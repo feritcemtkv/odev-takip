@@ -638,6 +638,26 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- TOKEN MODAL -->
+<div class="token-overlay" id="tokenOverlay">
+  <div class="token-modal">
+    <h2>☁️ GitHub Bağlantısı</h2>
+    <p>Değişiklikleriniz GitHub'a otomatik kaydedilsin. Bir kez token girin, her zaman çalışsın.</p>
+    <div class="token-input-wrap">
+      <input type="password" id="tokenInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+      <button class="token-eye" onclick="toggleTokenVis()">👁</button>
+    </div>
+    <div class="token-hint">
+      Token almak için:<br>
+      github.com → Profil → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token → <strong>repo</strong> iznini seçin
+    </div>
+    <div class="token-actions" style="margin-top:16px">
+      <button class="btn-cancel" onclick="closeTokenModal()">İptal</button>
+      <button class="btn-save" onclick="saveToken()">💾 Kaydet & Bağlan</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const CLASSES = {
   "10E": {
@@ -1128,7 +1148,7 @@ async function pushToGitHub(token) {
 
     if (putRes.ok) {
       setSyncBtn('ok', '✅ Kaydedildi');
-      showToast('☁️ GitHub'a kaydedildi!');
+      showToast('☁️ GitHub\'a kaydedildi!');
       setTimeout(() => setSyncBtn('', '☁️ Kaydet'), 3000);
     } else {
       const err = await putRes.json();
@@ -1173,7 +1193,7 @@ async function pullFromGitHub() {
     });
     saveData();
     render();
-    showToast('☁️ GitHub'dan yüklendi!');
+    showToast('☁️ GitHub\'dan yüklendi!');
     return true;
   } catch(e) { return false; }
 }
@@ -1755,25 +1775,6 @@ render();
 initSync();
 </script>
 
-<!-- TOKEN MODAL -->
-<div class="token-overlay" id="tokenOverlay">
-  <div class="token-modal">
-    <h2>☁️ GitHub Bağlantısı</h2>
-    <p>Değişiklikleriniz GitHub'a otomatik kaydedilsin. Bir kez token girin, her zaman çalışsın.</p>
-    <div class="token-input-wrap">
-      <input type="password" id="tokenInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
-      <button class="token-eye" onclick="toggleTokenVis()">👁</button>
-    </div>
-    <div class="token-hint">
-      Token almak için:<br>
-      github.com → Profil → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token → <strong>repo</strong> iznini seçin
-    </div>
-    <div class="token-actions" style="margin-top:16px">
-      <button class="btn-cancel" onclick="closeTokenModal()">İptal</button>
-      <button class="btn-save" onclick="saveToken()">💾 Kaydet & Bağlan</button>
-    </div>
-  </div>
-</div>
 
 </body>
 </html>
