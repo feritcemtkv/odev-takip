@@ -1102,14 +1102,14 @@ function showToast(msg) {
 
 
 
-// ─── GITHUB SYNC ─────────────────────────────────────────────────────────────
-const GH_USER = 'feritcemtkv';
-const GH_REPO = 'odev-takip';
-const GH_FILE = 'data.json';
-const GH_API  = 'https://api.github.com/repos/' + GH_USER + '/' + GH_REPO + '/contents/' + GH_FILE;
+// ─── GIST SYNC ───────────────────────────────────────────────────────────────
+const GIST_API = 'https://api.github.com/gists';
+const GIST_FILENAME = 'odev_takip_data.json';
 
 function getToken() { try { return localStorage.getItem('gh_token') || ''; } catch(e) { return ''; } }
 function setToken(t) { try { localStorage.setItem('gh_token', t); } catch(e) {} }
+function getGistId() { try { return localStorage.getItem('gist_id') || ''; } catch(e) { return ''; } }
+function setGistId(id) { try { localStorage.setItem('gist_id', id); } catch(e) {} }
 
 function setSyncBtn(state, label) {
   const btn = document.getElementById('syncBtn');
@@ -1121,63 +1121,70 @@ function setSyncBtn(state, label) {
 async function githubSync() {
   const token = getToken();
   if (!token) { openTokenModal(); return; }
-  await pushToGitHub(token);
+  await pushToGist(token);
 }
 
-async function pushToGitHub(token) {
+async function pushToGist(token) {
   setSyncBtn('syncing', '⏳ Kaydediliyor...');
   try {
     const data = JSON.stringify({ version: 2, savedAt: new Date().toISOString(), classes: CLASSES }, null, 2);
-    const encoded = btoa(unescape(encodeURIComponent(data)));
+    const body = { description: 'Odev Takip Verisi', public: false, files: {} };
+    body.files[GIST_FILENAME] = { content: data };
 
-    // Get current SHA if file exists
-    let sha = null;
-    try {
-      const res = await fetch(GH_API, { headers: { Authorization: 'token ' + token, Accept: 'application/vnd.github.v3+json' } });
-      if (res.ok) { const j = await res.json(); sha = j.sha; }
-    } catch(e) {}
+    const gistId = getGistId();
+    let res;
+    if (gistId) {
+      res = await fetch(GIST_API + '/' + gistId, {
+        method: 'PATCH',
+        headers: { Authorization: 'token ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+    } else {
+      res = await fetch(GIST_API, {
+        method: 'POST',
+        headers: { Authorization: 'token ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+    }
 
-    const body = { message: 'Ödev takip güncellendi - ' + new Date().toLocaleString('tr-TR'), content: encoded };
-    if (sha) body.sha = sha;
-
-    const putRes = await fetch(GH_API, {
-      method: 'PUT',
-      headers: { Authorization: 'token ' + token, Accept: 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-
-    if (putRes.ok) {
+    if (res.ok) {
+      const j = await res.json();
+      setGistId(j.id);
       setSyncBtn('ok', '✅ Kaydedildi');
-      showToast('☁️ GitHub\'a kaydedildi!');
+      showToast('☁️ Buluta kaydedildi!');
       setTimeout(() => setSyncBtn('', '☁️ Kaydet'), 3000);
     } else {
-      const err = await putRes.json();
-      if (putRes.status === 401) {
+      const err = await res.json();
+      if (res.status === 401) {
         setSyncBtn('err', '❌ Token Hatalı');
-        showToast('❌ Token geçersiz, yeniden girin');
+        showToast('❌ Token gecersiz');
+        localStorage.removeItem('gh_token');
         setTimeout(() => openTokenModal(), 1500);
       } else {
         setSyncBtn('err', '❌ Hata');
-        showToast('❌ ' + (err.message || 'Bilinmeyen hata'));
+        showToast('❌ ' + (err.message || 'Hata olustu'));
         setTimeout(() => setSyncBtn('', '☁️ Kaydet'), 3000);
       }
     }
   } catch(e) {
-    setSyncBtn('err', '❌ Bağlanamadı');
-    showToast('❌ İnternet bağlantısını kontrol edin');
+    setSyncBtn('err', '❌ Baglanti yok');
+    showToast('❌ Internet baglantisini kontrol edin');
     setTimeout(() => setSyncBtn('', '☁️ Kaydet'), 3000);
   }
 }
 
-async function pullFromGitHub() {
-  const token = getToken();
-  if (!token) return false;
+async function pullFromGist(token) {
+  const gistId = getGistId();
+  if (!gistId || !token) return false;
   try {
-    const res = await fetch(GH_API, { headers: { Authorization: 'token ' + token, Accept: 'application/vnd.github.v3+json' } });
+    const res = await fetch(GIST_API + '/' + gistId, {
+      headers: { Authorization: 'token ' + token }
+    });
     if (!res.ok) return false;
     const j = await res.json();
-    const text = decodeURIComponent(escape(atob(j.content.replace(/\n/g,''))));
-    const parsed = JSON.parse(text);
+    const fileContent = j.files[GIST_FILENAME] && j.files[GIST_FILENAME].content;
+    if (!fileContent) return false;
+    const parsed = JSON.parse(fileContent);
     if (!parsed.classes) return false;
     Object.keys(parsed.classes).forEach(k => {
       if (!CLASSES[k]) {
@@ -1193,7 +1200,7 @@ async function pullFromGitHub() {
     });
     saveData();
     render();
-    showToast('☁️ GitHub\'dan yüklendi!');
+    showToast('☁️ Buluttan yuklendi!');
     return true;
   } catch(e) { return false; }
 }
@@ -1211,21 +1218,20 @@ function toggleTokenVis() {
 }
 async function saveToken() {
   const t = document.getElementById('tokenInput').value.trim();
-  if (!t) { alert('Token boş olamaz!'); return; }
+  if (!t) { alert('Token bos olamaz!'); return; }
   setToken(t);
   closeTokenModal();
   showToast('🔑 Token kaydedildi, senkronize ediliyor...');
-  await pushToGitHub(t);
+  await pushToGist(t);
 }
 
-// On load: pull from GitHub if token exists
 async function initSync() {
   const token = getToken();
   if (token) {
-    setSyncBtn('syncing', '⏳ Yükleniyor...');
-    const ok = await pullFromGitHub();
+    setSyncBtn('syncing', '⏳ Yukleniyor...');
+    const ok = await pullFromGist(token);
     if (ok) { setSyncBtn('ok', '✅ Senkronize'); setTimeout(() => setSyncBtn('', '☁️ Kaydet'), 3000); }
-    else setSyncBtn('', '☁️ Kaydet');
+    else { await pushToGist(token); }
   }
 }
 
@@ -1653,8 +1659,12 @@ function exportHTML() {
 
   const classesJSON = JSON.stringify(CLASSES);
   let html = document.documentElement.outerHTML;
-  html = html.replace(/const CLASSES = \{[\s\S]*?\n\};\n\n\s*const EMOJIS/,
-    'const CLASSES = ' + classesJSON + ';\nconst EMOJIS');
+  const classesStart = html.indexOf('const CLASSES = {');
+  const emojisStart = html.indexOf('const EMOJIS =');
+  if (classesStart !== -1 && emojisStart !== -1) {
+    html = html.substring(0, classesStart) + 'const CLASSES = ' + classesJSON + ';\n' + html.substring(emojisStart);
+  }
+
   html = html.replace('loadData();\nrender();', 'render();');
 
   try {
