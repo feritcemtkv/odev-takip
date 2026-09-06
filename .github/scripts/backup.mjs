@@ -94,6 +94,18 @@ async function fetchOwnerScopedTables(ownerId) {
   dump.counseling_notes = await byStudentIds('counseling_notes', studentIds);
   console.log('  counseling_notes: ' + dump.counseling_notes.length + ' satır');
 
+  dump.university_goals = await byStudentIds('university_goals', studentIds);
+  console.log('  university_goals: ' + dump.university_goals.length + ' satır');
+
+  dump.abroad_consulting = await byStudentIds('abroad_consulting', studentIds);
+  console.log('  abroad_consulting: ' + dump.abroad_consulting.length + ' satır');
+
+  dump.class_evaluations = await byClassIds('class_evaluations');
+  console.log('  class_evaluations: ' + dump.class_evaluations.length + ' satır');
+
+  dump.class_evaluation_marks = await byStudentIds('class_evaluation_marks', studentIds);
+  console.log('  class_evaluation_marks: ' + dump.class_evaluation_marks.length + ' satır');
+
   return dump;
 }
 
