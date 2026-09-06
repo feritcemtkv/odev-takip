@@ -456,6 +456,7 @@ function exportClassBackup(){
   addSheet(wb, sorted.map(s=>({
     'No': s.no||'', 'Ad Soyad': s.name,
     'Ödev %': hwPct(s.id), 'Okulda Yok': s.absent?'Evet':'Hayır',
+    'Dershane/Etüt': s.dershane||'',
     'Öğretmen Notu': s.teacher_note||'',
   })), 'Öğrenciler');
 
@@ -522,10 +523,60 @@ function exportClassBackup(){
     const rows = [];
     sorted.forEach(s=>{
       (cls.counselingNotes[s.id]||[]).forEach(n=>{
-        rows.push({ 'No': s.no||'', 'Ad Soyad': s.name, 'Tarih': n.note_date||'', 'Not': n.content||'' });
+        rows.push({
+          'No': s.no||'', 'Ad Soyad': s.name, 'Tarih': n.note_date||'',
+          'Tür': n.meeting_type==='veli'?'Veli Görüşmesi':'Öğrenci Görüşmesi',
+          'Görüşmeyi Yapan': n.interviewer||'', 'Neden': n.reason||'',
+          'İçerik': n.content||'', 'Değerlendirme': n.evaluation||'',
+        });
       });
     });
     addSheet(wb, rows, 'Danışmanlık');
+
+    const ugRows = [];
+    sorted.forEach(s=>{
+      (cls.universityGoals[s.id]||[]).forEach(g=>{
+        (g.goals||[]).forEach((goal,i)=>{
+          ugRows.push({ 'No': s.no||'', 'Ad Soyad': s.name, 'Dönem': g.period, 'Sıra': i+1,
+            'Meslek/Bölüm': goal.profession||'', 'Üniversite': goal.university||'',
+            'Almanya İsteği': g.germany_interest===true?'Evet':(g.germany_interest===false?'Hayır':'') });
+        });
+      });
+    });
+    addSheet(wb, ugRows, 'Üniversite Hedefleri');
+
+    const acRows = [];
+    sorted.forEach(s=>{
+      const ac = cls.abroadConsulting[s.id];
+      if(!ac) return;
+      const maxLen = Math.max((ac.turkey_goals||[]).length, (ac.germany_goals||[]).length, 1);
+      for(let i=0;i<maxLen;i++){
+        const tr = (ac.turkey_goals||[])[i] || {};
+        const de = (ac.germany_goals||[])[i] || {};
+        acRows.push({
+          'No': s.no||'', 'Ad Soyad': s.name, 'Alanı': ac.field||'', 'Sıra': i+1,
+          'TR Bölüm': tr.profession||'', 'TR Üniversite': tr.university||'',
+          'DE Bölüm': de.profession||'', 'DE Üniversite': de.university||'',
+          'Randevu İstiyor': i===0?(ac.wants_appointment?'Evet':'Hayır'):'',
+          'Alman Başvurusuna Katılmak İstiyor': i===0?(ac.wants_german_application?'Evet':'Hayır'):'',
+        });
+      }
+    });
+    addSheet(wb, acRows, 'Yurtdışı Danışmanlık');
+
+    const ceRows = [];
+    cls.classEvaluations.forEach(ev=>{
+      sorted.forEach(s=>{
+        const marks = (cls.classEvaluationMarks[ev.id]||{})[s.id] || {};
+        (ev.criteria||[]).forEach((crit,ci)=>{
+          ceRows.push({ 'Dönem': ev.period, 'No': s.no||'', 'Ad Soyad': s.name,
+            'Kriter': crit, 'İşaretli': (marks[ci]&&marks[ci].checked) ? 'Evet' : 'Hayır' });
+        });
+        const specialNote = marks[-1] && marks[-1].note;
+        if(specialNote) ceRows.push({ 'Dönem': ev.period, 'No': s.no||'', 'Ad Soyad': s.name, 'Kriter': 'Özel Not', 'İşaretli': specialNote });
+      });
+    });
+    addSheet(wb, ceRows, 'Sınıf Değerlendirme');
   }
 
   const safeName = (cls.name||'sinif').replace(/[\\/:*?"<>|]/g,'_');
@@ -550,7 +601,7 @@ function exportParentReport(sid){
   addSheet(wb, [{
     'No': s.no||'', 'Ad Soyad': s.name,
     'Sınıf': cls.name, 'Ödev Tamamlama %': hwPct(s.id),
-    'Performans Ort.': perfAvg,
+    'Performans Ort.': perfAvg, 'Dershane/Etüt': s.dershane||'',
   }], 'Öğrenci Bilgisi');
 
   const hwRows = cls.homeworks.map(h=>{
@@ -596,6 +647,30 @@ function exportParentReport(sid){
     });
   }
 
+  if(g12){
+    const ugRows = [];
+    (cls.universityGoals[s.id]||[]).forEach(g=>{
+      (g.goals||[]).forEach((goal,i)=>{
+        ugRows.push({ 'Dönem': g.period, 'Sıra': i+1, 'Meslek/Bölüm': goal.profession||'', 'Üniversite': goal.university||'',
+          'Almanya İsteği': g.germany_interest===true?'Evet':(g.germany_interest===false?'Hayır':'') });
+      });
+    });
+    addSheet(wb, ugRows, 'Üniversite Hedefleri');
+
+    const ac = cls.abroadConsulting[s.id];
+    if(ac){
+      const acRows = [];
+      const maxLen = Math.max((ac.turkey_goals||[]).length, (ac.germany_goals||[]).length, 1);
+      for(let i=0;i<maxLen;i++){
+        const tr = (ac.turkey_goals||[])[i] || {};
+        const de = (ac.germany_goals||[])[i] || {};
+        acRows.push({ 'Sıra': i+1, 'TR Bölüm': tr.profession||'', 'TR Üniversite': tr.university||'',
+          'DE Bölüm': de.profession||'', 'DE Üniversite': de.university||'' });
+      }
+      addSheet(wb, acRows, 'Yurtdışı Danışmanlık');
+    }
+  }
+
   const safeName = (s.name||'ogrenci').replace(/[\\/:*?"<>|]/g,'_');
   XLSX.writeFile(wb, safeName+'_veli_raporu_'+today+'.xlsx');
   logActivity('"'+s.name+'" için veli raporu indirdi');
@@ -610,14 +685,21 @@ async function loadClassDetail(classId){
   const { data: quizzes } = await sb.from('quizzes').select('*').eq('class_id',classId).order('slot_no');
   const { data: perfTasks } = await sb.from('performance_tasks').select('*').eq('class_id',classId).order('slot_no');
   const { data: denemeExams } = await sb.from('deneme_exams').select('*').eq('class_id',classId).order('slot_no');
+  const { data: classEvaluations } = await sb.from('class_evaluations').select('*').eq('class_id',classId).order('created_at');
   const ids = (students||[]).map(s=>s.id);
-  let hwStatusRows=[], rubricScoreRows=[], quizScoreRows=[], denemeScoreRows=[], counselingNoteRows=[];
+  let hwStatusRows=[], rubricScoreRows=[], quizScoreRows=[], denemeScoreRows=[], counselingNoteRows=[], universityGoalRows=[], abroadConsultingRows=[], evalMarkRows=[];
   if(ids.length){
     const r1 = await sb.from('homework_status').select('*').in('student_id', ids); hwStatusRows = r1.data||[];
     const r2 = await sb.from('rubric_scores').select('*').in('student_id', ids); rubricScoreRows = r2.data||[];
     const r3 = await sb.from('quiz_scores').select('*').in('student_id', ids); quizScoreRows = r3.data||[];
     const r5 = await sb.from('counseling_notes').select('*').in('student_id', ids).order('note_date', {ascending:false}).order('created_at', {ascending:false});
     counselingNoteRows = r5.data||[];
+    const r6 = await sb.from('university_goals').select('*').in('student_id', ids).order('created_at', {ascending:false});
+    universityGoalRows = r6.data||[];
+    const r7 = await sb.from('abroad_consulting').select('*').in('student_id', ids);
+    abroadConsultingRows = r7.data||[];
+    const r8 = await sb.from('class_evaluation_marks').select('*').in('student_id', ids);
+    evalMarkRows = r8.data||[];
   }
   const examIds = (denemeExams||[]).map(e=>e.id);
   if(examIds.length){
@@ -646,6 +728,19 @@ async function loadClassDetail(classId){
     counselingNotes[row.student_id] = counselingNotes[row.student_id]||[];
     counselingNotes[row.student_id].push(row);
   }
+  const universityGoals = {};
+  for(const row of universityGoalRows){
+    universityGoals[row.student_id] = universityGoals[row.student_id]||[];
+    universityGoals[row.student_id].push(row);
+  }
+  const abroadConsulting = {};
+  for(const row of abroadConsultingRows){ abroadConsulting[row.student_id] = row; }
+  const classEvaluationMarks = {};
+  for(const row of evalMarkRows){
+    classEvaluationMarks[row.evaluation_id] = classEvaluationMarks[row.evaluation_id]||{};
+    classEvaluationMarks[row.evaluation_id][row.student_id] = classEvaluationMarks[row.evaluation_id][row.student_id]||{};
+    classEvaluationMarks[row.evaluation_id][row.student_id][row.criteria_index] = { checked: row.checked, note: row.note };
+  }
   state.cls = {
     id: classId, name: classObj?classObj.name:'',
     students: students||[], homeworks: homeworks||[], hwStatus,
@@ -655,6 +750,10 @@ async function loadClassDetail(classId){
     aytExams: (denemeExams||[]).filter(e=>e.exam_type==='ayt'),
     denemeScoresByExam,
     counselingNotes,
+    universityGoals,
+    abroadConsulting,
+    classEvaluations: classEvaluations||[],
+    classEvaluationMarks,
   };
   state.rubricLevel = (state.cls.perfTasks[0] && state.cls.perfTasks[0].label) || null;
   state.loading = false;
@@ -694,10 +793,14 @@ function quizSlotAvgDYB(slotNo){
   return { dogru: avg('dogru'), yanlis: avg('yanlis'), bos: avg('bos') };
 }
 
-async function addCounselingNote(sid, noteDate, content){
+async function addCounselingNote(sid, meetingType, noteDate, interviewer, reason, content, evaluation){
   content = (content||'').trim();
   if(!content) return;
-  const { data, error } = await sb.from('counseling_notes').insert({student_id:sid, note_date: noteDate||todayStr(), content}).select();
+  const { data, error } = await sb.from('counseling_notes').insert({
+    student_id:sid, meeting_type: meetingType||'ogrenci', note_date: noteDate||todayStr(),
+    interviewer: (interviewer||'').trim()||null, reason: (reason||'').trim()||null,
+    content, evaluation: (evaluation||'').trim()||null,
+  }).select();
   if(error){ showToast('Hata: '+error.message); return; }
   state.cls.counselingNotes[sid] = state.cls.counselingNotes[sid] || [];
   state.cls.counselingNotes[sid].unshift(data[0]);
@@ -712,6 +815,95 @@ async function deleteCounselingNote(sid, noteId){
   render();
   await sb.from('counseling_notes').delete().eq('id', noteId);
   showToast('Görüşme notu silindi');
+}
+
+// ---- Üniversite Hedefleri (Form-3a) ----
+async function addUniversityGoals(sid, period, goals, germanyInterest){
+  period = (period||'').trim();
+  if(!period){ showToast('Dönem adı girilmeli'); return; }
+  const cleanGoals = goals.filter(g=>(g.profession||'').trim() || (g.university||'').trim());
+  const { data, error } = await sb.from('university_goals').insert({
+    student_id: sid, period, goals: cleanGoals, germany_interest: germanyInterest,
+  }).select();
+  if(error){ showToast('Hata: '+error.message); return; }
+  state.cls.universityGoals[sid] = state.cls.universityGoals[sid] || [];
+  state.cls.universityGoals[sid].unshift(data[0]);
+  render();
+  const s = studentById(sid);
+  if(s) logActivity('"'+s.name+'" için üniversite hedefleri eklendi ('+period+')');
+  showToast('Üniversite hedefleri kaydedildi');
+}
+async function deleteUniversityGoals(sid, id){
+  if(!confirm('Bu dönem kaydı silinsin mi?')) return;
+  state.cls.universityGoals[sid] = (state.cls.universityGoals[sid]||[]).filter(g=>g.id!==id);
+  render();
+  await sb.from('university_goals').delete().eq('id', id);
+  showToast('Silindi');
+}
+
+// ---- Yurtdışı Danışmanlık (Form-7) — öğrenci başına tek kayıt ----
+async function saveAbroadConsulting(sid, fields){
+  const existing = state.cls.abroadConsulting[sid];
+  if(existing){
+    const { error } = await sb.from('abroad_consulting').update({...fields, updated_at:new Date().toISOString()}).eq('id', existing.id);
+    if(error){ showToast('Hata: '+error.message); return; }
+    Object.assign(existing, fields);
+  } else {
+    const { data, error } = await sb.from('abroad_consulting').insert({student_id:sid, ...fields}).select();
+    if(error){ showToast('Hata: '+error.message); return; }
+    state.cls.abroadConsulting[sid] = data[0];
+  }
+  render();
+  showToast('Yurtdışı danışmanlık bilgisi kaydedildi');
+}
+
+// ---- Dershane bilgisi: mevcut updateStudentField(sid,'dershane',value) zaten genel amaçlı, aynen kullanılır ----
+
+// ---- Sınıf Durum Değerlendirmesi (periyodik, sınıf geneli) ----
+async function addClassEvaluation(period, criteria){
+  period = (period||'').trim();
+  if(!period){ showToast('Dönem adı girilmeli'); return; }
+  const { data, error } = await sb.from('class_evaluations').insert({class_id: state.cls.id, period, criteria}).select();
+  if(error){ showToast('Hata: '+error.message); return; }
+  state.cls.classEvaluations.push(data[0]);
+  render();
+  logActivity('"'+period+'" sınıf durum değerlendirmesi eklendi');
+  showToast('Değerlendirme dönemi eklendi');
+}
+async function deleteClassEvaluation(id){
+  if(!confirm('Bu değerlendirme dönemi silinsin mi? Tüm işaretlemeler de silinir.')) return;
+  const ev = state.cls.classEvaluations.find(e=>e.id===id);
+  state.cls.classEvaluations = state.cls.classEvaluations.filter(e=>e.id!==id);
+  delete state.cls.classEvaluationMarks[id];
+  state.view='roster';
+  render();
+  await sb.from('class_evaluations').delete().eq('id', id);
+  logActivity('"'+(ev?ev.period:'')+'" değerlendirme dönemini sildi');
+  showToast('Değerlendirme dönemi silindi');
+}
+async function toggleEvaluationMark(evalId, sid, critIndex){
+  state.cls.classEvaluationMarks[evalId] = state.cls.classEvaluationMarks[evalId] || {};
+  state.cls.classEvaluationMarks[evalId][sid] = state.cls.classEvaluationMarks[evalId][sid] || {};
+  const cur = state.cls.classEvaluationMarks[evalId][sid][critIndex] || {checked:false, note:''};
+  const next = { checked: !cur.checked, note: cur.note||'' };
+  state.cls.classEvaluationMarks[evalId][sid][critIndex] = next;
+  render();
+  await sb.from('class_evaluation_marks').upsert(
+    {evaluation_id:evalId, student_id:sid, criteria_index:critIndex, checked:next.checked, note:next.note},
+    {onConflict:'evaluation_id,student_id,criteria_index'}
+  );
+}
+async function setEvaluationNote(evalId, sid, note){
+  // Özel Notlar: her öğrenci için tek bir genel not, criteria_index=-1 ayrılmış slot olarak kullanılır
+  state.cls.classEvaluationMarks[evalId] = state.cls.classEvaluationMarks[evalId] || {};
+  state.cls.classEvaluationMarks[evalId][sid] = state.cls.classEvaluationMarks[evalId][sid] || {};
+  state.cls.classEvaluationMarks[evalId][sid][-1] = { checked:false, note };
+  render();
+  await sb.from('class_evaluation_marks').upsert(
+    {evaluation_id:evalId, student_id:sid, criteria_index:-1, checked:false, note},
+    {onConflict:'evaluation_id,student_id,criteria_index'}
+  );
+  showToast('Not kaydedildi');
 }
 
 async function toggleAbsent(sid){
@@ -748,6 +940,7 @@ async function deleteStudent(sid){
   const s = studentById(sid); const name = s?s.name:'Öğrenci';
   state.cls.students = state.cls.students.filter(x=>x.id!==sid);
   delete state.cls.hwStatus[sid]; delete state.cls.rubricScores[sid]; delete state.cls.quizScores[sid]; delete state.cls.counselingNotes[sid];
+  delete state.cls.universityGoals[sid]; delete state.cls.abroadConsulting[sid];
   state.view='roster'; state.studentId=null;
   render();
   await sb.from('students').delete().eq('id', sid);
@@ -1434,6 +1627,8 @@ function renderSinifDetail(app){
   if(state.view==='quick_quiz') return renderQuickQuiz(app);
   if(state.view==='deneme_list') return renderDenemeList(app, state.examType);
   if(state.view==='deneme_scores') return renderDenemeScores(app);
+  if(state.view==='classEvalList') return renderClassEvalList(app);
+  if(state.view==='classEvalMatrix') return renderClassEvalMatrix(app);
 }
 function backToRoster(){ state.view='roster'; state.studentId=null; render(); }
 function backToHome(){ state.page='home'; state.cls=null; render(); }
@@ -1471,6 +1666,11 @@ function renderRoster(app){
       '<div class="actionrow"><button class="btn btn-primary full" id="tytBtn">'+ic('clipboard')+'TYT Denemeleri</button></div>' +
       '<div class="section-title"><span>AYT</span><span class="line"></span></div>' +
       '<div class="actionrow"><button class="btn btn-primary full" id="aytBtn">'+ic('clipboard')+'AYT Denemeleri</button></div>';
+  }
+  if(g12){
+    midSections +=
+      '<div class="section-title"><span>Danışmanlık</span><span class="line"></span></div>' +
+      '<div class="actionrow"><button class="btn btn-primary full" id="classEvalBtn">'+ic('clipboard')+'Sınıf Durum Değerlendirmesi</button></div>';
   }
 
   app.innerHTML =
@@ -1520,6 +1720,9 @@ function renderRoster(app){
   if(showTytAyt){
     document.getElementById('tytBtn').onclick = ()=>{ state.examType='tyt'; state.view='deneme_list'; render(); };
     document.getElementById('aytBtn').onclick = ()=>{ state.examType='ayt'; state.view='deneme_list'; render(); };
+  }
+  if(g12){
+    document.getElementById('classEvalBtn').onclick = ()=>{ state.view='classEvalList'; render(); };
   }
   document.getElementById('sortNo').onclick = ()=>{ state.sortBy='no'; render(); };
   document.getElementById('sortName').onclick = ()=>{ state.sortBy='name'; render(); };
@@ -1589,9 +1792,11 @@ function renderStudentDetail(app){
 
   app.innerHTML =
     '<button class="backlink" id="toRoster">'+ic('chevron')+' '+escapeHtml(cls.name)+' listesine dön</button>' +
-    '<div style="display:flex;align-items:center;gap:8px;margin:-8px 0 14px;">' +
+    '<div style="display:flex;align-items:center;gap:8px;margin:-8px 0 14px;flex-wrap:wrap;">' +
       '<label style="font-size:12px;color:var(--ink-soft);font-weight:700;">No:</label>' +
       '<input type="text" data-f="no" value="'+(s.no||'')+'" style="width:70px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;font-weight:700;color:var(--primary-deep);">' +
+      (g12 ? ('<label style="font-size:12px;color:var(--ink-soft);font-weight:700;margin-left:10px;">Dershane/Etüt:</label>' +
+      '<input type="text" data-f="dershane" value="'+escapeHtml(s.dershane||'')+'" placeholder="—" style="width:160px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;">') : '') +
     '</div>' +
     '<div class="pagehead"><h2>'+escapeHtml(s.name)+'</h2></div>' +
     '<div class="infobar">' +
@@ -1602,24 +1807,9 @@ function renderStudentDetail(app){
     (!g12 && cls.perfTasks.length ? '<div class="section-title"><span>Performans</span><span class="line"></span></div><div class="detail-grid">'+perfHtml+'</div>' : '') +
     (showTytAyt ? '<div class="section-title"><span>TYT Sonuçları</span><span class="line"></span></div>'+(tytHtml||'<div class="empty">Henüz TYT sonucu yok.</div>') : '') +
     (showTytAyt ? '<div class="section-title"><span>AYT Sonuçları</span><span class="line"></span></div>'+(aytHtml||'<div class="empty">Henüz AYT sonucu yok.</div>') : '') +
-    (g12 ? '<div class="section-title"><span>Danışmanlık Görüşmeleri</span><span class="line"></span></div>' +
-      '<div class="card">' +
-        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">' +
-          '<input type="date" id="counselDate" value="'+todayStr()+'" style="border:1px solid var(--line);border-radius:8px;padding:9px;font-size:13px;">' +
-          '<textarea id="counselNote" placeholder="Bugünkü görüşmede konuşulanlar, alınan kararlar..." style="flex:1;min-width:220px;border:1px solid var(--line);border-radius:8px;padding:9px;font-family:inherit;font-size:13.5px;min-height:60px;resize:vertical;"></textarea>' +
-        '</div>' +
-        '<button class="btn btn-primary full" id="addCounselBtn">'+ic('plus')+'Görüşme Notu Ekle</button>' +
-      '</div>' +
-      ((cls.counselingNotes[s.id]||[]).map(n=>
-        '<div class="card" style="padding:12px 14px;">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
-            '<div style="font-weight:700;font-size:12.5px;color:var(--primary-deep);">'+fmtDate(n.note_date)+'</div>' +
-            '<button class="iconbtn" data-delnote="'+n.id+'">'+ic('trash')+'</button>' +
-          '</div>' +
-          '<div style="font-size:13.5px;white-space:pre-wrap;line-height:1.5;">'+escapeHtml(n.content)+'</div>' +
-        '</div>'
-      ).join('') || '<div class="empty">Henüz görüşme notu eklenmedi.</div>')
-      : '') +
+    (g12 ? renderMeetingReportsSection(s) : '') +
+    (g12 ? renderUniversityGoalsSection(s) : '') +
+    (g12 ? renderAbroadConsultingSection(s) : '') +
     '<div class="section-title"><span>Ödev Geçmişi</span><span class="line"></span></div>' +
     '<div class="card">'+(hwRows||'<div class="empty">Ödev tanımlı değil.</div>')+'</div>' +
     '<div class="section-title"><span>Öğretmen Notu</span><span class="line"></span></div>' +
@@ -1636,15 +1826,9 @@ function renderStudentDetail(app){
   document.getElementById('toRoster').onclick = backToRoster;
   document.getElementById('parentReportBtn').onclick = ()=> exportParentReport(s.id);
   if(g12){
-    document.getElementById('addCounselBtn').onclick = ()=>{
-      const dateEl = document.getElementById('counselDate');
-      const noteEl = document.getElementById('counselNote');
-      if(!noteEl.value.trim()){ showToast('Not boş olamaz'); return; }
-      addCounselingNote(s.id, dateEl.value, noteEl.value);
-    };
-    app.querySelectorAll('[data-delnote]').forEach(btn=>{
-      btn.onclick = ()=> deleteCounselingNote(s.id, btn.dataset.delnote);
-    });
+    wireMeetingReportsSection(app, s);
+    wireUniversityGoalsSection(app, s);
+    wireAbroadConsultingSection(app, s);
   }
   app.querySelectorAll('.toggle').forEach(btn=>{
     if(btn.disabled) return;
@@ -1662,6 +1846,242 @@ function renderStudentDetail(app){
   document.getElementById('deleteStBtn').onclick = ()=>{
     if(confirm(s.name+' silinsin mi? Bu işlem geri alınamaz.')) deleteStudent(s.id);
   };
+}
+
+// ---- Görüşme Raporu (FL4a/FL6a) ----
+function renderMeetingReportsSection(s){
+  const notes = state.cls.counselingNotes[s.id] || [];
+  const typeLabel = t => t==='veli' ? 'Veli Görüşmesi' : 'Öğrenci Görüşmesi';
+  return '<div class="section-title"><span>Görüşme Raporu</span><span class="line"></span></div>' +
+    '<div class="card">' +
+      '<div class="levelpicker" id="mtypePicker" data-selected="ogrenci" style="margin-bottom:12px;">' +
+        '<button type="button" data-mtype="veli">Veli Görüşmesi</button>' +
+        '<button type="button" data-mtype="ogrenci" class="active">Öğrenci Görüşmesi</button>' +
+      '</div>' +
+      '<div class="detail-grid" style="margin-bottom:10px;">' +
+        '<div class="field" style="text-align:left;"><label>Tarih</label><input type="date" id="counselDate" value="'+todayStr()+'" style="text-align:left;font-size:13px;font-weight:600;color:var(--ink);"></div>' +
+        '<div class="field" style="text-align:left;"><label>Görüşmeyi Yapan</label><input type="text" id="counselInterviewer" placeholder="Ad Soyad" style="text-align:left;font-size:13px;font-weight:600;color:var(--ink);"></div>' +
+      '</div>' +
+      '<input type="text" id="counselReason" placeholder="Neden / Sorun (örn. Tanışma)" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-size:13.5px;margin-bottom:10px;box-sizing:border-box;">' +
+      '<textarea id="counselNote" placeholder="Görüşme İçeriği..." style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-family:inherit;font-size:13.5px;min-height:60px;resize:vertical;margin-bottom:10px;box-sizing:border-box;"></textarea>' +
+      '<textarea id="counselEval" placeholder="Değerlendirme..." style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-family:inherit;font-size:13.5px;min-height:50px;resize:vertical;margin-bottom:10px;box-sizing:border-box;"></textarea>' +
+      '<button class="btn btn-primary full" id="addCounselBtn">'+ic('plus')+'Görüşme Notu Ekle</button>' +
+    '</div>' +
+    (notes.map(n=>
+      '<div class="card" style="padding:12px 14px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">' +
+          '<div style="display:flex;gap:8px;align-items:center;">' +
+            '<span class="tag '+(n.meeting_type==='veli'?'teal':'blue')+'">'+typeLabel(n.meeting_type)+'</span>' +
+            '<span style="font-weight:700;font-size:12.5px;color:var(--primary-deep);">'+fmtDate(n.note_date)+'</span>' +
+          '</div>' +
+          '<button class="iconbtn" data-delnote="'+n.id+'">'+ic('trash')+'</button>' +
+        '</div>' +
+        (n.interviewer ? '<div style="font-size:12px;color:var(--ink-soft);margin-bottom:4px;"><b>Görüşmeyi Yapan:</b> '+escapeHtml(n.interviewer)+'</div>' : '') +
+        (n.reason ? '<div style="font-size:12px;color:var(--ink-soft);margin-bottom:4px;"><b>Neden:</b> '+escapeHtml(n.reason)+'</div>' : '') +
+        '<div style="font-size:13.5px;white-space:pre-wrap;line-height:1.5;">'+escapeHtml(n.content)+'</div>' +
+        (n.evaluation ? '<div style="font-size:13px;white-space:pre-wrap;line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);color:var(--ink-soft);"><b>Değerlendirme:</b> '+escapeHtml(n.evaluation)+'</div>' : '') +
+      '</div>'
+    ).join('') || '<div class="empty">Henüz görüşme notu eklenmedi.</div>');
+}
+function wireMeetingReportsSection(app, s){
+  const picker = document.getElementById('mtypePicker');
+  picker.querySelectorAll('[data-mtype]').forEach(btn=>{
+    btn.onclick = ()=>{
+      picker.dataset.selected = btn.dataset.mtype;
+      picker.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b===btn));
+    };
+  });
+  document.getElementById('addCounselBtn').onclick = ()=>{
+    const noteEl = document.getElementById('counselNote');
+    if(!noteEl.value.trim()){ showToast('Görüşme içeriği boş olamaz'); return; }
+    addCounselingNote(
+      s.id, picker.dataset.selected,
+      document.getElementById('counselDate').value,
+      document.getElementById('counselInterviewer').value,
+      document.getElementById('counselReason').value,
+      noteEl.value,
+      document.getElementById('counselEval').value
+    );
+  };
+  app.querySelectorAll('[data-delnote]').forEach(btn=>{
+    btn.onclick = ()=> deleteCounselingNote(s.id, btn.dataset.delnote);
+  });
+}
+
+// ---- Ortak: sıralı meslek/üniversite ya da bölüm/üniversite satırları ----
+function goalRowsHtml(prefix, count, existingGoals){
+  existingGoals = existingGoals || [];
+  let html = '';
+  for(let i=0;i<count;i++){
+    const g = existingGoals[i] || {};
+    html += '<div style="display:flex;gap:6px;margin-bottom:6px;">' +
+      '<div style="width:20px;font-size:11.5px;color:var(--ink-faint);padding-top:9px;text-align:center;">'+(i+1)+'</div>' +
+      '<input type="text" data-'+prefix+'i="'+i+'" data-'+prefix+'f="profession" placeholder="Meslek/Bölüm" value="'+escapeHtml(g.profession||'')+'" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;box-sizing:border-box;">' +
+      '<input type="text" data-'+prefix+'i="'+i+'" data-'+prefix+'f="university" placeholder="Üniversite" value="'+escapeHtml(g.university||'')+'" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;box-sizing:border-box;">' +
+    '</div>';
+  }
+  return html;
+}
+function readGoalRows(app, prefix, count){
+  const rows = [];
+  for(let i=0;i<count;i++){
+    const prof = app.querySelector('[data-'+prefix+'i="'+i+'"][data-'+prefix+'f="profession"]');
+    const uni = app.querySelector('[data-'+prefix+'i="'+i+'"][data-'+prefix+'f="university"]');
+    rows.push({ profession: prof?prof.value.trim():'', university: uni?uni.value.trim():'' });
+  }
+  return rows;
+}
+
+// ---- Üniversite Hedefleri (Form-3a) ----
+function renderUniversityGoalsSection(s){
+  const goals = state.cls.universityGoals[s.id] || [];
+  return '<div class="section-title"><span>Üniversite Hedefleri</span><span class="line"></span></div>' +
+    '<div class="card">' +
+      '<input type="text" id="ugPeriod" placeholder="Dönem (örn. 1. Dönem Başı)" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-size:13.5px;margin-bottom:10px;box-sizing:border-box;">' +
+      '<div style="font-size:11.5px;color:var(--ink-soft);font-weight:700;margin-bottom:6px;">HEDEFLENEN MESLEK VE ÜNİVERSİTELER (sırasıyla)</div>' +
+      goalRowsHtml('ug', 5, []) +
+      '<div style="margin:10px 0;font-size:13px;">Almanya\'da eğitime devam etme isteği: ' +
+        '<label style="margin-left:8px;"><input type="radio" name="ugGermany" value="evet"> Evet</label>' +
+        '<label style="margin-left:8px;"><input type="radio" name="ugGermany" value="hayir" checked> Hayır</label>' +
+      '</div>' +
+      '<button class="btn btn-primary full" id="addUgBtn">'+ic('plus')+'Kaydet</button>' +
+    '</div>' +
+    (goals.map(g=>
+      '<div class="card" style="padding:12px 14px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+          '<div style="font-weight:700;font-size:13.5px;color:var(--primary-deep);">'+escapeHtml(g.period)+'</div>' +
+          '<button class="iconbtn" data-delug="'+g.id+'">'+ic('trash')+'</button>' +
+        '</div>' +
+        ((g.goals||[]).map((goal,i)=>'<div style="font-size:12.5px;padding:2px 0;">'+(i+1)+'. '+escapeHtml(goal.profession||'-')+' — '+escapeHtml(goal.university||'-')+'</div>').join('') || '<div class="empty" style="padding:6px;">Kayıt yok</div>') +
+        '<div style="font-size:12px;color:var(--ink-soft);margin-top:6px;">Almanya isteği: '+(g.germany_interest===true?'Evet':(g.germany_interest===false?'Hayır':'-'))+'</div>' +
+      '</div>'
+    ).join('') || '<div class="empty">Henüz üniversite hedefi girilmedi.</div>');
+}
+function wireUniversityGoalsSection(app, s){
+  document.getElementById('addUgBtn').onclick = ()=>{
+    const period = document.getElementById('ugPeriod').value;
+    const goals = readGoalRows(app, 'ug', 5);
+    const germanyRadio = app.querySelector('input[name="ugGermany"]:checked');
+    const germanyInterest = germanyRadio ? (germanyRadio.value==='evet') : null;
+    addUniversityGoals(s.id, period, goals, germanyInterest);
+  };
+  app.querySelectorAll('[data-delug]').forEach(btn=>{
+    btn.onclick = ()=> deleteUniversityGoals(s.id, btn.dataset.delug);
+  });
+}
+
+// ---- Yurtdışı Danışmanlık (Form-7) ----
+function renderAbroadConsultingSection(s){
+  const ac = state.cls.abroadConsulting[s.id] || {};
+  return '<div class="section-title"><span>Yurtdışı Danışmanlık</span><span class="line"></span></div>' +
+    '<div class="card">' +
+      '<input type="text" id="acField" placeholder="Alanı (örn. Sayısal)" value="'+escapeHtml(ac.field||'')+'" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-size:13.5px;margin-bottom:12px;box-sizing:border-box;">' +
+      '<div style="font-size:11.5px;color:var(--ink-soft);font-weight:700;margin-bottom:6px;">TÜRKİYE\'DE HEDEFLENEN BÖLÜM VE ÜNİVERSİTE</div>' +
+      goalRowsHtml('tr', 5, ac.turkey_goals||[]) +
+      '<div style="font-size:11.5px;color:var(--ink-soft);font-weight:700;margin:14px 0 6px;">ALMANYA\'DA HEDEFLENEN BÖLÜM VE ÜNİVERSİTE</div>' +
+      goalRowsHtml('de', 5, ac.germany_goals||[]) +
+      '<div style="margin:14px 0 10px;">' +
+        '<label style="display:block;font-size:13px;margin-bottom:8px;"><input type="checkbox" id="acAppointment" '+(ac.wants_appointment?'checked':'')+'> Yurtdışı Eğitimi ve Danışmanlık Biriminden randevu alarak görüşme yapacağım</label>' +
+        '<label style="display:block;font-size:13px;"><input type="checkbox" id="acGermanApp" '+(ac.wants_german_application?'checked':'')+'> Alman Üniversiteleri Başvuru sürecine katılmak istiyorum</label>' +
+      '</div>' +
+      '<button class="btn btn-primary full" id="saveAcBtn">'+ic('file')+'Kaydet</button>' +
+    '</div>';
+}
+function wireAbroadConsultingSection(app, s){
+  document.getElementById('saveAcBtn').onclick = ()=>{
+    saveAbroadConsulting(s.id, {
+      field: document.getElementById('acField').value.trim() || null,
+      turkey_goals: readGoalRows(app, 'tr', 5).filter(g=>g.profession||g.university),
+      germany_goals: readGoalRows(app, 'de', 5).filter(g=>g.profession||g.university),
+      wants_appointment: document.getElementById('acAppointment').checked,
+      wants_german_application: document.getElementById('acGermanApp').checked,
+    });
+  };
+}
+
+// ---- Sınıf Durum Değerlendirmesi ----
+function openNewClassEvalModal(){
+  const defaultCriteria = ['Derslerde başarılı','Derslerde zorlanıyor','Derslere düzenli geliyor','Sınav performansı düzenli','Rehberlik görüşmesi yapıldı'].join('\n');
+  openModalHtml(
+    '<h3>Yeni Değerlendirme Dönemi</h3>' +
+    '<label>Dönem adı (örn. "1. Değerlendirme - Eylül/Kasım")</label><input type="text" id="cePeriod" placeholder="Dönem adı">' +
+    '<label>Kriterler (her satıra bir tane, istediğin gibi düzenleyebilirsin)</label>' +
+    '<textarea id="ceCriteria" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:11px;font-size:13px;min-height:130px;font-family:inherit;box-sizing:border-box;">'+defaultCriteria+'</textarea>' +
+    '<div class="modalactions"><button class="btn btn-outline" id="ceCancel">Vazgeç</button><button class="btn btn-primary" id="ceSave">Oluştur</button></div>'
+  );
+  document.getElementById('ceCancel').onclick = closeModal;
+  document.getElementById('ceSave').onclick = ()=>{
+    const period = document.getElementById('cePeriod').value.trim();
+    const criteria = document.getElementById('ceCriteria').value.split('\n').map(x=>x.trim()).filter(Boolean);
+    if(!period){ showToast('Dönem adı girilmeli'); return; }
+    if(!criteria.length){ showToast('En az bir kriter girilmeli'); return; }
+    closeModal();
+    addClassEvaluation(period, criteria);
+  };
+}
+function renderClassEvalList(app){
+  const rows = state.cls.classEvaluations.map(ev=>
+    '<div class="card rowcard" data-pickeval="'+ev.id+'">' +
+      '<div class="name">'+escapeHtml(ev.period)+'<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;">'+(ev.criteria||[]).length+' kriter</div></div>' +
+      '<div class="chev">'+ic('chevron')+'</div>' +
+    '</div>'
+  ).join('');
+  app.innerHTML =
+    '<button class="backlink" id="backCEL">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
+    '<div class="pagehead"><h2>Sınıf Durum Değerlendirmesi</h2></div>' +
+    '<button class="btn btn-primary full" id="addCEBtn" style="margin-bottom:16px;">'+ic('plus')+'Yeni Değerlendirme Dönemi</button>' +
+    (rows || '<div class="empty">Henüz değerlendirme dönemi eklenmedi.</div>');
+  document.getElementById('backCEL').onclick = backToRoster;
+  document.getElementById('addCEBtn').onclick = openNewClassEvalModal;
+  app.querySelectorAll('[data-pickeval]').forEach(el=>{
+    el.onclick = ()=>{ state.activeEvalId = el.dataset.pickeval; state.view='classEvalMatrix'; render(); };
+  });
+}
+function renderClassEvalMatrix(app){
+  const ev = state.cls.classEvaluations.find(e=>e.id===state.activeEvalId);
+  if(!ev){ state.view='classEvalList'; return render(); }
+  const criteria = ev.criteria || [];
+  const sorted = sortedStudents();
+  const headerCells = criteria.map(c=>'<th style="font-size:10px;padding:4px 3px;border-bottom:1px solid var(--line);color:var(--ink-soft);max-width:60px;">'+escapeHtml(c)+'</th>').join('');
+  const rows = sorted.map(s=>{
+    const marks = (state.cls.classEvaluationMarks[ev.id]||{})[s.id] || {};
+    const cells = criteria.map((c,ci)=>{
+      const checked = marks[ci] && marks[ci].checked;
+      return '<td style="text-align:center;padding:4px;"><button class="toggle" data-markcell="'+s.id+':'+ci+'" style="width:34px;height:20px;'+(checked?'background:var(--teal);':'')+'"><span class="knob" style="width:14px;height:14px;top:3px;left:'+(checked?'17px':'3px')+';"></span></button></td>';
+    }).join('');
+    const noteVal = (marks[-1] && marks[-1].note) || '';
+    return '<tr><td style="padding:6px 8px;font-size:11px;color:var(--ink-faint);white-space:nowrap;">'+(s.no||'')+'</td>' +
+      '<td style="padding:6px 8px;font-size:13px;font-weight:700;white-space:nowrap;">'+escapeHtml(s.name)+'</td>' +
+      cells +
+      '<td style="padding:4px;text-align:center;"><button class="iconbtn" data-notebtn="'+s.id+'" title="Özel Not" style="color:'+(noteVal?'var(--primary)':'var(--ink-faint)')+';">'+ic('file')+'</button></td>' +
+    '</tr>';
+  }).join('');
+  app.innerHTML =
+    '<button class="backlink" id="backCEM">'+ic('chevron')+' Değerlendirme listesine dön</button>' +
+    '<div class="pagehead"><h2>'+escapeHtml(ev.period)+'</h2></div>' +
+    '<div class="card" style="margin-bottom:14px;">' +
+      '<button class="btn btn-danger full" id="delCEBtn">Bu Dönemi Sil</button>' +
+    '</div>' +
+    '<div class="card" style="overflow-x:auto;">' +
+      '<table style="border-collapse:collapse;width:100%;"><thead><tr><th></th><th></th>'+headerCells+'<th></th></tr></thead><tbody>'+(rows||'')+'</tbody></table>' +
+    '</div>' +
+    '<p style="font-size:12px;color:var(--ink-faint);margin-top:14px;">Dosya ikonuna basarak her öğrenci için özel not ekleyebilirsin.</p>';
+  document.getElementById('backCEM').onclick = ()=>{ state.view='classEvalList'; render(); };
+  document.getElementById('delCEBtn').onclick = ()=> deleteClassEvaluation(ev.id);
+  app.querySelectorAll('[data-markcell]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const [sid, ci] = btn.dataset.markcell.split(':');
+      toggleEvaluationMark(ev.id, sid, parseInt(ci));
+    };
+  });
+  app.querySelectorAll('[data-notebtn]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const sid = btn.dataset.notebtn;
+      const cur = ((state.cls.classEvaluationMarks[ev.id]||{})[sid]||{})[-1];
+      const val = prompt('Özel not:', (cur&&cur.note)||'');
+      if(val!==null) setEvaluationNote(ev.id, sid, val);
+    };
+  });
 }
 
 function renderHomeworksEdit(app){
