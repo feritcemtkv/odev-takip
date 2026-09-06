@@ -457,7 +457,7 @@ function exportClassBackup(){
     const row = { 'No': s.no||'', 'Ad Soyad': s.name };
     if(!g12) row['Ödev %'] = hwPct(s.id);
     row['Okulda Yok'] = s.absent?'Evet':'Hayır';
-    if(g12) row['Dershane/Etüt/Özel Ders'] = s.dershane||'';
+    if(g12){ row['Dershane/Etüt'] = s.dershane||''; row['Özel Ders'] = s.ozel_ders||''; }
     row['Öğretmen Notu'] = s.teacher_note||'';
     return row;
   }), 'Öğrenciler');
@@ -605,7 +605,7 @@ function exportParentReport(sid){
   const infoRow = { 'No': s.no||'', 'Ad Soyad': s.name, 'Sınıf': cls.name };
   if(!g12) infoRow['Ödev Tamamlama %'] = hwPct(s.id);
   infoRow['Performans Ort.'] = perfAvg;
-  if(g12) infoRow['Dershane/Etüt/Özel Ders'] = s.dershane||'';
+  if(g12){ infoRow['Dershane/Etüt'] = s.dershane||''; infoRow['Özel Ders'] = s.ozel_ders||''; }
   addSheet(wb, [infoRow], 'Öğrenci Bilgisi');
 
   if(!g12){
@@ -1801,8 +1801,10 @@ function renderStudentDetail(app){
   app.innerHTML =
     '<button class="backlink" id="toRoster">'+ic('chevron')+' '+escapeHtml(cls.name)+' listesine dön</button>' +
     (g12 ? ('<div style="display:flex;align-items:center;gap:8px;margin:-8px 0 14px;flex-wrap:wrap;">' +
-      '<label style="font-size:12px;color:var(--ink-soft);font-weight:700;">Dershane/Etüt/Özel Ders:</label>' +
-      '<input type="text" data-f="dershane" value="'+escapeHtml(s.dershane||'')+'" placeholder="—" style="width:220px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;">' +
+      '<label style="font-size:12px;color:var(--ink-soft);font-weight:700;">Dershane/Etüt:</label>' +
+      '<input type="text" data-f="dershane" value="'+escapeHtml(s.dershane||'')+'" placeholder="—" style="width:180px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;">' +
+      '<label style="font-size:12px;color:var(--ink-soft);font-weight:700;margin-left:6px;">Özel Ders:</label>' +
+      '<input type="text" data-f="ozel_ders" value="'+escapeHtml(s.ozel_ders||'')+'" placeholder="—" style="width:180px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;">' +
     '</div>') : '') +
     '<div class="pagehead"><h2>'+escapeHtml(s.name)+'</h2></div>' +
     '<div class="infobar">' +
