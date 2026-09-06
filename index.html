@@ -453,28 +453,32 @@ function exportClassBackup(){
   const sorted = sortedStudents();
   const wb = XLSX.utils.book_new();
 
-  addSheet(wb, sorted.map(s=>({
-    'No': s.no||'', 'Ad Soyad': s.name,
-    'Ödev %': hwPct(s.id), 'Okulda Yok': s.absent?'Evet':'Hayır',
-    'Dershane/Etüt': s.dershane||'',
-    'Öğretmen Notu': s.teacher_note||'',
-  })), 'Öğrenciler');
+  addSheet(wb, sorted.map(s=>{
+    const row = { 'No': s.no||'', 'Ad Soyad': s.name };
+    if(!g12) row['Ödev %'] = hwPct(s.id);
+    row['Okulda Yok'] = s.absent?'Evet':'Hayır';
+    if(g12) row['Dershane/Etüt/Özel Ders'] = s.dershane||'';
+    row['Öğretmen Notu'] = s.teacher_note||'';
+    return row;
+  }), 'Öğrenciler');
 
   const today = todayStr();
-  const hwRows = [];
-  sorted.forEach(s=>{
-    cls.homeworks.forEach(h=>{
-      const done = !!(cls.hwStatus[s.id]||{})[h.slot_no];
-      const checked = h.check_date && h.check_date<=today;
-      hwRows.push({
-        'No': s.no||'', 'Ad Soyad': s.name,
-        'Ödev': h.topic||('Ödev #'+h.slot_no),
-        'Veriliş Tarihi': h.hw_date||'', 'Kontrol Tarihi': h.check_date||'',
-        'Durum': !checked ? 'Kontrol tarihi gelmedi' : (done?'Yaptı':'Yapmadı'),
+  if(!g12){
+    const hwRows = [];
+    sorted.forEach(s=>{
+      cls.homeworks.forEach(h=>{
+        const done = !!(cls.hwStatus[s.id]||{})[h.slot_no];
+        const checked = h.check_date && h.check_date<=today;
+        hwRows.push({
+          'No': s.no||'', 'Ad Soyad': s.name,
+          'Ödev': h.topic||('Ödev #'+h.slot_no),
+          'Veriliş Tarihi': h.hw_date||'', 'Kontrol Tarihi': h.check_date||'',
+          'Durum': !checked ? 'Kontrol tarihi gelmedi' : (done?'Yaptı':'Yapmadı'),
+        });
       });
     });
-  });
-  addSheet(wb, hwRows, 'Ödevler');
+    addSheet(wb, hwRows, 'Ödevler');
+  }
 
   if(!g12 && cls.quizzes.length){
     const rows = [];
@@ -598,22 +602,24 @@ function exportParentReport(sid){
     const grades = cls.perfTasks.map(t=>rubricTotal(s.id,t.label).grade).filter(v=>v!=null);
     if(grades.length) perfAvg = Math.round(grades.reduce((a,b)=>a+b,0)/grades.length);
   }
-  addSheet(wb, [{
-    'No': s.no||'', 'Ad Soyad': s.name,
-    'Sınıf': cls.name, 'Ödev Tamamlama %': hwPct(s.id),
-    'Performans Ort.': perfAvg, 'Dershane/Etüt': s.dershane||'',
-  }], 'Öğrenci Bilgisi');
+  const infoRow = { 'No': s.no||'', 'Ad Soyad': s.name, 'Sınıf': cls.name };
+  if(!g12) infoRow['Ödev Tamamlama %'] = hwPct(s.id);
+  infoRow['Performans Ort.'] = perfAvg;
+  if(g12) infoRow['Dershane/Etüt/Özel Ders'] = s.dershane||'';
+  addSheet(wb, [infoRow], 'Öğrenci Bilgisi');
 
-  const hwRows = cls.homeworks.map(h=>{
-    const done = !!(cls.hwStatus[s.id]||{})[h.slot_no];
-    const checked = h.check_date && h.check_date<=today;
-    return {
-      'Ödev': h.topic||('Ödev #'+h.slot_no),
-      'Veriliş Tarihi': h.hw_date||'', 'Kontrol Tarihi': h.check_date||'',
-      'Durum': !checked ? 'Kontrol tarihi gelmedi' : (done?'Yaptı':'Yapmadı'),
-    };
-  });
-  addSheet(wb, hwRows, 'Ödev Geçmişi');
+  if(!g12){
+    const hwRows = cls.homeworks.map(h=>{
+      const done = !!(cls.hwStatus[s.id]||{})[h.slot_no];
+      const checked = h.check_date && h.check_date<=today;
+      return {
+        'Ödev': h.topic||('Ödev #'+h.slot_no),
+        'Veriliş Tarihi': h.hw_date||'', 'Kontrol Tarihi': h.check_date||'',
+        'Durum': !checked ? 'Kontrol tarihi gelmedi' : (done?'Yaptı':'Yapmadı'),
+      };
+    });
+    addSheet(wb, hwRows, 'Ödev Geçmişi');
+  }
 
   if(!g12 && cls.quizzes.length){
     const rows = cls.quizzes.map(q=>{
@@ -1678,12 +1684,12 @@ function renderRoster(app){
     '<div class="pagehead"><h2>'+escapeHtml(cls.name)+'</h2><div class="sub">Sınıf paneli</div></div>' +
     '<div class="infobar">' +
       '<div class="item"><div class="v">'+cls.students.length+'</div><div class="k">Öğrenci</div></div>' +
-      '<div class="item"><div class="v">'+(hwAvg!=null?hwAvg+'%':'-')+'</div><div class="k">Ödev Tamamlama Ort.</div></div>' +
+      (!g12 ? ('<div class="item"><div class="v">'+(hwAvg!=null?hwAvg+'%':'-')+'</div><div class="k">Ödev Tamamlama Ort.</div></div>') : '') +
       (showTytAyt ? ('<div class="item"><div class="v">'+cls.tytExams.length+'</div><div class="k">TYT Denemesi</div></div><div class="item"><div class="v">'+cls.aytExams.length+'</div><div class="k">AYT Denemesi</div></div>') : '') +
       (!g12 ? ('<div class="item"><div class="v">'+(perfClassAvg()!=null?perfClassAvg():'-')+'</div><div class="k">Performans Ort.</div></div>') : '') +
     '</div>' +
-    '<div class="section-title"><span>Takip</span><span class="line"></span></div>' +
-    '<div class="actionrow"><button class="btn btn-primary" id="hwMenuBtn">'+ic('flag')+'Ödevler</button></div>' +
+    (!g12 ? ('<div class="section-title"><span>Takip</span><span class="line"></span></div>' +
+    '<div class="actionrow"><button class="btn btn-primary" id="hwMenuBtn">'+ic('flag')+'Ödevler</button></div>') : '') +
     midSections +
     '<div class="section-title"><span>Öğrenciler</span><span class="line"></span>' +
       '<button class="btn btn-outline btn-sm" id="sortNo">No</button><button class="btn btn-outline btn-sm" id="sortName">İsim</button>' +
@@ -1701,10 +1707,12 @@ function renderRoster(app){
 
   document.getElementById('toHome').onclick = backToHome;
   document.getElementById('backupBtn').onclick = exportClassBackup;
-  document.getElementById('hwMenuBtn').onclick = ()=> openActionMenu('Ödevler', [
-    {label:'Ödevleri Düzenle', icon:'flag', onClick:()=>{ state.view='homeworks'; render(); }},
-    {label:'Ödevleri Kontrol Et', icon:'clipboard', onClick:()=>{ state.view='hw_picker'; render(); }},
-  ]);
+  if(!g12){
+    document.getElementById('hwMenuBtn').onclick = ()=> openActionMenu('Ödevler', [
+      {label:'Ödevleri Düzenle', icon:'flag', onClick:()=>{ state.view='homeworks'; render(); }},
+      {label:'Ödevleri Kontrol Et', icon:'clipboard', onClick:()=>{ state.view='hw_picker'; render(); }},
+    ]);
+  }
   if(!g12){
     const exWord = examWord(cls.name), exWordPl = examWordPlural(cls.name);
     document.getElementById('quizMenuBtn').onclick = ()=> openActionMenu('KDS', [
@@ -1792,16 +1800,14 @@ function renderStudentDetail(app){
 
   app.innerHTML =
     '<button class="backlink" id="toRoster">'+ic('chevron')+' '+escapeHtml(cls.name)+' listesine dön</button>' +
-    '<div style="display:flex;align-items:center;gap:8px;margin:-8px 0 14px;flex-wrap:wrap;">' +
-      '<label style="font-size:12px;color:var(--ink-soft);font-weight:700;">No:</label>' +
-      '<input type="text" data-f="no" value="'+(s.no||'')+'" style="width:70px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;font-weight:700;color:var(--primary-deep);">' +
-      (g12 ? ('<label style="font-size:12px;color:var(--ink-soft);font-weight:700;margin-left:10px;">Dershane/Etüt:</label>' +
-      '<input type="text" data-f="dershane" value="'+escapeHtml(s.dershane||'')+'" placeholder="—" style="width:160px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;">') : '') +
-    '</div>' +
+    (g12 ? ('<div style="display:flex;align-items:center;gap:8px;margin:-8px 0 14px;flex-wrap:wrap;">' +
+      '<label style="font-size:12px;color:var(--ink-soft);font-weight:700;">Dershane/Etüt/Özel Ders:</label>' +
+      '<input type="text" data-f="dershane" value="'+escapeHtml(s.dershane||'')+'" placeholder="—" style="width:220px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;">' +
+    '</div>') : '') +
     '<div class="pagehead"><h2>'+escapeHtml(s.name)+'</h2></div>' +
     '<div class="infobar">' +
       (!g12 ? '<div class="item"><div class="v">'+perfAvg+'</div><div class="k">Performans Ort.</div></div>' : '') +
-      '<div class="item"><div class="v">%'+hwP+'</div><div class="k">Ödev Durumu</div></div>' +
+      (!g12 ? '<div class="item"><div class="v">%'+hwP+'</div><div class="k">Ödev Durumu</div></div>' : '') +
     '</div>' +
     (!g12 && cls.quizzes.length ? '<div class="section-title"><span>'+examWord(cls.name)+' Notları</span><span class="line"></span></div><div class="detail-grid">'+quizHtml+'</div>' : '') +
     (!g12 && cls.perfTasks.length ? '<div class="section-title"><span>Performans</span><span class="line"></span></div><div class="detail-grid">'+perfHtml+'</div>' : '') +
@@ -1810,8 +1816,8 @@ function renderStudentDetail(app){
     (g12 ? renderMeetingReportsSection(s) : '') +
     (g12 ? renderUniversityGoalsSection(s) : '') +
     (g12 ? renderAbroadConsultingSection(s) : '') +
-    '<div class="section-title"><span>Ödev Geçmişi</span><span class="line"></span></div>' +
-    '<div class="card">'+(hwRows||'<div class="empty">Ödev tanımlı değil.</div>')+'</div>' +
+    (!g12 ? ('<div class="section-title"><span>Ödev Geçmişi</span><span class="line"></span></div>' +
+    '<div class="card">'+(hwRows||'<div class="empty">Ödev tanımlı değil.</div>')+'</div>') : '') +
     '<div class="section-title"><span>Öğretmen Notu</span><span class="line"></span></div>' +
     '<textarea class="note" id="noteBox" placeholder="Gözlem, veli görüşmesi notu...">'+escapeHtml(s.teacher_note||'')+'</textarea>' +
     '<div class="section-title" style="margin-top:24px;"><span>Veli Görüşmesi</span><span class="line"></span></div>' +
