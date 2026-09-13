@@ -5,7 +5,6 @@
 Supabase'den sınıf verilerini otomatik olarak Google Drive'a yedekleyen sistem.
 
 
-
 \## Setup
 
 
