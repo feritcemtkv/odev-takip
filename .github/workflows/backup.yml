@@ -1,10 +1,12 @@
-name: Kullanıcı Ekle veya Şifre Değiştir
+name: Otomatik Excel Yedek
 
 on:
-  workflow_dispatch: {}
+  schedule:
+    - cron: '0 20 * * *'   # her gün 20:00 UTC = 23:00 Türkiye saati
+  workflow_dispatch: {}     # bu, "Run workflow" ile elle de tetiklenebilmesini sağlar
 
 jobs:
-  manage-user:
+  backup:
     runs-on: ubuntu-latest
     steps:
       - name: Repoyu indir
@@ -16,11 +18,14 @@ jobs:
           node-version: '22'
 
       - name: Paketleri kur
-        run: npm install @supabase/supabase-js --no-audit --no-fund
+        run: npm install @supabase/supabase-js googleapis --no-audit --no-fund
 
-      - name: Kullanıcı işlemini çalıştır
+      - name: Yedekleme scriptini çalıştır
         env:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          PW_USERNAME: ${{ secrets.PW_USERNAME }}
-          PW_PASSWORD: ${{ secrets.PW_PASSWORD }}
-        run: node .github/scripts/manage-user.mjs
+          TEACHER_USERNAME: ${{ secrets.TEACHER_USERNAME }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+        run: node .github/scripts/backup.mjs
