@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://esm.sh; style-src 'self' 'unsafe-inline'; connect-src 'self' https://miekldpkuclbinclnvvu.supabase.co https://esm.sh https://cdnjs.cloudflare.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; img-src 'self' data: blob:; font-src 'self'; base-uri 'self';">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Sınıf Yönetim Panelim</title>
 <style>
   :root{
@@ -205,15 +208,17 @@
 <div class="toast" id="toast"></div>
 <div id="modalRoot"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
 <script type="module">
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.48.1';
+import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.mjs';
+
+window.pdfjsLib = pdfjsLib;
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.mjs';
 
 const SUPABASE_URL = 'https://miekldpkuclbinclnvvu.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZWtsZHBrdWNsYmluY2xudnZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MDIxNDIsImV4cCI6MjEwMDk3ODE0Mn0.5e6xes30VH-aDrApuCwmFCI7GkteZe-X55sYGU039VQ';
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
-if(window.pdfjsLib){ window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }
 
 const ICONS = {
   home:'<path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/>',
@@ -243,6 +248,23 @@ let state = {
   examType: null, activeExamId: null,
   loading: false,
 };
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+function checkFileSize(file){
+  if(!file) return false;
+  if(file.size > MAX_FILE_SIZE){
+    showToast('Dosya boyutu çok büyük (Maksimum 10 MB)');
+    return false;
+  }
+  return true;
+}
+function sanitizeCell(val){
+  if(typeof val === 'number') return val;
+  if(val == null) return '';
+  const s = String(val);
+  if(/^[=+\-@\t\r]/.test(s)) return "'" + s;
+  return s;
+}
 
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 function fmtDate(d){ if(!d) return null; const dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
@@ -287,7 +309,23 @@ async function doLogin(username, password){
   }
   await startApp();
 }
+let idleTimer = null;
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 dakika boşta kalma süresi
+function resetIdleTimer(){
+  clearTimeout(idleTimer);
+  if(state.userId && state.page !== 'login'){
+    idleTimer = setTimeout(()=>{
+      showToast('Oturumunuz işlem yapılmadığı için güvenlik amacıyla kapatıldı.');
+      doLogout();
+    }, IDLE_TIMEOUT_MS);
+  }
+}
+['mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
+  window.addEventListener(evt, resetIdleTimer, { passive: true });
+});
+
 async function doLogout(){
+  clearTimeout(idleTimer);
   await sb.auth.signOut();
   state.userId = null; state.username = null; state.userEmail = null;
   state.classes = []; state.classId = null; state.cls = null;
@@ -308,6 +346,7 @@ async function startApp(){
   await loadClasses();
   state.loading = false;
   render();
+  resetIdleTimer();
 }
 document.getElementById('teacherBtn').onclick = ()=>{
   if(confirm('Çıkış yapmak istediğine emin misin?')) doLogout();
@@ -378,7 +417,7 @@ function openNewStudentModal(){
 }
 function openActionMenu(title, actions){
   const btns = actions.map((a,i)=>
-    '<button class="btn btn-primary full" data-menu-i="'+i+'" style="margin-bottom:8px;justify-content:flex-start;">'+ic(a.icon)+a.label+'</button>'
+    '<button class="btn btn-primary full" data-menu-i="'+i+'" style="margin-bottom:8px;justify-content:flex-start;">'+ic(a.icon)+escapeHtml(a.label)+'</button>'
   ).join('');
   openModalHtml(
     '<h3>'+escapeHtml(title)+'</h3>' +
@@ -392,7 +431,9 @@ function openActionMenu(title, actions){
 }
 
 async function loadClasses(){
-  const { data } = await sb.from('classes').select('*').order('sort_order');
+  if(!state.userId) return;
+  const { data, error } = await sb.from('classes').select('*').eq('owner_id', state.userId).order('sort_order');
+  if(error) console.error('loadClasses error', error);
   state.classes = data || [];
 }
 async function addClass(name){
@@ -441,8 +482,13 @@ function autoWidth(rows){
 }
 function addSheet(wb, rows, sheetName){
   if(!rows || !rows.length) return;
-  const ws = XLSX.utils.json_to_sheet(rows);
-  ws['!cols'] = autoWidth(rows);
+  const safeRows = rows.map(r=>{
+    const clean = {};
+    for(const k of Object.keys(r)){ clean[k] = sanitizeCell(r[k]); }
+    return clean;
+  });
+  const ws = XLSX.utils.json_to_sheet(safeRows);
+  ws['!cols'] = autoWidth(safeRows);
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
 }
 function exportClassBackup(){
@@ -954,7 +1000,7 @@ async function deleteStudent(sid){
   showToast('Öğrenci silindi');
 }
 async function importStudentsFromExcel(file){
-  if(!file) return;
+  if(!file || !checkFileSize(file)) return;
   showToast('Dosya okunuyor...');
   try{
     const buf = await file.arrayBuffer();
@@ -979,11 +1025,13 @@ async function importStudentsFromExcel(file){
     for(let r=startRow; r<rows.length; r++){
       const row = rows[r];
       if(!row || row.every(c=>String(c).trim()==='')) continue;
-      const no = String(row[noCol]??'').trim();
+      let no = String(row[noCol]??'').trim();
+      if(no.length > 20) no = no.slice(0, 20);
       let name;
       if(firstCol>=0 && lastCol>=0){ name=(String(row[firstCol]??'').trim()+' '+String(row[lastCol]??'').trim()).trim(); }
       else { name = String(row[nameCol]??'').trim(); }
       if(!name) continue;
+      if(name.length > 100) name = name.slice(0, 100);
       order++;
       newRows.push({class_id: state.cls.id, no: no||null, name, sort_order: order});
     }
@@ -1082,7 +1130,7 @@ async function updateQuizDYB(sid, slotNo, field, value){
   showToast('Kaydedildi');
 }
 async function importQuizScoresFromExcel(file, slotNo){
-  if(!file) return;
+  if(!file || !checkFileSize(file)) return;
   showToast('Dosya okunuyor...');
   try{
     const buf = await file.arrayBuffer();
@@ -1123,7 +1171,7 @@ async function importQuizScoresFromExcel(file, slotNo){
   }catch(err){ showToast('Dosya okunamadı: '+err.message); }
 }
 async function addQuizFromExcel(file){
-  if(!file) return;
+  if(!file || !checkFileSize(file)) return;
   const exWord = examWord();
   const label = prompt('Yeni '+exWord+' adı (örn. '+exWord+' 3):');
   if(!label || !label.trim()) return;
@@ -1174,7 +1222,7 @@ async function addQuizFromExcel(file){
 }
 
 async function importKdsRaporuFromExcel(file){
-  if(!file) return;
+  if(!file || !checkFileSize(file)) return;
   showToast('Rapor okunuyor...');
   try{
     const buf = await file.arrayBuffer();
@@ -1351,6 +1399,10 @@ async function setRubricScore(sid, level, critIndex, score){
 async function extractPdfRows(file){
   const buf = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+  if(pdf.numPages > 100){
+    showToast('PDF çok fazla sayfa içeriyor (Maksimum 100 sayfa)');
+    return [];
+  }
   const allRows = [];
   for(let p=1; p<=pdf.numPages; p++){
     const page = await pdf.getPage(p);
@@ -1432,7 +1484,7 @@ function toIntOrNull(s){
   return Math.round(v);
 }
 async function importDenemeFromPdf(file, examType){
-  if(!file) return;
+  if(!file || !checkFileSize(file)) return;
   if(!window.pdfjsLib){ showToast('PDF okuyucu yüklenemedi'); return; }
   showToast('PDF okunuyor...');
   try{
@@ -1499,7 +1551,7 @@ async function importDenemeFromPdf(file, examType){
 }
 
 async function importDenemeFromExcel(file, examType){
-  if(!file) return;
+  if(!file || !checkFileSize(file)) return;
   const label = prompt('Yeni '+(examType==='tyt'?'TYT':'AYT')+' denemesinin adı:');
   if(!label || !label.trim()) return;
   showToast('Dosya okunuyor...');
@@ -1651,7 +1703,7 @@ function renderRoster(app){
     const pillClass = p<50?'low':(p<75?'mid':'');
     const absentTag = s.absent ? '<span style="font-size:10.5px;background:var(--red-soft);color:var(--red);padding:2px 7px;border-radius:6px;margin-right:6px;font-weight:700;">Yok</span>' : '';
     return '<div class="card rowcard" data-student="'+s.id+'">' +
-      '<div class="no">'+(s.no||'')+'</div>' +
+      '<div class="no">'+escapeHtml(s.no||'')+'</div>' +
       '<div class="name">'+absentTag+escapeHtml(s.name)+'</div>' +
       '<div class="pct '+pillClass+'">'+p+'%</div>' +
       '<div class="chev">'+ic('chevron')+'</div>' +
@@ -1811,7 +1863,7 @@ function renderStudentDetail(app){
       (!g12 ? '<div class="item"><div class="v">'+perfAvg+'</div><div class="k">Performans Ort.</div></div>' : '') +
       (!g12 ? '<div class="item"><div class="v">%'+hwP+'</div><div class="k">Ödev Durumu</div></div>' : '') +
     '</div>' +
-    (!g12 && cls.quizzes.length ? '<div class="section-title"><span>'+examWord(cls.name)+' Notları</span><span class="line"></span></div><div class="detail-grid">'+quizHtml+'</div>' : '') +
+    (!g12 && cls.quizzes.length ? '<div class="section-title"><span>'+escapeHtml(examWord(cls.name))+' Notları</span><span class="line"></span></div><div class="detail-grid">'+quizHtml+'</div>' : '') +
     (!g12 && cls.perfTasks.length ? '<div class="section-title"><span>Performans</span><span class="line"></span></div><div class="detail-grid">'+perfHtml+'</div>' : '') +
     (showTytAyt ? '<div class="section-title"><span>TYT Sonuçları</span><span class="line"></span></div>'+(tytHtml||'<div class="empty">Henüz TYT sonucu yok.</div>') : '') +
     (showTytAyt ? '<div class="section-title"><span>AYT Sonuçları</span><span class="line"></span></div>'+(aytHtml||'<div class="empty">Henüz AYT sonucu yok.</div>') : '') +
@@ -2058,7 +2110,7 @@ function renderClassEvalMatrix(app){
       return '<td style="text-align:center;padding:4px;"><button class="toggle" data-markcell="'+s.id+':'+ci+'" style="width:34px;height:20px;'+(checked?'background:var(--teal);':'')+'"><span class="knob" style="width:14px;height:14px;top:3px;left:'+(checked?'17px':'3px')+';"></span></button></td>';
     }).join('');
     const noteVal = (marks[-1] && marks[-1].note) || '';
-    return '<tr><td style="padding:6px 8px;font-size:11px;color:var(--ink-faint);white-space:nowrap;">'+(s.no||'')+'</td>' +
+    return '<tr><td style="padding:6px 8px;font-size:11px;color:var(--ink-faint);white-space:nowrap;">'+escapeHtml(s.no||'')+'</td>' +
       '<td style="padding:6px 8px;font-size:13px;font-weight:700;white-space:nowrap;">'+escapeHtml(s.name)+'</td>' +
       cells +
       '<td style="padding:4px;text-align:center;"><button class="iconbtn" data-notebtn="'+s.id+'" title="Özel Not" style="color:'+(noteVal?'var(--primary)':'var(--ink-faint)')+';">'+ic('file')+'</button></td>' +
@@ -2142,7 +2194,7 @@ function renderQuickHw(app){
   const rows = sortedStudents().map(s=>{
     const done = !!(state.cls.hwStatus[s.id]||{})[slotNo];
     return '<div class="card" style="display:flex;align-items:center;gap:10px;">' +
-      '<div class="no" style="width:22px;font-size:11.5px;color:var(--ink-faint);font-weight:700;">'+(s.no||'')+'</div>' +
+      '<div class="no" style="width:22px;font-size:11.5px;color:var(--ink-faint);font-weight:700;">'+escapeHtml(s.no||'')+'</div>' +
       '<div class="name" style="flex:1;font-size:14.5px;font-weight:700;">'+escapeHtml(s.name)+'</div>' +
       '<button class="toggle '+(done?'on':'')+'" data-id="'+s.id+'"><span class="knob"></span></button>' +
     '</div>';
@@ -2377,7 +2429,7 @@ function renderQuickQuiz(app){
   const rows = sortedStudents().map(s=>{
     const v = (state.cls.quizScores[s.id]||{})[slotNo] || {};
     return '<div class="scorerow">' +
-      '<div class="no">'+(s.no||'')+'</div>' +
+      '<div class="no">'+escapeHtml(s.no||'')+'</div>' +
       '<div class="name">'+escapeHtml(s.name)+'</div>' +
       '<input type="text" inputmode="numeric" placeholder="D" title="Doğru" value="'+(v.dogru!=null?v.dogru:'')+'" data-id="'+s.id+'" data-f="dogru" style="width:50px;">' +
       '<input type="text" inputmode="numeric" placeholder="Y" title="Yanlış" value="'+(v.yanlis!=null?v.yanlis:'')+'" data-id="'+s.id+'" data-f="yanlis" style="width:50px;">' +
@@ -2424,7 +2476,7 @@ function renderDenemeList(app, examType){
   }).join('');
   app.innerHTML =
     '<button class="backlink" id="backDL">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
-    '<div class="pagehead"><h2>'+label+' Denemeleri</h2></div>' +
+    '<div class="pagehead"><h2>'+escapeHtml(label)+' Denemeleri</h2></div>' +
     '<div class="card" style="background:var(--primary-soft);border:none;">' +
       '<div style="font-weight:800;font-size:14px;color:var(--primary-deep);margin-bottom:4px;">Sınav Sonuç Raporu (PDF) Yükle</div>' +
       '<div style="font-size:12.5px;color:var(--primary-deep);opacity:.85;margin-bottom:12px;">Kurumdan gelen "Sıralı Liste" PDF raporunu doğrudan yükle. Sınıfındaki öğrenciler isimle otomatik bulunur, '+label+' dersleri ve doğru/yanlış/boş notları otomatik girilir. Aynı raporu TYT ve AYT sekmelerinde ayrı ayrı yükleyebilirsin.</div>' +
@@ -2466,7 +2518,7 @@ function renderDenemeScores(app){
         '<td style="padding:2px;"><input type="text" inputmode="numeric" value="'+(v.yanlis!=null?v.yanlis:'')+'" data-id="'+s.id+'" data-subj="'+escapeHtml(subj)+'" data-f="yanlis" style="width:34px;text-align:center;border:1px solid var(--line);border-radius:5px;padding:4px 2px;font-size:12px;"></td>' +
         '<td style="padding:2px;"><input type="text" inputmode="numeric" value="'+(v.bos!=null?v.bos:'')+'" data-id="'+s.id+'" data-subj="'+escapeHtml(subj)+'" data-f="bos" style="width:34px;text-align:center;border:1px solid var(--line);border-radius:5px;padding:4px 2px;font-size:12px;"></td>';
     }).join('');
-    return '<tr><td style="padding:6px 8px;font-size:11px;color:var(--ink-faint);">'+(s.no||'')+'</td><td style="padding:6px 8px;font-size:13px;font-weight:700;white-space:nowrap;">'+escapeHtml(s.name)+'</td>'+cells+'</tr>';
+    return '<tr><td style="padding:6px 8px;font-size:11px;color:var(--ink-faint);">'+escapeHtml(s.no||'')+'</td><td style="padding:6px 8px;font-size:13px;font-weight:700;white-space:nowrap;">'+escapeHtml(s.name)+'</td>'+cells+'</tr>';
   }).join('');
   app.innerHTML =
     '<button class="backlink" id="backDS">'+ic('chevron')+' '+(examType==='tyt'?'TYT':'AYT')+' listesine dön</button>' +
