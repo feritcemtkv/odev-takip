@@ -1,0 +1,16 @@
+{
+  "name": "odev-takip",
+  "version": "1.0.0",
+  "description": "Ödev Takip Sistemi ve Google Drive Yedekleme",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node serve.js",
+    "start": "node serve.js",
+    "backup": "node .github/scripts/backup.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.48.1",
+    "googleapis": "^144.0.0"
+  }
+}

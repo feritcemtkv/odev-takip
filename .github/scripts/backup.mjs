@@ -112,7 +112,7 @@ async function fetchOwnerScopedTables(ownerId) {
 async function main() {
   console.log('Öğretmen hesabı bulunuyor...');
   const email = TEACHER_USERNAME.includes('@') ? TEACHER_USERNAME : TEACHER_USERNAME + '@takip.local';
-  const { data: userList, error: userErr } = await sb.auth.admin.listUsers();
+  const { data: userList, error: userErr } = await sb.auth.admin.listUsers({ page: 1, perPage: 1000 });
   if (userErr) throw new Error('Kullanıcı listesi alınamadı: ' + userErr.message);
   const teacherUser = (userList.users || []).find(u => u.email === email);
   if (!teacherUser) throw new Error('Kullanıcı bulunamadı: ' + email + ' (TEACHER_USERNAME değerini kontrol et)');
