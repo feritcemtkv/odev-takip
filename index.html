@@ -653,6 +653,206 @@ function addSheet(wb, rows, sheetName){
   ws['!cols'] = autoWidth(safeRows);
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
 }
+
+function exportTakevFormsExcel(){
+  const cls = state.cls;
+  if(!cls || !cls.students.length){ showToast('Sınıfta öğrenci yok.'); return; }
+  const sorted = sortedStudents();
+  const wb = XLSX.utils.book_new();
+
+  // 1. Form-2 (Devam Ettiği Dershane/Etüt/Kurs)
+  const form2Aoa = [];
+  for(let i=0; i<5; i++) form2Aoa.push([]);
+  form2Aoa.push(['# Sıra', '# Okul No', 'Adı Soyadı', 'Devam Ettiği Dershane/Etüt/Kurs']);
+  sorted.forEach((s, idx)=>{
+    form2Aoa.push([idx+1, parseInt(s.no)||s.no||'', s.name, s.dershane||'']);
+  });
+  const wsForm2 = XLSX.utils.aoa_to_sheet(form2Aoa);
+  wsForm2['!cols'] = [{ wch: 8 }, { wch: 12 }, { wch: 28 }, { wch: 38 }];
+  XLSX.utils.book_append_sheet(wb, wsForm2, 'Form-2');
+
+  // 2. Form-3a (Üniversite Hedefleri Çizelgesi)
+  const form3Aoa = Array.from({ length: 22 }, () => []);
+  const form3Merges = [];
+  sorted.forEach((s, sIdx)=>{
+    const startCol = sIdx * 6;
+    form3Aoa[0][startCol] = 'ÖZEL TAKEV Anadolu ve Fen Lisesi';
+    form3Aoa[0][startCol + 3] = 'Form-3a';
+    form3Merges.push({ s: { r: 0, c: startCol }, e: { r: 1, c: startCol + 2 } });
+
+    form3Aoa[3][startCol] = 'ÜNİVERSİTE HEDEFLERİ ÇİZELGESİ';
+    form3Merges.push({ s: { r: 3, c: startCol }, e: { r: 3, c: startCol + 3 } });
+
+    form3Aoa[4][startCol] = 'Öğrenci Adı Soyadı:';
+    form3Aoa[4][startCol + 1] = s.name;
+    form3Merges.push({ s: { r: 4, c: startCol + 1 }, e: { r: 4, c: startCol + 3 } });
+
+    form3Aoa[6][startCol] = 'HEDEFLENDİĞİ MESLEKLER (sırasıyla)';
+    form3Merges.push({ s: { r: 6, c: startCol }, e: { r: 6, c: startCol + 1 } });
+    form3Aoa[6][startCol + 2] = 'HEDEFLENDİĞİ ÜNİVERSİTELER (sırasıyla)';
+    form3Merges.push({ s: { r: 6, c: startCol + 2 }, e: { r: 6, c: startCol + 3 } });
+
+    form3Aoa[7][startCol] = 'Sıra';
+    form3Aoa[7][startCol + 1] = 'Meslek Adı';
+    form3Aoa[7][startCol + 2] = 'Üniversite Adı';
+    form3Merges.push({ s: { r: 7, c: startCol + 2 }, e: { r: 7, c: startCol + 3 } });
+
+    const ugs = (cls.universityGoals[s.id] || [])[0] || {};
+    const goalList = ugs.goals || [];
+    for(let choice=1; choice<=5; choice++){
+      const r = 7 + choice;
+      const g = goalList[choice-1] || {};
+      form3Aoa[r][startCol] = choice;
+      form3Aoa[r][startCol + 1] = g.profession || '';
+      form3Aoa[r][startCol + 2] = g.university || '';
+      form3Merges.push({ s: { r: r, c: startCol + 2 }, e: { r: r, c: startCol + 3 } });
+    }
+
+    form3Aoa[14][startCol] = "Eğitimine Almanya'da devam etme isteği";
+    form3Merges.push({ s: { r: 14, c: startCol }, e: { r: 14, c: startCol + 3 } });
+
+    form3Aoa[15][startCol] = 'EVET';
+    form3Merges.push({ s: { r: 15, c: startCol }, e: { r: 15, c: startCol + 1 } });
+    form3Aoa[15][startCol + 2] = 'HAYIR';
+    form3Merges.push({ s: { r: 15, c: startCol + 2 }, e: { r: 15, c: startCol + 3 } });
+
+    form3Aoa[16][startCol] = ugs.germany_interest === true ? '☑' : '☐';
+    form3Merges.push({ s: { r: 16, c: startCol }, e: { r: 16, c: startCol + 1 } });
+    form3Aoa[16][startCol + 2] = ugs.germany_interest === false ? '☑' : '☐';
+    form3Merges.push({ s: { r: 16, c: startCol + 2 }, e: { r: 16, c: startCol + 3 } });
+
+    form3Aoa[18][startCol] = '1. dönem başında uygulanır.';
+    form3Merges.push({ s: { r: 18, c: startCol }, e: { r: 18, c: startCol + 3 } });
+  });
+
+  const wsForm3 = XLSX.utils.aoa_to_sheet(form3Aoa);
+  wsForm3['!merges'] = form3Merges;
+  const form3Cols = [];
+  sorted.forEach(()=>{ form3Cols.push({ wch: 6 }, { wch: 22 }, { wch: 14 }, { wch: 14 }, { wch: 4 }, { wch: 4 }); });
+  wsForm3['!cols'] = form3Cols;
+  XLSX.utils.book_append_sheet(wb, wsForm3, 'Form-3a');
+
+  // 3. Form-4 (Öğrenci Sınıf Durum Değerlendirmesi)
+  const periods = [
+    { title: '(Eylül-Kasım Arası Değerlendirme)' },
+    { title: '(I.Dönem Sonu Arası Değerlendirme)' },
+    { title: '(II. Dönem Başı-Nisan Arası Değerlendirme)' }
+  ];
+  const criteriaList = [
+    'Derslerde çok aktif olan öğrenciler',
+    'Derslerde pasif olan öğrenciler',
+    'Derslerin akışını bozan öğrenciler',
+    'Konsantrasyon yetersizliği olan öğrenciler',
+    'Aşırı Sınav Kaygısı yaşayan öğrenciler',
+    'Derslere düzenli çalışan öğrenciler',
+    'Rehberlik görüşmesi gereken öğr.'
+  ];
+
+  const totalForm4Rows = 10 + sorted.length;
+  const form4Aoa = Array.from({ length: totalForm4Rows }, () => []);
+  const form4Merges = [];
+
+  periods.forEach((p, pIdx)=>{
+    const pStartCol = pIdx * 13;
+    form4Aoa[0][pStartCol] = 'ÖZEL TAKEV Anadolu ve Fen Lisesi';
+    form4Aoa[0][pStartCol + 10] = 'Form-4';
+    form4Merges.push({ s: { r: 0, c: pStartCol }, e: { r: 1, c: pStartCol + 9 } });
+
+    form4Aoa[3][pStartCol] = 'ÖĞRENCİ SINIF DURUM DEĞERLENDİRMESİ';
+    form4Merges.push({ s: { r: 3, c: pStartCol }, e: { r: 3, c: pStartCol + 10 } });
+
+    form4Aoa[4][pStartCol] = p.title;
+    form4Merges.push({ s: { r: 4, c: pStartCol }, e: { r: 4, c: pStartCol + 10 } });
+
+    form4Aoa[6][pStartCol + 3] = 'Tüm dersler düzeyinde GENEL DEĞERLENDİRME';
+    form4Merges.push({ s: { r: 6, c: pStartCol + 3 }, e: { r: 6, c: pStartCol + 9 } });
+
+    form4Aoa[7][pStartCol] = 'Sıra';
+    form4Aoa[7][pStartCol + 1] = 'Okul No';
+    form4Aoa[7][pStartCol + 2] = 'Adı Soyadı';
+    criteriaList.forEach((crit, cIdx)=>{ form4Aoa[7][pStartCol + 3 + cIdx] = crit; });
+    form4Aoa[7][pStartCol + 10] = 'ÖZEL NOTLAR';
+
+    const dbEval = (cls.classEvaluations||[]).find(e=> e.period && (e.period.includes(p.title.replace(/[()]/g,'')) || p.title.includes(e.period)));
+
+    sorted.forEach((s, sIdx)=>{
+      const rowIdx = 8 + sIdx;
+      form4Aoa[rowIdx][pStartCol] = sIdx + 1;
+      form4Aoa[rowIdx][pStartCol + 1] = parseInt(s.no) || s.no || '';
+      form4Aoa[rowIdx][pStartCol + 2] = s.name;
+
+      const marks = dbEval ? ((cls.classEvaluationMarks[dbEval.id]||{})[s.id]||{}) : {};
+      criteriaList.forEach((_, cIdx)=>{
+        const isChecked = marks[cIdx] && marks[cIdx].checked;
+        form4Aoa[rowIdx][pStartCol + 3 + cIdx] = isChecked ? '☑' : '☐';
+      });
+      form4Aoa[rowIdx][pStartCol + 10] = (marks[-1] && marks[-1].note) || '';
+    });
+  });
+
+  const wsForm4 = XLSX.utils.aoa_to_sheet(form4Aoa);
+  wsForm4['!merges'] = form4Merges;
+  const form4Cols = [];
+  periods.forEach(()=>{
+    form4Cols.push(
+      { wch: 6 }, { wch: 10 }, { wch: 24 },
+      { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
+      { wch: 20 },
+      { wch: 4 }, { wch: 4 }
+    );
+  });
+  wsForm4['!cols'] = form4Cols;
+  XLSX.utils.book_append_sheet(wb, wsForm4, 'Form-4');
+
+  const safeName = (cls.name||'Sinif').replace(/[^a-zA-Z0-9_\u00C0-\u017F-]/g, '_');
+  XLSX.writeFile(wb, safeName + '_TAKEV_Rehberlik_Formlari.xlsx');
+  showToast('TAKEV Rehberlik Formları (Excel) indirildi');
+}
+
+function openForm2Modal(){
+  const sorted = sortedStudents();
+  const rows = sorted.map((s, idx)=>
+    '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);">' +
+      '<div style="width:24px;font-size:12px;color:var(--ink-faint);text-align:center;">'+(idx+1)+'</div>' +
+      '<div style="width:42px;font-size:12px;font-weight:700;color:var(--primary);">#'+escapeHtml(s.no||'-')+'</div>' +
+      '<div style="flex:1;font-size:13.5px;font-weight:700;">'+escapeHtml(s.name)+'</div>' +
+      '<input type="text" data-f2id="'+s.id+'" value="'+escapeHtml(s.dershane||'')+'" placeholder="Dershane/Etüt/Kurs adı" '+(state.isAdmin?'disabled readonly style="background:var(--surface-2);cursor:not-allowed;"':'')+' style="flex:1.5;min-width:140px;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;box-sizing:border-box;">' +
+    '</div>'
+  ).join('');
+
+  openModalHtml(
+    '<h3>Form-2: Devam Ettiği Dershane/Etüt/Kurs</h3>' +
+    '<p style="font-size:12.5px;color:var(--ink-soft);margin-bottom:14px;">'+escapeHtml(state.cls.name)+' öğrencilerinin dershane, etüt ve kurs bilgilerini topluca düzenleyin.</p>' +
+    '<div style="max-height:55vh;overflow-y:auto;padding-right:4px;">'+rows+'</div>' +
+    '<div class="modalactions" style="margin-top:16px;">' +
+      '<button class="btn btn-outline" id="mCancelF2">Kapat</button>' +
+      (!state.isAdmin ? '<button class="btn btn-primary" id="mSaveF2">Tümünü Kaydet</button>' : '') +
+    '</div>'
+  );
+
+  document.getElementById('mCancelF2').onclick = closeModal;
+  const saveBtn = document.getElementById('mSaveF2');
+  if(saveBtn){
+    saveBtn.onclick = async ()=>{
+      saveBtn.textContent = 'Kaydediliyor...';
+      saveBtn.disabled = true;
+      const inps = document.querySelectorAll('[data-f2id]');
+      for(const inp of inps){
+        const sid = inp.dataset.f2id;
+        const val = inp.value.trim();
+        const st = studentById(sid);
+        if(st && (st.dershane||'') !== val){
+          st.dershane = val;
+          await updateStudentField(sid, 'dershane', val);
+        }
+      }
+      closeModal();
+      showToast('Form-2 dershane bilgileri güncellendi');
+      render();
+    };
+  }
+}
+
 function exportClassBackup(){
   const cls = state.cls;
   if(!cls.students.length){ showToast('Sınıfta öğrenci yok, yedek oluşturulamadı'); return; }
@@ -2006,8 +2206,14 @@ function renderRoster(app){
   }
   if(g12){
     midSections +=
-      '<div class="section-title"><span>Danışmanlık</span><span class="line"></span></div>' +
-      '<div class="actionrow"><button class="btn btn-primary full" id="classEvalBtn">'+ic('clipboard')+'Sınıf Durum Değerlendirmesi</button></div>';
+      '<div class="section-title"><span>Rehberlik &amp; Danışmanlık Formları (TAKEV)</span><span class="line"></span></div>' +
+      '<div class="actionrow" style="flex-direction:column;gap:8px;">' +
+        '<button class="btn btn-primary full" id="takevExportBtn">'+ic('file')+'TAKEV Formları İndir (Form-2, Form-3a, Form-4 .xlsx)</button>' +
+        '<div style="display:flex;gap:8px;width:100%;">' +
+          '<button class="btn btn-outline" id="form2QuickBtn" style="flex:1;justify-content:center;">'+ic('edit')+'Form-2: Dershane/Kurs</button>' +
+          '<button class="btn btn-outline" id="classEvalBtn" style="flex:1;justify-content:center;">'+ic('clipboard')+'Form-4: Sınıf Durumu</button>' +
+        '</div>' +
+      '</div>';
   }
 
   app.innerHTML =
@@ -2078,6 +2284,8 @@ function renderRoster(app){
     document.getElementById('aytBtn').onclick = ()=>{ state.examType='ayt'; state.view='deneme_list'; render(); };
   }
   if(g12){
+    document.getElementById('takevExportBtn').onclick = exportTakevFormsExcel;
+    document.getElementById('form2QuickBtn').onclick = openForm2Modal;
     document.getElementById('classEvalBtn').onclick = ()=>{ state.view='classEvalList'; render(); };
   }
   document.getElementById('sortNo').onclick = ()=>{ state.sortBy='no'; render(); };
@@ -2388,10 +2596,18 @@ function wireAbroadConsultingSection(app, s){
 // ---- Sınıf Durum Değerlendirmesi ----
 function openNewClassEvalModal(){
   if(state.isAdmin){ showToast('Yönetici modunda değerlendirme dönemi eklenemez (Salt Okunur).'); return; }
-  const defaultCriteria = ['Derslerde başarılı','Derslerde zorlanıyor','Derslere düzenli geliyor','Sınav performansı düzenli','Rehberlik görüşmesi yapıldı'].join('\n');
+  const defaultCriteria = [
+    'Derslerde çok aktif olan öğrenciler',
+    'Derslerde pasif olan öğrenciler',
+    'Derslerin akışını bozan öğrenciler',
+    'Konsantrasyon yetersizliği olan öğrenciler',
+    'Aşırı Sınav Kaygısı yaşayan öğrenciler',
+    'Derslere düzenli çalışan öğrenciler',
+    'Rehberlik görüşmesi gereken öğr.'
+  ].join('\n');
   openModalHtml(
     '<h3>Yeni Değerlendirme Dönemi</h3>' +
-    '<label>Dönem adı (örn. "1. Değerlendirme - Eylül/Kasım")</label><input type="text" id="cePeriod" placeholder="Dönem adı">' +
+    '<label>Dönem adı (örn. "(Eylül-Kasım Arası Değerlendirme)")</label><input type="text" id="cePeriod" placeholder="Dönem adı">' +
     '<label>Kriterler (her satıra bir tane, istediğin gibi düzenleyebilirsin)</label>' +
     '<textarea id="ceCriteria" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:11px;font-size:13px;min-height:130px;font-family:inherit;box-sizing:border-box;">'+defaultCriteria+'</textarea>' +
     '<div class="modalactions"><button class="btn btn-outline" id="ceCancel">Vazgeç</button><button class="btn btn-primary" id="ceSave">Oluştur</button></div>'
@@ -2413,15 +2629,43 @@ function renderClassEvalList(app){
       '<div class="chev">'+ic('chevron')+'</div>' +
     '</div>'
   ).join('');
+  const takevSeedBtn = (!state.isAdmin && state.cls.classEvaluations.length === 0) ?
+    '<button class="btn btn-outline full" id="seedTakevBtn" style="margin-bottom:12px;">'+ic('plus')+'Resmi 3 TAKEV Dönemini Otomatik Oluştur</button>' : '';
   app.innerHTML =
     '<button class="backlink" id="backCEL">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
     (state.isAdmin ? '<div style="background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius-sm);padding:8px 14px;margin-bottom:12px;color:#8a4d05;font-size:12.5px;font-weight:700;">👁️ Yönetici İzleme Modu (Salt Okunur)</div>' : '') +
     '<div class="pagehead"><h2>Sınıf Durum Değerlendirmesi</h2></div>' +
+    takevSeedBtn +
     (!state.isAdmin ? '<button class="btn btn-primary full" id="addCEBtn" style="margin-bottom:16px;">'+ic('plus')+'Yeni Değerlendirme Dönemi</button>' : '') +
     (rows || '<div class="empty">Henüz değerlendirme dönemi eklenmedi.</div>');
   document.getElementById('backCEL').onclick = backToRoster;
   const addCEBtn = document.getElementById('addCEBtn');
   if(addCEBtn) addCEBtn.onclick = openNewClassEvalModal;
+  const sBtn = document.getElementById('seedTakevBtn');
+  if(sBtn){
+    sBtn.onclick = async ()=>{
+      sBtn.textContent = 'Oluşturuluyor...';
+      sBtn.disabled = true;
+      const takevPeriods = [
+        '(Eylül-Kasım Arası Değerlendirme)',
+        '(I.Dönem Sonu Arası Değerlendirme)',
+        '(II. Dönem Başı-Nisan Arası Değerlendirme)'
+      ];
+      const takevCriteria = [
+        'Derslerde çok aktif olan öğrenciler',
+        'Derslerde pasif olan öğrenciler',
+        'Derslerin akışını bozan öğrenciler',
+        'Konsantrasyon yetersizliği olan öğrenciler',
+        'Aşırı Sınav Kaygısı yaşayan öğrenciler',
+        'Derslere düzenli çalışan öğrenciler',
+        'Rehberlik görüşmesi gereken öğr.'
+      ];
+      for(const p of takevPeriods){
+        await addClassEvaluation(p, takevCriteria);
+      }
+      showToast('3 resmi TAKEV dönemi oluşturuldu');
+    };
+  }
   app.querySelectorAll('[data-pickeval]').forEach(el=>{
     el.onclick = ()=>{ state.activeEvalId = el.dataset.pickeval; state.view='classEvalMatrix'; render(); };
   });
