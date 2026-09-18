@@ -4,3 +4,9 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+
+# Öğrenci verileri ve yerel Excel çıktıları (KVKK / Gizlilik)
+*.xlsx
+*.xls
+scripts/
+
