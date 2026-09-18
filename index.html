@@ -93,7 +93,7 @@
   .actionrow .btn{flex:1;min-width:170px;justify-content:center;}
 
   .rowcard{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;}
-  .rowcard .no{font-size:11.5px;color:var(--ink-faint);width:24px;flex-shrink:0;text-align:center;font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+  .rowcard .no{font-size:11.5px;color:var(--ink-faint);min-width:36px;padding:0 4px;flex-shrink:0;text-align:center;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;}
   .rowcard .name{flex:1;font-size:14.5px;font-weight:700;}
   .rowcard .pct{font-size:12.5px;font-weight:800;padding:4px 10px;border-radius:999px;background:var(--teal-soft);color:var(--teal);min-width:46px;text-align:center;}
   .rowcard .pct.low{background:var(--red-soft);color:var(--red);}
@@ -136,7 +136,7 @@
   .scoregrid{display:flex;flex-direction:column;}
   .scorerow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);}
   .scorerow:last-child{border-bottom:none;}
-  .scorerow .no{width:24px;font-size:11.5px;color:var(--ink-faint);font-weight:700;text-align:center;}
+  .scorerow .no{min-width:36px;padding:0 4px;font-size:11.5px;color:var(--ink-faint);font-weight:700;text-align:center;flex-shrink:0;white-space:nowrap;font-variant-numeric:tabular-nums;}
   .scorerow .name{flex:1;font-size:14px;font-weight:700;}
   .scorerow input{width:70px;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:14px;font-weight:800;text-align:center;color:var(--primary-deep);}
 
@@ -168,10 +168,15 @@
   .modalbox{background:var(--surface);border-radius:16px;padding:24px;width:100%;max-width:420px;max-height:88vh;overflow-y:auto;}
   .modalbox h3{font-size:17px;margin-bottom:14px;}
   .modalbox label{display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin:14px 0 6px;}
-  .modalbox label:first-of-type{margin-top:0;}
-  .modalbox input[type=text]{width:100%;border:1px solid var(--line);border-radius:9px;padding:11px;font-size:14px;}
+  .modalbox input[type=text], .modalbox input[type=password]{width:100%;border:1px solid var(--line);border-radius:9px;padding:11px;font-size:14px;}
   .modalactions{display:flex;gap:10px;margin-top:20px;}
   .modalactions .btn{flex:1;justify-content:center;}
+
+  .passwrap{position:relative;display:flex;align-items:center;width:100%;}
+  .passwrap input{padding-right:42px !important;width:100%;}
+  .passwrap .eye-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--ink-soft);padding:6px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;line-height:1;transition:color .15s;width:auto !important;margin:0 !important;}
+  .passwrap .eye-btn:hover{color:var(--primary);}
+  .passwrap .eye-btn .ic{width:18px;height:18px;}
 
   .loginwrap{min-height:80vh;display:flex;align-items:center;justify-content:center;padding:20px;}
   .loginbox{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:30px 26px;box-shadow:var(--shadow);}
@@ -180,7 +185,7 @@
   .loginbox label{display:block;font-size:12px;color:var(--ink-soft);margin:14px 0 6px;font-weight:700;}
   .loginbox label:first-of-type{margin-top:0;}
   .loginbox input{width:100%;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:14.5px;font-family:inherit;}
-  .loginbox button{width:100%;margin-top:20px;justify-content:center;}
+  .loginbox .btn{width:100%;margin-top:20px;justify-content:center;}
   .loginbox .err{color:var(--red);font-size:12.5px;margin-top:12px;text-align:center;min-height:16px;}
 
   @media(max-width:820px){
@@ -198,7 +203,7 @@
   </div>
   <div class="spacer"></div>
   <button class="teacherbox" id="teacherBtn" style="display:none;">
-    <div class="who"><div class="name" id="teacherNameLbl"></div><div class="branch">Çıkış Yap</div></div>
+    <div class="who"><div class="name" id="teacherNameLbl"></div><div class="branch">Hesap Ayarları</div></div>
     <div class="av" id="teacherAv"></div>
   </button>
 </header>
@@ -225,6 +230,7 @@ const ICONS = {
   school:'<path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/>',
   flag:'<path d="M5 3v18"/><path d="M5 4h11l-2 4 2 4H5"/>',
   users:'<circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.3 3.1-6 7-6s7 2.7 7 6"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2c2.9.5 5 2.5 5 5.8"/>',
+  user:'<circle cx="12" cy="7" r="4"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/>',
   file:'<path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5"/>',
   plus:'<path d="M12 5v14"/><path d="M5 12h14"/>',
   chevron:'<path d="m9 6 6 6-6 6"/>',
@@ -233,11 +239,30 @@ const ICONS = {
   target:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
   clipboard:'<rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.3" width="6" height="3.2" rx="1"/><path d="M9 11h6M9 15h6"/>',
   upload:'<path d="M12 20V9"/><path d="m7 13 5-5 5 5"/><path d="M5 20h14"/>',
+  edit:'<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+  key:'<circle cx="7.5" cy="15.5" r="4.5"/><path d="m11 12 9-9h4v4l-2 2v2l-2 2v2l-3.5-3.5"/>',
+  eye:'<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  eyeOff:'<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/>',
 };
 function ic(name){ return '<svg class="ic" viewBox="0 0 24 24">'+(ICONS[name]||'')+'</svg>'; }
 
+function wirePassToggle(inpId, btnId){
+  const $inp = document.getElementById(inpId);
+  const $btn = document.getElementById(btnId);
+  if(!$inp || !$btn) return;
+  $btn.onclick = (e)=>{
+    e.preventDefault();
+    const isPass = $inp.type === 'password';
+    $inp.type = isPass ? 'text' : 'password';
+    $btn.innerHTML = ic(isPass ? 'eyeOff' : 'eye');
+    $btn.title = isPass ? 'Şifreyi gizle' : 'Şifreyi göster';
+    $btn.setAttribute('aria-label', isPass ? 'Şifreyi gizle' : 'Şifreyi göster');
+  };
+}
+
 let state = {
   userId: null, username: null, userEmail: null,
+  isAdmin: false,
   page: 'login',
   classes: [], classId: null, cls: null,
   view: 'roster',
@@ -328,6 +353,7 @@ async function doLogout(){
   clearTimeout(idleTimer);
   await sb.auth.signOut();
   state.userId = null; state.username = null; state.userEmail = null;
+  state.isAdmin = false;
   state.classes = []; state.classId = null; state.cls = null;
   state.page = 'login';
   document.getElementById('teacherBtn').style.display = 'none';
@@ -338,7 +364,13 @@ async function startApp(){
   state.userId = user ? user.id : null;
   state.userEmail = user ? user.email : null;
   state.username = user && user.email ? user.email.split('@')[0] : '';
+  state.isAdmin = (state.username.toLowerCase() === 'admin') || (state.userEmail === 'admin@takip.local') || (user && user.user_metadata && user.user_metadata.role === 'admin');
   document.getElementById('teacherBtn').style.display = 'flex';
+  const $branch = document.querySelector('#teacherBtn .branch');
+  if($branch){
+    $branch.textContent = state.isAdmin ? 'Yönetici (İzleme)' : 'Hesap Ayarları';
+    $branch.style.color = state.isAdmin ? 'var(--amber)' : '';
+  }
   document.getElementById('teacherNameLbl').textContent = state.username;
   document.getElementById('teacherAv').textContent = (state.username||'?').trim().charAt(0).toUpperCase();
   state.page = 'home';
@@ -348,9 +380,7 @@ async function startApp(){
   render();
   resetIdleTimer();
 }
-document.getElementById('teacherBtn').onclick = ()=>{
-  if(confirm('Çıkış yapmak istediğine emin misin?')) doLogout();
-};
+document.getElementById('teacherBtn').onclick = openUserProfileModal;
 
 function renderLogin(app){
   app.innerHTML =
@@ -360,10 +390,14 @@ function renderLogin(app){
       '<label>Kullanıcı Adı</label>' +
       '<input type="text" id="loginUser" autocapitalize="none" autocorrect="off">' +
       '<label>Şifre</label>' +
-      '<input type="password" id="loginPass">' +
+      '<div class="passwrap">' +
+        '<input type="password" id="loginPass">' +
+        '<button type="button" class="eye-btn" id="loginPassEye" title="Şifreyi göster" aria-label="Şifreyi göster">' + ic('eye') + '</button>' +
+      '</div>' +
       '<button class="btn btn-primary" id="loginBtn">Giriş Yap</button>' +
       '<div class="err" id="loginErr"></div>' +
     '</div></div>';
+  wirePassToggle('loginPass', 'loginPassEye');
   const $user = document.getElementById('loginUser');
   const $pass = document.getElementById('loginPass');
   const submit = ()=> doLogin($user.value, $pass.value);
@@ -374,7 +408,7 @@ function renderLogin(app){
 }
 
 async function logActivity(description){
-  if(!state.userId) return;
+  if(!state.userId || state.isAdmin) return;
   try{ await sb.from('activity_log').insert({ user_id: state.userId, class_name: state.cls?state.cls.name:null, description }); }
   catch(e){ console.error('logActivity error', e); }
 }
@@ -383,6 +417,127 @@ function closeModal(){ document.getElementById('modalRoot').innerHTML = ''; }
 function openModalHtml(innerHtml){
   document.getElementById('modalRoot').innerHTML = '<div class="modalbg" id="modalBg"><div class="modalbox">'+innerHtml+'</div></div>';
   document.getElementById('modalBg').onclick = (e)=>{ if(e.target.id==='modalBg') closeModal(); };
+}
+
+function openUserProfileModal(){
+  openModalHtml(
+    '<h3>'+(state.isAdmin ? 'Yönetici Hesabı' : 'Hesap ve Profil')+'</h3>' +
+    '<div style="background:var(--surface-2);border-radius:10px;padding:14px;margin-bottom:14px;">' +
+      '<div style="font-size:11px;color:'+(state.isAdmin?'var(--amber)':'var(--ink-soft)')+';font-weight:700;text-transform:uppercase;letter-spacing:.04em;">'+(state.isAdmin?'Yönetici Modu (Tüm Sınıflar - Salt Okunur)':'Giriş Yapan Öğretmen')+'</div>' +
+      '<div style="font-size:16px;font-weight:800;color:var(--primary-deep);margin-top:2px;">'+escapeHtml(state.username||'')+'</div>' +
+      '<div style="font-size:12px;color:var(--ink-faint);margin-top:2px;">'+escapeHtml(state.userEmail||'')+'</div>' +
+    '</div>' +
+    '<div style="display:flex;flex-direction:column;gap:9px;">' +
+      '<button class="btn btn-primary full" id="mChangePassBtn" style="justify-content:center;">'+ic('key')+'Şifre Değiştir</button>' +
+      (state.isAdmin ? '<button class="btn btn-outline full" id="mNewUserBtn" style="justify-content:center;">'+ic('plus')+'Yeni Kullanıcı Ekle</button>' : '') +
+      '<button class="btn btn-danger full" id="mLogoutBtn" style="justify-content:center;margin-top:4px;">Çıkış Yap</button>' +
+    '</div>' +
+    '<div class="modalactions" style="margin-top:14px;"><button class="btn btn-outline full" id="mCloseProfile">Kapat</button></div>'
+  );
+  document.getElementById('mChangePassBtn').onclick = ()=>{ closeModal(); openChangePasswordModal(); };
+  const $nuBtn = document.getElementById('mNewUserBtn');
+  if($nuBtn) $nuBtn.onclick = ()=>{ closeModal(); openCreateUserModal(); };
+  document.getElementById('mLogoutBtn').onclick = ()=>{
+    closeModal();
+    if(confirm('Çıkış yapmak istediğinize emin misiniz?')) doLogout();
+  };
+  document.getElementById('mCloseProfile').onclick = closeModal;
+}
+
+function openChangePasswordModal(){
+  openModalHtml(
+    '<h3>Şifre Değiştir</h3>' +
+    '<p style="font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;">Mevcut hesabınız (<strong>'+escapeHtml(state.username||'')+'</strong>) için yeni bir şifre belirleyin.</p>' +
+    '<label>Yeni Şifre</label>' +
+    '<div class="passwrap">' +
+      '<input type="password" id="mNewPassword" placeholder="En az 6 karakter">' +
+      '<button type="button" class="eye-btn" id="mNewPasswordEye" title="Şifreyi göster" aria-label="Şifreyi göster">' + ic('eye') + '</button>' +
+    '</div>' +
+    '<label>Yeni Şifre (Tekrar)</label>' +
+    '<div class="passwrap">' +
+      '<input type="password" id="mNewPasswordConfirm" placeholder="Yeni şifrenizi tekrar yazın">' +
+      '<button type="button" class="eye-btn" id="mNewPasswordConfirmEye" title="Şifreyi göster" aria-label="Şifreyi göster">' + ic('eye') + '</button>' +
+    '</div>' +
+    '<div class="err" id="mChangePassErr" style="color:var(--red);font-size:12px;margin-top:6px;min-height:16px;"></div>' +
+    '<div class="modalactions">' +
+      '<button class="btn btn-outline" id="mCancelChangePass">Vazgeç</button>' +
+      '<button class="btn btn-primary" id="mSaveChangePass">Şifreyi Güncelle</button>' +
+    '</div>'
+  );
+  wirePassToggle('mNewPassword', 'mNewPasswordEye');
+  wirePassToggle('mNewPasswordConfirm', 'mNewPasswordConfirmEye');
+  const $p1 = document.getElementById('mNewPassword');
+  const $p2 = document.getElementById('mNewPasswordConfirm');
+  const $err = document.getElementById('mChangePassErr');
+  const $btn = document.getElementById('mSaveChangePass');
+
+  const submit = async ()=>{
+    const p1 = $p1.value;
+    const p2 = $p2.value;
+    $err.textContent = '';
+    if(!p1 || p1.length < 6){
+      $err.textContent = 'Şifre en az 6 karakter olmalıdır.';
+      return;
+    }
+    if(p1 !== p2){
+      $err.textContent = 'Şifreler eşleşmiyor, lütfen kontrol edin.';
+      return;
+    }
+    $btn.textContent = 'Güncelleniyor...';
+    $btn.disabled = true;
+    try{
+      const { error } = await sb.auth.updateUser({ password: p1 });
+      if(error){
+        $err.textContent = 'Hata: ' + error.message;
+        $btn.textContent = 'Şifreyi Güncelle';
+        $btn.disabled = false;
+        return;
+      }
+      closeModal();
+      logActivity('Hesap şifresini güncelledi');
+      showToast('Şifreniz başarıyla değiştirildi.');
+    }catch(e){
+      $err.textContent = 'Beklenmeyen hata: ' + (e.message || e);
+      $btn.textContent = 'Şifreyi Güncelle';
+      $btn.disabled = false;
+    }
+  };
+
+  document.getElementById('mCancelChangePass').onclick = closeModal;
+  document.getElementById('mSaveChangePass').onclick = submit;
+  $p1.addEventListener('keydown', e=>{ if(e.key==='Enter') $p2.focus(); });
+  $p2.addEventListener('keydown', e=>{ if(e.key==='Enter') submit(); });
+  setTimeout(()=>$p1.focus(), 50);
+}
+
+function openCreateUserModal(){
+  if(!state.isAdmin){
+    showToast('Yeni kullanıcı ekleme yetkisi sadece yöneticidedir (Admin).');
+    return;
+  }
+  openModalHtml(
+    '<h3>Yeni Kullanıcı / Öğretmen Ekle</h3>' +
+    '<p style="font-size:13px;color:var(--ink-soft);line-height:1.5;margin-bottom:14px;">' +
+      'Sistem güvenliği nedeniyle yeni kullanıcı ve öğretmen hesapları doğrudan <strong>Supabase Yönetim Paneli</strong> üzerinden tanımlanır.' +
+    '</p>' +
+    '<div style="background:var(--surface-2);border-radius:10px;padding:14px;font-size:12.5px;line-height:1.6;margin-bottom:16px;">' +
+      '<div style="font-weight:700;color:var(--ink);margin-bottom:6px;">Adım Adım Kullanıcı Ekleme:</div>' +
+      '<strong>1.</strong> Aşağıdaki butona tıklayarak Supabase Kullanıcılar sayfasını açın.<br>' +
+      '<strong>2.</strong> Sağ üstteki <strong>"Add user" &gt; "Create user"</strong> butonuna basın.<br>' +
+      '<strong>3.</strong> Bilgileri girin:<br>' +
+      '&nbsp;&nbsp;• <strong>Email:</strong> <code>kullaniciadi@takip.local</code> (örn: <code>candan@takip.local</code>)<br>' +
+      '&nbsp;&nbsp;• <strong>Password:</strong> İstediğiniz şifre<br>' +
+      '&nbsp;&nbsp;• <strong>Auto Confirm User?:</strong> Açık (İşaretli) olmalıdır.<br>' +
+      '<strong>4.</strong> "Create user"a basın. Öğretmen bu kullanıcı adı ve şifreyle sisteme anında girebilir.' +
+    '</div>' +
+    '<div style="display:flex;flex-direction:column;gap:8px;">' +
+      '<a href="https://supabase.com/dashboard/project/miekldpkuclbinclnvvu/auth/users" target="_blank" rel="noopener" class="btn btn-primary full" style="justify-content:center;text-decoration:none;font-size:13.5px;padding:10px;display:flex;align-items:center;gap:6px;">' +
+        ic('user') + 'Supabase Kullanıcı Paneline Git ↗' +
+      '</a>' +
+      '<button class="btn btn-outline full" id="mCloseCreateUser" style="justify-content:center;">Kapat</button>' +
+    '</div>'
+  );
+  document.getElementById('mCloseCreateUser').onclick = closeModal;
 }
 function openNewClassModal(){
   openModalHtml(
@@ -432,11 +587,16 @@ function openActionMenu(title, actions){
 
 async function loadClasses(){
   if(!state.userId) return;
-  const { data, error } = await sb.from('classes').select('*').eq('owner_id', state.userId).order('sort_order');
+  let query = sb.from('classes').select('*').order('sort_order');
+  if(!state.isAdmin){
+    query = query.eq('owner_id', state.userId);
+  }
+  const { data, error } = await query;
   if(error) console.error('loadClasses error', error);
   state.classes = data || [];
 }
 async function addClass(name){
+  if(state.isAdmin){ showToast('Yönetici modunda sınıf eklenemez (Salt Okunur).'); return; }
   name = name.trim();
   if(!name) return;
   if(state.classes.some(c=>c.name.toLowerCase()===name.toLowerCase())){ showToast('Bu sınıf zaten var'); return; }
@@ -451,6 +611,7 @@ async function addClass(name){
   await loadClassDetail(state.classId);
 }
 async function renameClass(newName){
+  if(state.isAdmin){ showToast('Yönetici modunda sınıf düzenlenemez (Salt Okunur).'); return; }
   newName = newName.trim();
   if(!newName) return;
   await sb.from('classes').update({name:newName}).eq('id', state.cls.id);
@@ -462,6 +623,7 @@ async function renameClass(newName){
   showToast('Sınıf adı güncellendi');
 }
 async function deleteClass(){
+  if(state.isAdmin){ showToast('Yönetici modunda sınıf silinemez (Salt Okunur).'); return; }
   const name = state.cls.name;
   await sb.from('classes').delete().eq('id', state.cls.id);
   state.classes = state.classes.filter(c=>c.id!==state.cls.id);
@@ -630,7 +792,8 @@ function exportClassBackup(){
   }
 
   const safeName = (cls.name||'sinif').replace(/[\\/:*?"<>|]/g,'_');
-  XLSX.writeFile(wb, safeName+'_yedek_'+today+'.xlsx');
+  const teacherName = (state.username||'ogretmen').replace(/[\\/:*?"<>|]/g,'_');
+  XLSX.writeFile(wb, teacherName+'_'+safeName+'_yedek_'+today+'.xlsx');
   logActivity('Excel yedeği indirdi');
   showToast('Excel yedeği indirildi');
 }
@@ -846,6 +1009,7 @@ function quizSlotAvgDYB(slotNo){
 }
 
 async function addCounselingNote(sid, meetingType, noteDate, interviewer, reason, content, evaluation){
+  if(state.isAdmin){ showToast('Yönetici modunda görüşme notu eklenemez (Salt Okunur).'); return; }
   content = (content||'').trim();
   if(!content) return;
   const { data, error } = await sb.from('counseling_notes').insert({
@@ -862,6 +1026,7 @@ async function addCounselingNote(sid, meetingType, noteDate, interviewer, reason
   showToast('Görüşme notu eklendi');
 }
 async function deleteCounselingNote(sid, noteId){
+  if(state.isAdmin){ showToast('Yönetici modunda silme işlemi yapılamaz (Salt Okunur).'); return; }
   if(!confirm('Bu görüşme notu silinsin mi?')) return;
   state.cls.counselingNotes[sid] = (state.cls.counselingNotes[sid]||[]).filter(n=>n.id!==noteId);
   render();
@@ -871,6 +1036,7 @@ async function deleteCounselingNote(sid, noteId){
 
 // ---- Üniversite Hedefleri (Form-3a) ----
 async function addUniversityGoals(sid, period, goals, germanyInterest){
+  if(state.isAdmin){ showToast('Yönetici modunda üniversite hedefi eklenemez (Salt Okunur).'); return; }
   period = (period||'').trim();
   if(!period){ showToast('Dönem adı girilmeli'); return; }
   const cleanGoals = goals.filter(g=>(g.profession||'').trim() || (g.university||'').trim());
@@ -886,6 +1052,7 @@ async function addUniversityGoals(sid, period, goals, germanyInterest){
   showToast('Üniversite hedefleri kaydedildi');
 }
 async function deleteUniversityGoals(sid, id){
+  if(state.isAdmin){ showToast('Yönetici modunda silme işlemi yapılamaz (Salt Okunur).'); return; }
   if(!confirm('Bu dönem kaydı silinsin mi?')) return;
   state.cls.universityGoals[sid] = (state.cls.universityGoals[sid]||[]).filter(g=>g.id!==id);
   render();
@@ -895,6 +1062,7 @@ async function deleteUniversityGoals(sid, id){
 
 // ---- Yurtdışı Danışmanlık (Form-7) — öğrenci başına tek kayıt ----
 async function saveAbroadConsulting(sid, fields){
+  if(state.isAdmin){ showToast('Yönetici modunda yurtdışı danışmanlık bilgisi değiştirilemez (Salt Okunur).'); return; }
   const existing = state.cls.abroadConsulting[sid];
   if(existing){
     const { error } = await sb.from('abroad_consulting').update({...fields, updated_at:new Date().toISOString()}).eq('id', existing.id);
@@ -913,6 +1081,7 @@ async function saveAbroadConsulting(sid, fields){
 
 // ---- Sınıf Durum Değerlendirmesi (periyodik, sınıf geneli) ----
 async function addClassEvaluation(period, criteria){
+  if(state.isAdmin){ showToast('Yönetici modunda değerlendirme dönemi eklenemez (Salt Okunur).'); return; }
   period = (period||'').trim();
   if(!period){ showToast('Dönem adı girilmeli'); return; }
   const { data, error } = await sb.from('class_evaluations').insert({class_id: state.cls.id, period, criteria}).select();
@@ -923,6 +1092,7 @@ async function addClassEvaluation(period, criteria){
   showToast('Değerlendirme dönemi eklendi');
 }
 async function deleteClassEvaluation(id){
+  if(state.isAdmin){ showToast('Yönetici modunda değerlendirme dönemi silinemez (Salt Okunur).'); return; }
   if(!confirm('Bu değerlendirme dönemi silinsin mi? Tüm işaretlemeler de silinir.')) return;
   const ev = state.cls.classEvaluations.find(e=>e.id===id);
   state.cls.classEvaluations = state.cls.classEvaluations.filter(e=>e.id!==id);
@@ -934,6 +1104,7 @@ async function deleteClassEvaluation(id){
   showToast('Değerlendirme dönemi silindi');
 }
 async function toggleEvaluationMark(evalId, sid, critIndex){
+  if(state.isAdmin){ showToast('Yönetici modunda işaretleme değiştirilemez (Salt Okunur).'); return; }
   state.cls.classEvaluationMarks[evalId] = state.cls.classEvaluationMarks[evalId] || {};
   state.cls.classEvaluationMarks[evalId][sid] = state.cls.classEvaluationMarks[evalId][sid] || {};
   const cur = state.cls.classEvaluationMarks[evalId][sid][critIndex] || {checked:false, note:''};
@@ -946,6 +1117,7 @@ async function toggleEvaluationMark(evalId, sid, critIndex){
   );
 }
 async function setEvaluationNote(evalId, sid, note){
+  if(state.isAdmin){ showToast('Yönetici modunda not eklenemez (Salt Okunur).'); return; }
   // Özel Notlar: her öğrenci için tek bir genel not, criteria_index=-1 ayrılmış slot olarak kullanılır
   state.cls.classEvaluationMarks[evalId] = state.cls.classEvaluationMarks[evalId] || {};
   state.cls.classEvaluationMarks[evalId][sid] = state.cls.classEvaluationMarks[evalId][sid] || {};
@@ -959,6 +1131,7 @@ async function setEvaluationNote(evalId, sid, note){
 }
 
 async function toggleAbsent(sid){
+  if(state.isAdmin){ showToast('Yönetici modunda devamsızlık değiştirilemez (Salt Okunur).'); return; }
   const s = studentById(sid); if(!s) return;
   s.absent = !s.absent; render();
   await sb.from('students').update({absent:s.absent}).eq('id', sid);
@@ -966,12 +1139,14 @@ async function toggleAbsent(sid){
   showToast(s.absent?'Okulda yok işaretlendi':'Aktif işaretlendi');
 }
 async function updateStudentField(sid, field, value){
+  if(state.isAdmin) return;
   const s = studentById(sid); if(s) s[field]=value;
   await sb.from('students').update({[field]:value}).eq('id', sid);
   if(s) logActivity('"'+s.name+'" öğrencisinin bilgisini güncelledi');
   showToast('Kaydedildi');
 }
 async function addStudent(name, no){
+  if(state.isAdmin){ showToast('Yönetici modunda öğrenci eklenemez (Salt Okunur).'); return; }
   const maxOrder = Math.max(0, ...state.cls.students.map(s=>s.sort_order||0));
   const { data, error } = await sb.from('students').insert({class_id:state.cls.id, name, no: no||null, sort_order:maxOrder+1}).select();
   if(error){ showToast('Hata: '+error.message); return; }
@@ -980,15 +1155,53 @@ async function addStudent(name, no){
   logActivity('"'+name+'" öğrencisini ekledi');
   showToast('Öğrenci eklendi');
 }
-async function renameStudent(sid, newName){
-  const s = studentById(sid); const old = s?s.name:'';
-  if(s) s.name = newName;
+async function updateStudentInfo(sid, newName, newNo){
+  if(state.isAdmin){ showToast('Yönetici modunda öğrenci bilgileri düzenlenemez (Salt Okunur).'); return; }
+  const s = studentById(sid);
+  if(!s) return;
+  const oldName = s.name;
+  const cleanNo = newNo ? String(newNo).trim() : null;
+  s.name = newName;
+  s.no = cleanNo;
   render();
-  await sb.from('students').update({name:newName}).eq('id', sid);
-  logActivity('"'+old+'" öğrencisinin adını "'+newName+'" olarak değiştirdi');
-  showToast('İsim güncellendi');
+  const { error } = await sb.from('students').update({name:newName, no:cleanNo}).eq('id', sid);
+  if(error){
+    showToast('Hata: ' + error.message);
+    return;
+  }
+  logActivity('"'+oldName+'" öğrencisinin bilgilerini güncelledi (No: '+(cleanNo||'yok')+', Ad: '+newName+')');
+  showToast('Öğrenci bilgileri güncellendi');
+}
+async function renameStudent(sid, newName){
+  return updateStudentInfo(sid, newName, (studentById(sid)||{}).no);
+}
+function openEditStudentModal(sid){
+  if(state.isAdmin){ showToast('Yönetici modunda öğrenci bilgileri düzenlenemez (Salt Okunur).'); return; }
+  const s = studentById(sid);
+  if(!s) return;
+  openModalHtml(
+    '<h3>Öğrenci Bilgilerini Düzenle</h3>' +
+    '<label>Öğrenci No</label><input type="text" id="mEditStuNo" value="'+escapeHtml(s.no||'')+'" placeholder="Örn. 104" inputmode="numeric">' +
+    '<label>Adı Soyadı</label><input type="text" id="mEditStuName" value="'+escapeHtml(s.name||'')+'" placeholder="Ad Soyad">' +
+    '<div class="modalactions"><button class="btn btn-outline" id="mCancelEditStu">Vazgeç</button><button class="btn btn-primary" id="mSaveEditStu">Kaydet</button></div>'
+  );
+  const submit = ()=>{
+    const name = document.getElementById('mEditStuName').value.trim();
+    const no = document.getElementById('mEditStuNo').value.trim();
+    if(!name){ showToast('Ad soyad girilmeli'); return; }
+    closeModal();
+    updateStudentInfo(sid, name, no);
+  };
+  document.getElementById('mCancelEditStu').onclick = closeModal;
+  document.getElementById('mSaveEditStu').onclick = submit;
+  const $no = document.getElementById('mEditStuNo');
+  const $name = document.getElementById('mEditStuName');
+  $no.addEventListener('keydown', e=>{ if(e.key==='Enter') $name.focus(); });
+  $name.addEventListener('keydown', e=>{ if(e.key==='Enter') submit(); });
+  setTimeout(()=>$no.focus(), 50);
 }
 async function deleteStudent(sid){
+  if(state.isAdmin){ showToast('Yönetici modunda öğrenci silinemez (Salt Okunur).'); return; }
   const s = studentById(sid); const name = s?s.name:'Öğrenci';
   state.cls.students = state.cls.students.filter(x=>x.id!==sid);
   delete state.cls.hwStatus[sid]; delete state.cls.rubricScores[sid]; delete state.cls.quizScores[sid]; delete state.cls.counselingNotes[sid];
@@ -1000,6 +1213,7 @@ async function deleteStudent(sid){
   showToast('Öğrenci silindi');
 }
 async function importStudentsFromExcel(file){
+  if(state.isAdmin){ showToast('Yönetici modunda öğrenci listesi yüklenemez (Salt Okunur).'); return; }
   if(!file || !checkFileSize(file)) return;
   showToast('Dosya okunuyor...');
   try{
@@ -1008,24 +1222,38 @@ async function importStudentsFromExcel(file){
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, {header:1, raw:false, defval:''});
     if(!rows.length){ showToast('Dosya boş görünüyor'); return; }
-    let startRow=0, noCol=0, nameCol=1, firstCol=-1, lastCol=-1;
-    const header = rows[0].map(c=>String(c).toLocaleLowerCase('tr'));
-    const looksLikeHeader = header.some(h=>h.includes('no')||h.includes('ad')||h.includes('isim')||h.includes('soyad'));
+
+    const isStudentNoCol = (str)=>{
+      const h = String(str||'').trim().toLocaleLowerCase('tr');
+      if(['no', 'okul no', 'öğrenci no', 'ogrenci no', 'numara', 'numarası', 'ogr no', 'öğr no', 'öğr. no', 'kno'].includes(h)) return true;
+      if(/^(öğrenci|okul|ogr|öğr)[\s._-]*(no|numara|numarası)$/i.test(h)) return true;
+      if(/^no$/i.test(h)) return true;
+      return false;
+    };
+
+    let startRow=0, noCol=-1, nameCol=-1, firstCol=-1, lastCol=-1;
+    const header = rows[0].map(c=>String(c).trim().toLocaleLowerCase('tr'));
+    const looksLikeHeader = header.some(h=>isStudentNoCol(h) || h.includes('ad') || h.includes('isim') || h.includes('soyad'));
     if(looksLikeHeader){
       startRow=1;
       header.forEach((h,i)=>{
-        if(h.includes('no')) noCol=i;
+        if(isStudentNoCol(h)){
+          if(noCol===-1 || h.includes('öğrenci') || h.includes('okul')) noCol=i;
+        }
         else if(h.includes('ad') && h.includes('soyad')) nameCol=i;
-        else if(h.includes('ad') && firstCol===-1 && !h.includes('soyad')) firstCol=i;
+        else if((h.includes('ad') || h.includes('isim')) && firstCol===-1 && !h.includes('soyad')) firstCol=i;
         else if(h.includes('soyad')) lastCol=i;
       });
     }
+    if(noCol===-1) noCol=0;
+    if(nameCol===-1 && firstCol===-1) nameCol=1;
+
     const maxOrder = Math.max(0, ...state.cls.students.map(s=>s.sort_order||0));
     const newRows = []; let order = maxOrder;
     for(let r=startRow; r<rows.length; r++){
       const row = rows[r];
       if(!row || row.every(c=>String(c).trim()==='')) continue;
-      let no = String(row[noCol]??'').trim();
+      let no = noCol>=0 ? String(row[noCol]??'').trim() : '';
       if(no.length > 20) no = no.slice(0, 20);
       let name;
       if(firstCol>=0 && lastCol>=0){ name=(String(row[firstCol]??'').trim()+' '+String(row[lastCol]??'').trim()).trim(); }
@@ -1046,6 +1274,7 @@ async function importStudentsFromExcel(file){
 }
 
 async function toggleHw(sid, slotNo){
+  if(state.isAdmin){ showToast('Yönetici modunda ödev durumu değiştirilemez (Salt Okunur).'); return; }
   const cur = !!(state.cls.hwStatus[sid]||{})[slotNo];
   const next = !cur;
   state.cls.hwStatus[sid] = state.cls.hwStatus[sid]||{};
@@ -1057,6 +1286,7 @@ async function toggleHw(sid, slotNo){
   if(s) logActivity('"'+s.name+'" - "'+(hw&&hw.topic?hw.topic:('Ödev #'+slotNo))+'" ödevini '+(next?'yaptı':'yapmadı')+' olarak işaretledi');
 }
 async function addHomework(){
+  if(state.isAdmin){ showToast('Yönetici modunda ödev eklenemez (Salt Okunur).'); return; }
   const maxSlot = Math.max(0, ...state.cls.homeworks.map(h=>h.slot_no||0));
   const nextSlot = maxSlot+1;
   const { data } = await sb.from('homeworks').insert({class_id:state.cls.id, slot_no:nextSlot, topic:'', hw_date:null, check_date:null}).select();
@@ -1066,6 +1296,7 @@ async function addHomework(){
   showToast('Ödev eklendi');
 }
 async function updateHomework(slotNo, field, value){
+  if(state.isAdmin) return;
   const h = state.cls.homeworks.find(x=>x.slot_no===slotNo);
   if(h) h[field] = value;
   await sb.from('homeworks').update({[field]:value}).eq('class_id', state.cls.id).eq('slot_no', slotNo);
@@ -1073,6 +1304,7 @@ async function updateHomework(slotNo, field, value){
   showToast('Kaydedildi');
 }
 async function deleteHomework(slotNo){
+  if(state.isAdmin){ showToast('Yönetici modunda ödev silinemez (Salt Okunur).'); return; }
   const h = state.cls.homeworks.find(x=>x.slot_no===slotNo);
   const label = h&&h.topic?h.topic:('Ödev #'+slotNo);
   state.cls.homeworks = state.cls.homeworks.filter(x=>x.slot_no!==slotNo);
@@ -1085,6 +1317,7 @@ async function deleteHomework(slotNo){
 }
 
 async function addQuiz(){
+  if(state.isAdmin){ showToast('Yönetici modunda sınav eklenemez (Salt Okunur).'); return; }
   const exWord = examWord();
   const label = prompt('Yeni '+exWord+' adı (örn. '+exWord+' 3):');
   if(!label || !label.trim()) return;
@@ -1096,6 +1329,7 @@ async function addQuiz(){
   showToast(exWord+' eklendi');
 }
 async function renameQuiz(slotNo, label){
+  if(state.isAdmin) return;
   const q = state.cls.quizzes.find(x=>x.slot_no===slotNo);
   const old = q?q.label:null;
   if(q) q.label = label;
@@ -1104,6 +1338,7 @@ async function renameQuiz(slotNo, label){
   showToast('Kaydedildi');
 }
 async function deleteQuiz(slotNo){
+  if(state.isAdmin){ showToast('Yönetici modunda sınav silinemez (Salt Okunur).'); return; }
   const exWord = examWord();
   if(!confirm('Bu '+exWord+' silinsin mi? Öğrencilerin bu öğeye ait notları da silinir.')) return;
   const q = state.cls.quizzes.find(x=>x.slot_no===slotNo);
@@ -1117,6 +1352,7 @@ async function deleteQuiz(slotNo){
   showToast(exWord+' silindi');
 }
 async function updateQuizDYB(sid, slotNo, field, value){
+  if(state.isAdmin) return;
   state.cls.quizScores[sid] = state.cls.quizScores[sid] || {};
   state.cls.quizScores[sid][slotNo] = state.cls.quizScores[sid][slotNo] || {};
   const numVal = value===''? null : (parseInt(value)||0);
@@ -1130,6 +1366,7 @@ async function updateQuizDYB(sid, slotNo, field, value){
   showToast('Kaydedildi');
 }
 async function importQuizScoresFromExcel(file, slotNo){
+  if(state.isAdmin){ showToast('Yönetici modunda sınav notu yüklenemez (Salt Okunur).'); return; }
   if(!file || !checkFileSize(file)) return;
   showToast('Dosya okunuyor...');
   try{
@@ -1171,6 +1408,7 @@ async function importQuizScoresFromExcel(file, slotNo){
   }catch(err){ showToast('Dosya okunamadı: '+err.message); }
 }
 async function addQuizFromExcel(file){
+  if(state.isAdmin){ showToast('Yönetici modunda sınav eklenemez (Salt Okunur).'); return; }
   if(!file || !checkFileSize(file)) return;
   const exWord = examWord();
   const label = prompt('Yeni '+exWord+' adı (örn. '+exWord+' 3):');
@@ -1222,6 +1460,7 @@ async function addQuizFromExcel(file){
 }
 
 async function importKdsRaporuFromExcel(file){
+  if(state.isAdmin){ showToast('Yönetici modunda sınav raporu yüklenemez (Salt Okunur).'); return; }
   if(!file || !checkFileSize(file)) return;
   showToast('Rapor okunuyor...');
   try{
@@ -1306,6 +1545,7 @@ async function importKdsRaporuFromExcel(file){
 }
 
 async function addPerfTask(label){
+  if(state.isAdmin){ showToast('Yönetici modunda performans ödevi eklenemez (Salt Okunur).'); return; }
   const maxSlot = Math.max(0, ...state.cls.perfTasks.map(t=>t.slot_no||0));
   const { data } = await sb.from('performance_tasks').insert({class_id:state.cls.id, slot_no:maxSlot+1, label}).select();
   if(data && data[0]) state.cls.perfTasks.push(data[0]);
@@ -1315,6 +1555,7 @@ async function addPerfTask(label){
   showToast('Performans ödevi eklendi');
 }
 async function renamePerfTask(oldLabel, newLabel){
+  if(state.isAdmin) return;
   newLabel = newLabel.trim();
   if(!newLabel || newLabel===oldLabel) return;
   const t = state.cls.perfTasks.find(x=>x.label===oldLabel);
@@ -1333,6 +1574,7 @@ async function renamePerfTask(oldLabel, newLabel){
   showToast('İsim güncellendi');
 }
 async function deletePerfTask(label){
+  if(state.isAdmin){ showToast('Yönetici modunda performans ödevi silinemez (Salt Okunur).'); return; }
   state.cls.perfTasks = state.cls.perfTasks.filter(t=>t.label!==label);
   delete state.cls.rubrics[label];
   for(const sid in state.cls.rubricScores){ delete state.cls.rubricScores[sid][label]; }
@@ -1347,11 +1589,13 @@ async function deletePerfTask(label){
   showToast('Performans ödevi silindi');
 }
 async function saveRubric(level){
+  if(state.isAdmin) return;
   const criteria = state.cls.rubrics[level] || [];
   await sb.from('rubrics').upsert({class_id: state.cls.id, level, criteria}, {onConflict:'class_id,level'});
   logActivity('"'+level+'" performans rubriğini güncelledi');
 }
 function addCriterion(level){
+  if(state.isAdmin) return;
   state.cls.rubrics[level] = state.cls.rubrics[level] || [];
   state.cls.rubrics[level].push({name:'Yeni Ölçüt', max:4, levels:[
     {score:4, label:'Mükemmel', desc:''},
@@ -1362,30 +1606,36 @@ function addCriterion(level){
   saveRubric(level); render();
 }
 function deleteCriterion(level, ci){
+  if(state.isAdmin) return;
   if(!confirm('Bu ölçüt silinsin mi?')) return;
   state.cls.rubrics[level].splice(ci,1);
   saveRubric(level); render();
 }
 function updateCriterion(level, ci, field, value){
+  if(state.isAdmin) return;
   state.cls.rubrics[level][ci][field] = field==='max' ? (parseInt(value)||1) : value;
   saveRubric(level);
 }
 function addLevel(level, ci){
+  if(state.isAdmin) return;
   const c = state.cls.rubrics[level][ci];
   c.levels = c.levels || [];
   c.levels.push({score:1, label:'Yeni Seviye', desc:''});
   saveRubric(level); render();
 }
 function deleteLevel(level, ci, li){
+  if(state.isAdmin) return;
   state.cls.rubrics[level][ci].levels.splice(li,1);
   saveRubric(level); render();
 }
 function updateLevel(level, ci, li, field, value){
+  if(state.isAdmin) return;
   const lv = state.cls.rubrics[level][ci].levels[li];
   lv[field] = field==='score' ? (parseInt(value)||0) : value;
   saveRubric(level);
 }
 async function setRubricScore(sid, level, critIndex, score){
+  if(state.isAdmin){ showToast('Yönetici modunda puan değiştirilemez (Salt Okunur).'); return; }
   state.cls.rubricScores[sid] = state.cls.rubricScores[sid] || {};
   state.cls.rubricScores[sid][level] = state.cls.rubricScores[sid][level] || {};
   state.cls.rubricScores[sid][level][critIndex] = score;
@@ -1484,6 +1734,7 @@ function toIntOrNull(s){
   return Math.round(v);
 }
 async function importDenemeFromPdf(file, examType){
+  if(state.isAdmin){ showToast('Yönetici modunda deneme raporu yüklenemez (Salt Okunur).'); return; }
   if(!file || !checkFileSize(file)) return;
   if(!window.pdfjsLib){ showToast('PDF okuyucu yüklenemedi'); return; }
   showToast('PDF okunuyor...');
@@ -1551,6 +1802,7 @@ async function importDenemeFromPdf(file, examType){
 }
 
 async function importDenemeFromExcel(file, examType){
+  if(state.isAdmin){ showToast('Yönetici modunda deneme yüklenemez (Salt Okunur).'); return; }
   if(!file || !checkFileSize(file)) return;
   const label = prompt('Yeni '+(examType==='tyt'?'TYT':'AYT')+' denemesinin adı:');
   if(!label || !label.trim()) return;
@@ -1611,6 +1863,7 @@ async function importDenemeFromExcel(file, examType){
   }catch(err){ showToast('Dosya okunamadı: '+err.message); }
 }
 async function deleteDenemeExam(examId, examType){
+  if(state.isAdmin){ showToast('Yönetici modunda deneme silinemez (Salt Okunur).'); return; }
   const list = examType==='tyt'?state.cls.tytExams:state.cls.aytExams;
   const exam = list.find(e=>e.id===examId);
   const label = exam?exam.label:'';
@@ -1623,6 +1876,7 @@ async function deleteDenemeExam(examId, examType){
   showToast('Deneme silindi');
 }
 async function updateDenemeScore(sid, examId, subject, field, value){
+  if(state.isAdmin) return;
   state.cls.denemeScoresByExam[examId] = state.cls.denemeScoresByExam[examId]||{};
   state.cls.denemeScoresByExam[examId][sid] = state.cls.denemeScoresByExam[examId][sid]||{};
   state.cls.denemeScoresByExam[examId][sid][subject] = state.cls.denemeScoresByExam[examId][sid][subject]||{};
@@ -1641,10 +1895,27 @@ function render(){
   if(state.page==='sinif_detail') return renderSinifDetail(app);
 }
 function renderHome(app){
+  const adminBanner = state.isAdmin ?
+    '<div style="background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius);padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;color:#8a4d05;">' +
+      '<div style="display:flex;align-items:center;gap:14px;">' +
+        '<div style="font-size:28px;line-height:1;">👁️</div>' +
+        '<div>' +
+          '<div style="font-size:15px;font-weight:800;">Yönetici İzleme Modu (Salt Okunur)</div>' +
+          '<div style="font-size:12.5px;font-weight:500;opacity:0.9;margin-top:2px;">Sistemdeki tüm öğretmenlerin sınıflarını ve kayıtlarını görüntülüyorsunuz. Güvenlik gereği veriler üzerinde ekleme, silme veya değişiklik yapılamaz.</div>' +
+        '</div>' +
+      '</div>' +
+      '<button class="btn btn-primary" id="adminNewUserBtn" style="font-size:12.5px;padding:8px 16px;display:flex;align-items:center;gap:6px;white-space:nowrap;">'+ic('user')+'Yeni Kullanıcı Ekle</button>' +
+    '</div>' : '';
+
   app.innerHTML =
-    '<div class="pagehead"><h2>Hoş geldin, '+escapeHtml(state.username||'')+'</h2></div>' +
-    '<div class="section-title"><span>Sınıflarım</span><span class="line"></span></div>' +
+    adminBanner +
+    '<div class="pagehead" style="margin-bottom:14px;"><h2>Hoş geldin, '+escapeHtml(state.username||'')+(state.isAdmin?' (Yönetici)':'')+'</h2></div>' +
+    '<div class="section-title"><span>'+(state.isAdmin?('Tüm Sınıflar ('+state.classes.length+' Sınıf)'):'Sınıflarım')+'</span><span class="line"></span></div>' +
     classGridHtml();
+  if(state.isAdmin){
+    const aBtn = document.getElementById('adminNewUserBtn');
+    if(aBtn) aBtn.onclick = openCreateUserModal;
+  }
   wireClassCards(app);
 }
 function classGridHtml(){
@@ -1660,7 +1931,10 @@ function classGridHtml(){
       '<div class="tags">'+tags+'</div>' +
     '</div>';
   });
-  html += '<button class="addcard" id="addClassCard">'+ic('plus')+'Yeni Sınıf Ekle</button></div>';
+  if(!state.isAdmin){
+    html += '<button class="addcard" id="addClassCard">'+ic('plus')+'Yeni Sınıf Ekle</button>';
+  }
+  html += '</div>';
   return html;
 }
 function wireClassCards(app){
@@ -1703,12 +1977,17 @@ function renderRoster(app){
     const pillClass = p<50?'low':(p<75?'mid':'');
     const absentTag = s.absent ? '<span style="font-size:10.5px;background:var(--red-soft);color:var(--red);padding:2px 7px;border-radius:6px;margin-right:6px;font-weight:700;">Yok</span>' : '';
     return '<div class="card rowcard" data-student="'+s.id+'">' +
-      '<div class="no">'+escapeHtml(s.no||'')+'</div>' +
+      '<div class="no">'+escapeHtml(s.no||'—')+'</div>' +
       '<div class="name">'+absentTag+escapeHtml(s.name)+'</div>' +
       '<div class="pct '+pillClass+'">'+p+'%</div>' +
       '<div class="chev">'+ic('chevron')+'</div>' +
     '</div>';
   }).join('');
+
+  const adminBadge = state.isAdmin ?
+    '<div style="background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius-sm);padding:8px 14px;margin-bottom:14px;color:#8a4d05;font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:8px;">' +
+      '👁️ Yönetici İzleme Modu — Bu sınıfta değişiklik yapma yetkiniz yoktur (Salt Okunur).' +
+    '</div>' : '';
 
   let midSections = '';
   if(!g12){
@@ -1733,6 +2012,7 @@ function renderRoster(app){
 
   app.innerHTML =
     '<button class="backlink" id="toHome">'+ic('chevron')+' Sınıflarım listesine dön</button>' +
+    adminBadge +
     '<div class="pagehead"><h2>'+escapeHtml(cls.name)+'</h2><div class="sub">Sınıf paneli</div></div>' +
     '<div class="infobar">' +
       '<div class="item"><div class="v">'+cls.students.length+'</div><div class="k">Öğrenci</div></div>' +
@@ -1747,32 +2027,48 @@ function renderRoster(app){
       '<button class="btn btn-outline btn-sm" id="sortNo">No</button><button class="btn btn-outline btn-sm" id="sortName">İsim</button>' +
     '</div>' +
     (list || '<div class="empty">Henüz öğrenci yok.</div>') +
-    '<button class="btn btn-soft full" id="addStudentBtn" style="margin-top:12px;">'+ic('plus')+'Öğrenci Ekle</button>' +
-    '<button class="btn btn-outline full" id="excelImportBtn" style="margin-top:8px;">'+ic('upload')+'Excelden Öğrenci Listesi Yükle</button>' +
-    '<input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" style="display:none;">' +
+    (!state.isAdmin ? (
+      '<button class="btn btn-soft full" id="addStudentBtn" style="margin-top:12px;">'+ic('plus')+'Öğrenci Ekle</button>' +
+      '<button class="btn btn-outline full" id="excelImportBtn" style="margin-top:8px;">'+ic('upload')+'Excelden Öğrenci Listesi Yükle</button>' +
+      '<input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" style="display:none;">'
+    ) : '') +
     '<div class="section-title"><span>Sınıf İşlemleri</span><span class="line"></span></div>' +
     '<button class="btn btn-soft full" id="backupBtn" style="margin-bottom:10px;">'+ic('file')+'Excel Yedek İndir</button>' +
-    '<div class="card" style="display:flex;gap:10px;flex-wrap:wrap;">' +
-      '<button class="btn btn-outline" id="renameClassBtn" style="flex:1;justify-content:center;">Sınıf Adını Düzenle</button>' +
-      '<button class="btn btn-danger" id="deleteClassBtn" style="flex:1;justify-content:center;">Sınıfı Sil</button>' +
-    '</div>';
+    (!state.isAdmin ? (
+      '<div class="card" style="display:flex;gap:10px;flex-wrap:wrap;">' +
+        '<button class="btn btn-outline" id="renameClassBtn" style="flex:1;justify-content:center;">Sınıf Adını Düzenle</button>' +
+        '<button class="btn btn-danger" id="deleteClassBtn" style="flex:1;justify-content:center;">Sınıfı Sil</button>' +
+      '</div>'
+    ) : '');
 
   document.getElementById('toHome').onclick = backToHome;
   document.getElementById('backupBtn').onclick = exportClassBackup;
   if(!g12){
-    document.getElementById('hwMenuBtn').onclick = ()=> openActionMenu('Ödevler', [
-      {label:'Ödevleri Düzenle', icon:'flag', onClick:()=>{ state.view='homeworks'; render(); }},
-      {label:'Ödevleri Kontrol Et', icon:'clipboard', onClick:()=>{ state.view='hw_picker'; render(); }},
-    ]);
+    document.getElementById('hwMenuBtn').onclick = ()=>{
+      if(state.isAdmin){
+        state.view = 'hw_picker'; render();
+      } else {
+        openActionMenu('Ödevler', [
+          {label:'Ödevleri Düzenle', icon:'flag', onClick:()=>{ state.view='homeworks'; render(); }},
+          {label:'Ödevleri Kontrol Et', icon:'clipboard', onClick:()=>{ state.view='hw_picker'; render(); }},
+        ]);
+      }
+    };
   }
   if(!g12){
     const exWord = examWord(cls.name), exWordPl = examWordPlural(cls.name);
-    document.getElementById('quizMenuBtn').onclick = ()=> openActionMenu('KDS', [
-      {label:exWordPl+' Düzenle', icon:'file', onClick:()=>{ state.view='quizzes'; render(); }},
-      {label:exWord+' Notu Gir', icon:'clipboard', onClick:()=>{ state.view='quiz_picker'; render(); }},
-    ]);
+    document.getElementById('quizMenuBtn').onclick = ()=>{
+      if(state.isAdmin){
+        state.view = 'quiz_picker'; render();
+      } else {
+        openActionMenu('KDS', [
+          {label:exWordPl+' Düzenle', icon:'file', onClick:()=>{ state.view='quizzes'; render(); }},
+          {label:exWord+' Notu Gir', icon:'clipboard', onClick:()=>{ state.view='quiz_picker'; render(); }},
+        ]);
+      }
+    };
     document.getElementById('perfMenuBtn').onclick = ()=>{
-      if(!state.cls.perfTasks.length){ showToast('Önce bir performans ödevi ekle'); state.view='perfTasks'; render(); return; }
+      if(!state.cls.perfTasks.length){ showToast('Henüz performans ödevi tanımlanmamış'); return; }
       if(!state.rubricLevel) state.rubricLevel = state.cls.perfTasks[0].label;
       state.view='rubric'; render();
     };
@@ -1789,14 +2085,19 @@ function renderRoster(app){
   app.querySelectorAll('[data-student]').forEach(el=>{
     el.onclick = ()=>{ state.studentId=el.dataset.student; state.view='student'; render(); };
   });
-  document.getElementById('addStudentBtn').onclick = openNewStudentModal;
-  document.getElementById('excelImportBtn').onclick = ()=> document.getElementById('excelFileInput').click();
-  document.getElementById('excelFileInput').onchange = (e)=> importStudentsFromExcel(e.target.files[0]);
-  document.getElementById('renameClassBtn').onclick = ()=>{
+  const addStBtn = document.getElementById('addStudentBtn');
+  if(addStBtn) addStBtn.onclick = openNewStudentModal;
+  const excImpBtn = document.getElementById('excelImportBtn');
+  if(excImpBtn) excImpBtn.onclick = ()=> document.getElementById('excelFileInput').click();
+  const excFileInput = document.getElementById('excelFileInput');
+  if(excFileInput) excFileInput.onchange = (e)=> importStudentsFromExcel(e.target.files[0]);
+  const renBtn = document.getElementById('renameClassBtn');
+  if(renBtn) renBtn.onclick = ()=>{
     const nn = prompt('Yeni sınıf adı:', cls.name);
     if(nn && nn.trim() && nn.trim()!==cls.name) renameClass(nn.trim());
   };
-  document.getElementById('deleteClassBtn').onclick = ()=>{
+  const delBtn = document.getElementById('deleteClassBtn');
+  if(delBtn) delBtn.onclick = ()=>{
     if(confirm('"'+cls.name+'" sınıfı ve tüm verileri silinsin mi? Bu işlem geri alınamaz.')) deleteClass();
   };
 }
@@ -1846,19 +2147,28 @@ function renderStudentDetail(app){
     const dateLine = (h.hw_date?('Verildi: '+fmtDate(h.hw_date)):'Veriliş tarihi yok') + ' &middot; ' + (h.check_date?('Kontrol: '+fmtDate(h.check_date)):'Kontrol tarihi yok');
     return '<div class="hwrow '+(future?'future':'')+'">' +
       '<div class="topic"><div class="t">'+escapeHtml(h.topic||('Ödev #'+h.slot_no))+'</div><div class="d">'+dateLine+'</div></div>' +
-      '<button class="toggle '+(done?'on':'')+'" data-slot="'+h.slot_no+'" '+(future?'disabled':'')+'><span class="knob"></span></button>' +
+      '<button class="toggle '+(done?'on':'')+'" data-slot="'+h.slot_no+'" '+(state.isAdmin || future ? 'disabled style="cursor:not-allowed;"' : '')+'><span class="knob"></span></button>' +
     '</div>';
   }).join('');
 
+  const adminBadge = state.isAdmin ?
+    '<div style="background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius-sm);padding:8px 14px;margin-bottom:14px;color:#8a4d05;font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:8px;">' +
+      '👁️ Yönetici İzleme Modu (Salt Okunur)' +
+    '</div>' : '';
+
   app.innerHTML =
     '<button class="backlink" id="toRoster">'+ic('chevron')+' '+escapeHtml(cls.name)+' listesine dön</button>' +
+    adminBadge +
     (g12 ? ('<div style="display:flex;align-items:center;gap:8px;margin:-8px 0 14px;flex-wrap:wrap;">' +
       '<label style="font-size:12px;color:var(--ink-soft);font-weight:700;">Dershane/Etüt:</label>' +
-      '<input type="text" data-f="dershane" value="'+escapeHtml(s.dershane||'')+'" placeholder="—" style="width:180px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;">' +
+      '<input type="text" data-f="dershane" value="'+escapeHtml(s.dershane||'')+'" placeholder="—" '+(state.isAdmin?'disabled readonly':'')+' style="width:180px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;'+(state.isAdmin?'background:var(--surface-2);cursor:not-allowed;':'')+'">' +
       '<label style="font-size:12px;color:var(--ink-soft);font-weight:700;margin-left:6px;">Özel Ders:</label>' +
-      '<input type="text" data-f="ozel_ders" value="'+escapeHtml(s.ozel_ders||'')+'" placeholder="—" style="width:180px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;">' +
+      '<input type="text" data-f="ozel_ders" value="'+escapeHtml(s.ozel_ders||'')+'" placeholder="—" '+(state.isAdmin?'disabled readonly':'')+' style="width:180px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;'+(state.isAdmin?'background:var(--surface-2);cursor:not-allowed;':'')+'">' +
     '</div>') : '') +
-    '<div class="pagehead"><h2>'+escapeHtml(s.name)+'</h2></div>' +
+    '<div class="pagehead"><h2>' +
+      (s.no ? '<span style="font-size:15px;color:var(--primary);background:var(--primary-soft);padding:3px 10px;border-radius:8px;margin-right:8px;font-weight:800;vertical-align:middle;">#'+escapeHtml(s.no)+'</span>' : '<span style="font-size:12px;color:var(--ink-faint);background:var(--surface-2);padding:3px 8px;border-radius:6px;margin-right:8px;font-weight:600;vertical-align:middle;">No Belirtilmedi</span>') +
+      escapeHtml(s.name) +
+    '</h2></div>' +
     '<div class="infobar">' +
       (!g12 ? '<div class="item"><div class="v">'+perfAvg+'</div><div class="k">Performans Ort.</div></div>' : '') +
       (!g12 ? '<div class="item"><div class="v">%'+hwP+'</div><div class="k">Ödev Durumu</div></div>' : '') +
@@ -1873,15 +2183,17 @@ function renderStudentDetail(app){
     (!g12 ? ('<div class="section-title"><span>Ödev Geçmişi</span><span class="line"></span></div>' +
     '<div class="card">'+(hwRows||'<div class="empty">Ödev tanımlı değil.</div>')+'</div>') : '') +
     '<div class="section-title"><span>Öğretmen Notu</span><span class="line"></span></div>' +
-    '<textarea class="note" id="noteBox" placeholder="Gözlem, veli görüşmesi notu...">'+escapeHtml(s.teacher_note||'')+'</textarea>' +
+    '<textarea class="note" id="noteBox" placeholder="Gözlem, veli görüşmesi notu..." '+(state.isAdmin ? 'readonly style="background:var(--surface-2);cursor:not-allowed;"' : '')+'>'+escapeHtml(s.teacher_note||'')+'</textarea>' +
     '<div class="section-title" style="margin-top:24px;"><span>Veli Görüşmesi</span><span class="line"></span></div>' +
     '<button class="btn btn-primary full" id="parentReportBtn">'+ic('file')+'Veli Raporu İndir (Excel)</button>' +
-    '<div class="section-title" style="margin-top:24px;"><span>Öğrenci İşlemleri</span><span class="line"></span></div>' +
-    '<div class="card" style="display:flex;gap:10px;">' +
-      '<button class="btn btn-outline" id="absentBtn" style="flex:1;justify-content:center;">'+(s.absent?'Aktif Yap':'Okulda Yok İşaretle')+'</button>' +
-      '<button class="btn btn-outline" id="renameStBtn" style="flex:1;justify-content:center;">Adını Düzenle</button>' +
-      '<button class="btn btn-danger" id="deleteStBtn" style="flex:1;justify-content:center;">Öğrenciyi Sil</button>' +
-    '</div>';
+    (!state.isAdmin ? (
+      '<div class="section-title" style="margin-top:24px;"><span>Öğrenci İşlemleri</span><span class="line"></span></div>' +
+      '<div class="card" style="display:flex;gap:10px;">' +
+        '<button class="btn btn-outline" id="absentBtn" style="flex:1;justify-content:center;">'+(s.absent?'Aktif Yap':'Okulda Yok İşaretle')+'</button>' +
+        '<button class="btn btn-outline" id="editStBtn" style="flex:1;justify-content:center;">'+ic('edit')+'Bilgileri Düzenle</button>' +
+        '<button class="btn btn-danger" id="deleteStBtn" style="flex:1;justify-content:center;">'+ic('trash')+'Öğrenciyi Sil</button>' +
+      '</div>'
+    ) : '');
 
   document.getElementById('toRoster').onclick = backToRoster;
   document.getElementById('parentReportBtn').onclick = ()=> exportParentReport(s.id);
@@ -1890,29 +2202,31 @@ function renderStudentDetail(app){
     wireUniversityGoalsSection(app, s);
     wireAbroadConsultingSection(app, s);
   }
-  app.querySelectorAll('.toggle').forEach(btn=>{
-    if(btn.disabled) return;
-    btn.onclick = ()=> toggleHw(s.id, parseInt(btn.dataset.slot));
-  });
-  app.querySelectorAll('input[data-f]').forEach(inp=>{
-    inp.onblur = ()=> updateStudentField(s.id, inp.dataset.f, inp.value);
-  });
-  document.getElementById('noteBox').onblur = (e)=> updateStudentField(s.id, 'teacher_note', e.target.value);
-  document.getElementById('absentBtn').onclick = ()=> toggleAbsent(s.id);
-  document.getElementById('renameStBtn').onclick = ()=>{
-    const nn = prompt('Yeni ad soyad:', s.name);
-    if(nn && nn.trim() && nn.trim()!==s.name) renameStudent(s.id, nn.trim());
-  };
-  document.getElementById('deleteStBtn').onclick = ()=>{
-    if(confirm(s.name+' silinsin mi? Bu işlem geri alınamaz.')) deleteStudent(s.id);
-  };
+  if(!state.isAdmin){
+    app.querySelectorAll('.toggle').forEach(btn=>{
+      if(btn.disabled) return;
+      btn.onclick = ()=> toggleHw(s.id, parseInt(btn.dataset.slot));
+    });
+    app.querySelectorAll('input[data-f]').forEach(inp=>{
+      inp.onblur = ()=> updateStudentField(s.id, inp.dataset.f, inp.value);
+    });
+    document.getElementById('noteBox').onblur = (e)=> updateStudentField(s.id, 'teacher_note', e.target.value);
+    const abBtn = document.getElementById('absentBtn');
+    if(abBtn) abBtn.onclick = ()=> toggleAbsent(s.id);
+    const edBtn = document.getElementById('editStBtn');
+    if(edBtn) edBtn.onclick = ()=> openEditStudentModal(s.id);
+    const delStBtn = document.getElementById('deleteStBtn');
+    if(delStBtn) delStBtn.onclick = ()=>{
+      if(confirm(s.name+' silinsin mi? Bu işlem geri alınamaz.')) deleteStudent(s.id);
+    };
+  }
 }
 
 // ---- Görüşme Raporu (FL4a/FL6a) ----
 function renderMeetingReportsSection(s){
   const notes = state.cls.counselingNotes[s.id] || [];
   const typeLabel = t => t==='veli' ? 'Veli Görüşmesi' : 'Öğrenci Görüşmesi';
-  return '<div class="section-title"><span>Görüşme Raporu</span><span class="line"></span></div>' +
+  const newNoteCard = state.isAdmin ? '' :
     '<div class="card">' +
       '<div class="levelpicker" id="mtypePicker" data-selected="ogrenci" style="margin-bottom:12px;">' +
         '<button type="button" data-mtype="veli">Veli Görüşmesi</button>' +
@@ -1926,7 +2240,10 @@ function renderMeetingReportsSection(s){
       '<textarea id="counselNote" placeholder="Görüşme İçeriği..." style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-family:inherit;font-size:13.5px;min-height:60px;resize:vertical;margin-bottom:10px;box-sizing:border-box;"></textarea>' +
       '<textarea id="counselEval" placeholder="Değerlendirme..." style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-family:inherit;font-size:13.5px;min-height:50px;resize:vertical;margin-bottom:10px;box-sizing:border-box;"></textarea>' +
       '<button class="btn btn-primary full" id="addCounselBtn">'+ic('plus')+'Görüşme Notu Ekle</button>' +
-    '</div>' +
+    '</div>';
+
+  return '<div class="section-title"><span>Görüşme Raporu</span><span class="line"></span></div>' +
+    newNoteCard +
     (notes.map(n=>
       '<div class="card" style="padding:12px 14px;">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">' +
@@ -1934,7 +2251,7 @@ function renderMeetingReportsSection(s){
             '<span class="tag '+(n.meeting_type==='veli'?'teal':'blue')+'">'+typeLabel(n.meeting_type)+'</span>' +
             '<span style="font-weight:700;font-size:12.5px;color:var(--primary-deep);">'+fmtDate(n.note_date)+'</span>' +
           '</div>' +
-          '<button class="iconbtn" data-delnote="'+n.id+'">'+ic('trash')+'</button>' +
+          (!state.isAdmin ? '<button class="iconbtn" data-delnote="'+n.id+'">'+ic('trash')+'</button>' : '') +
         '</div>' +
         (n.interviewer ? '<div style="font-size:12px;color:var(--ink-soft);margin-bottom:4px;"><b>Görüşmeyi Yapan:</b> '+escapeHtml(n.interviewer)+'</div>' : '') +
         (n.reason ? '<div style="font-size:12px;color:var(--ink-soft);margin-bottom:4px;"><b>Neden:</b> '+escapeHtml(n.reason)+'</div>' : '') +
@@ -1944,14 +2261,17 @@ function renderMeetingReportsSection(s){
     ).join('') || '<div class="empty">Henüz görüşme notu eklenmedi.</div>');
 }
 function wireMeetingReportsSection(app, s){
+  if(state.isAdmin) return;
   const picker = document.getElementById('mtypePicker');
+  if(!picker) return;
   picker.querySelectorAll('[data-mtype]').forEach(btn=>{
     btn.onclick = ()=>{
       picker.dataset.selected = btn.dataset.mtype;
       picker.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b===btn));
     };
   });
-  document.getElementById('addCounselBtn').onclick = ()=>{
+  const addBtn = document.getElementById('addCounselBtn');
+  if(addBtn) addBtn.onclick = ()=>{
     const noteEl = document.getElementById('counselNote');
     if(!noteEl.value.trim()){ showToast('Görüşme içeriği boş olamaz'); return; }
     addCounselingNote(
@@ -1976,8 +2296,8 @@ function goalRowsHtml(prefix, count, existingGoals){
     const g = existingGoals[i] || {};
     html += '<div style="display:flex;gap:6px;margin-bottom:6px;">' +
       '<div style="width:20px;font-size:11.5px;color:var(--ink-faint);padding-top:9px;text-align:center;">'+(i+1)+'</div>' +
-      '<input type="text" data-'+prefix+'i="'+i+'" data-'+prefix+'f="profession" placeholder="Meslek/Bölüm" value="'+escapeHtml(g.profession||'')+'" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;box-sizing:border-box;">' +
-      '<input type="text" data-'+prefix+'i="'+i+'" data-'+prefix+'f="university" placeholder="Üniversite" value="'+escapeHtml(g.university||'')+'" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;box-sizing:border-box;">' +
+      '<input type="text" data-'+prefix+'i="'+i+'" data-'+prefix+'f="profession" placeholder="Meslek/Bölüm" value="'+escapeHtml(g.profession||'')+'" '+(state.isAdmin?'disabled readonly':'')+' style="flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;box-sizing:border-box;'+(state.isAdmin?'background:var(--surface-2);cursor:not-allowed;':'')+'">' +
+      '<input type="text" data-'+prefix+'i="'+i+'" data-'+prefix+'f="university" placeholder="Üniversite" value="'+escapeHtml(g.university||'')+'" '+(state.isAdmin?'disabled readonly':'')+' style="flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;box-sizing:border-box;'+(state.isAdmin?'background:var(--surface-2);cursor:not-allowed;':'')+'">' +
     '</div>';
   }
   return html;
@@ -1995,7 +2315,7 @@ function readGoalRows(app, prefix, count){
 // ---- Üniversite Hedefleri (Form-3a) ----
 function renderUniversityGoalsSection(s){
   const goals = state.cls.universityGoals[s.id] || [];
-  return '<div class="section-title"><span>Üniversite Hedefleri</span><span class="line"></span></div>' +
+  const addCard = state.isAdmin ? '' :
     '<div class="card">' +
       '<input type="text" id="ugPeriod" placeholder="Dönem (örn. 1. Dönem Başı)" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-size:13.5px;margin-bottom:10px;box-sizing:border-box;">' +
       '<div style="font-size:11.5px;color:var(--ink-soft);font-weight:700;margin-bottom:6px;">HEDEFLENEN MESLEK VE ÜNİVERSİTELER (sırasıyla)</div>' +
@@ -2005,12 +2325,15 @@ function renderUniversityGoalsSection(s){
         '<label style="margin-left:8px;"><input type="radio" name="ugGermany" value="hayir" checked> Hayır</label>' +
       '</div>' +
       '<button class="btn btn-primary full" id="addUgBtn">'+ic('plus')+'Kaydet</button>' +
-    '</div>' +
+    '</div>';
+
+  return '<div class="section-title"><span>Üniversite Hedefleri</span><span class="line"></span></div>' +
+    addCard +
     (goals.map(g=>
       '<div class="card" style="padding:12px 14px;">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
           '<div style="font-weight:700;font-size:13.5px;color:var(--primary-deep);">'+escapeHtml(g.period)+'</div>' +
-          '<button class="iconbtn" data-delug="'+g.id+'">'+ic('trash')+'</button>' +
+          (!state.isAdmin ? '<button class="iconbtn" data-delug="'+g.id+'">'+ic('trash')+'</button>' : '') +
         '</div>' +
         ((g.goals||[]).map((goal,i)=>'<div style="font-size:12.5px;padding:2px 0;">'+(i+1)+'. '+escapeHtml(goal.profession||'-')+' — '+escapeHtml(goal.university||'-')+'</div>').join('') || '<div class="empty" style="padding:6px;">Kayıt yok</div>') +
         '<div style="font-size:12px;color:var(--ink-soft);margin-top:6px;">Almanya isteği: '+(g.germany_interest===true?'Evet':(g.germany_interest===false?'Hayır':'-'))+'</div>' +
@@ -2018,7 +2341,9 @@ function renderUniversityGoalsSection(s){
     ).join('') || '<div class="empty">Henüz üniversite hedefi girilmedi.</div>');
 }
 function wireUniversityGoalsSection(app, s){
-  document.getElementById('addUgBtn').onclick = ()=>{
+  if(state.isAdmin) return;
+  const addBtn = document.getElementById('addUgBtn');
+  if(addBtn) addBtn.onclick = ()=>{
     const period = document.getElementById('ugPeriod').value;
     const goals = readGoalRows(app, 'ug', 5);
     const germanyRadio = app.querySelector('input[name="ugGermany"]:checked');
@@ -2035,32 +2360,34 @@ function renderAbroadConsultingSection(s){
   const ac = state.cls.abroadConsulting[s.id] || {};
   return '<div class="section-title"><span>Yurtdışı Danışmanlık</span><span class="line"></span></div>' +
     '<div class="card">' +
-      '<input type="text" id="acField" placeholder="Alanı (örn. Sayısal)" value="'+escapeHtml(ac.field||'')+'" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-size:13.5px;margin-bottom:12px;box-sizing:border-box;">' +
+      '<input type="text" id="acField" placeholder="Alanı (örn. Sayısal)" value="'+escapeHtml(ac.field||'')+'" '+(state.isAdmin?'disabled readonly':'')+' style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-size:13.5px;margin-bottom:12px;box-sizing:border-box;'+(state.isAdmin?'background:var(--surface-2);cursor:not-allowed;':'')+'">' +
       '<div style="font-size:11.5px;color:var(--ink-soft);font-weight:700;margin-bottom:6px;">TÜRKİYE\'DE HEDEFLENEN BÖLÜM VE ÜNİVERSİTE</div>' +
       goalRowsHtml('tr', 5, ac.turkey_goals||[]) +
       '<div style="font-size:11.5px;color:var(--ink-soft);font-weight:700;margin:14px 0 6px;">ALMANYA\'DA HEDEFLENEN BÖLÜM VE ÜNİVERSİTE</div>' +
       goalRowsHtml('de', 5, ac.germany_goals||[]) +
       '<div style="margin:14px 0 10px;">' +
-        '<label style="display:block;font-size:13px;margin-bottom:8px;"><input type="checkbox" id="acAppointment" '+(ac.wants_appointment?'checked':'')+'> Yurtdışı Eğitimi ve Danışmanlık Biriminden randevu alarak görüşme yapacağım</label>' +
-        '<label style="display:block;font-size:13px;"><input type="checkbox" id="acGermanApp" '+(ac.wants_german_application?'checked':'')+'> Alman Üniversiteleri Başvuru sürecine katılmak istiyorum</label>' +
+        '<label style="display:block;font-size:13px;margin-bottom:8px;"><input type="checkbox" id="acAppointment" '+(ac.wants_appointment?'checked':'')+' '+(state.isAdmin?'disabled':'')+'> Randevu istiyor</label>' +
+        '<label style="display:block;font-size:13px;"><input type="checkbox" id="acGermanApp" '+(ac.wants_german_application?'checked':'')+' '+(state.isAdmin?'disabled':'')+'> Alman başvurusuna katılmak istiyor</label>' +
       '</div>' +
-      '<button class="btn btn-primary full" id="saveAcBtn">'+ic('file')+'Kaydet</button>' +
+      (!state.isAdmin ? '<button class="btn btn-primary full" id="saveAcBtn">'+ic('plus')+'Bilgileri Kaydet</button>' : '') +
     '</div>';
 }
 function wireAbroadConsultingSection(app, s){
-  document.getElementById('saveAcBtn').onclick = ()=>{
-    saveAbroadConsulting(s.id, {
-      field: document.getElementById('acField').value.trim() || null,
-      turkey_goals: readGoalRows(app, 'tr', 5).filter(g=>g.profession||g.university),
-      germany_goals: readGoalRows(app, 'de', 5).filter(g=>g.profession||g.university),
-      wants_appointment: document.getElementById('acAppointment').checked,
-      wants_german_application: document.getElementById('acGermanApp').checked,
-    });
+  if(state.isAdmin) return;
+  const saveBtn = document.getElementById('saveAcBtn');
+  if(saveBtn) saveBtn.onclick = ()=>{
+    const field = (document.getElementById('acField')||{}).value || '';
+    const turkey_goals = readGoalRows(app, 'tr', 5);
+    const germany_goals = readGoalRows(app, 'de', 5);
+    const wants_appointment = !!(document.getElementById('acAppointment')||{}).checked;
+    const wants_german_application = !!(document.getElementById('acGermanApp')||{}).checked;
+    saveAbroadConsulting(s.id, { field, turkey_goals, germany_goals, wants_appointment, wants_german_application });
   };
 }
 
 // ---- Sınıf Durum Değerlendirmesi ----
 function openNewClassEvalModal(){
+  if(state.isAdmin){ showToast('Yönetici modunda değerlendirme dönemi eklenemez (Salt Okunur).'); return; }
   const defaultCriteria = ['Derslerde başarılı','Derslerde zorlanıyor','Derslere düzenli geliyor','Sınav performansı düzenli','Rehberlik görüşmesi yapıldı'].join('\n');
   openModalHtml(
     '<h3>Yeni Değerlendirme Dönemi</h3>' +
@@ -2088,11 +2415,13 @@ function renderClassEvalList(app){
   ).join('');
   app.innerHTML =
     '<button class="backlink" id="backCEL">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
+    (state.isAdmin ? '<div style="background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius-sm);padding:8px 14px;margin-bottom:12px;color:#8a4d05;font-size:12.5px;font-weight:700;">👁️ Yönetici İzleme Modu (Salt Okunur)</div>' : '') +
     '<div class="pagehead"><h2>Sınıf Durum Değerlendirmesi</h2></div>' +
-    '<button class="btn btn-primary full" id="addCEBtn" style="margin-bottom:16px;">'+ic('plus')+'Yeni Değerlendirme Dönemi</button>' +
+    (!state.isAdmin ? '<button class="btn btn-primary full" id="addCEBtn" style="margin-bottom:16px;">'+ic('plus')+'Yeni Değerlendirme Dönemi</button>' : '') +
     (rows || '<div class="empty">Henüz değerlendirme dönemi eklenmedi.</div>');
   document.getElementById('backCEL').onclick = backToRoster;
-  document.getElementById('addCEBtn').onclick = openNewClassEvalModal;
+  const addCEBtn = document.getElementById('addCEBtn');
+  if(addCEBtn) addCEBtn.onclick = openNewClassEvalModal;
   app.querySelectorAll('[data-pickeval]').forEach(el=>{
     el.onclick = ()=>{ state.activeEvalId = el.dataset.pickeval; state.view='classEvalMatrix'; render(); };
   });
@@ -2107,7 +2436,7 @@ function renderClassEvalMatrix(app){
     const marks = (state.cls.classEvaluationMarks[ev.id]||{})[s.id] || {};
     const cells = criteria.map((c,ci)=>{
       const checked = marks[ci] && marks[ci].checked;
-      return '<td style="text-align:center;padding:4px;"><button class="toggle" data-markcell="'+s.id+':'+ci+'" style="width:34px;height:20px;'+(checked?'background:var(--teal);':'')+'"><span class="knob" style="width:14px;height:14px;top:3px;left:'+(checked?'17px':'3px')+';"></span></button></td>';
+      return '<td style="text-align:center;padding:4px;"><button class="toggle" data-markcell="'+s.id+':'+ci+'" '+(state.isAdmin?'disabled style="cursor:not-allowed;width:34px;height:20px;'+(checked?'background:var(--teal);':'')+'"':'style="width:34px;height:20px;'+(checked?'background:var(--teal);':'')+'"')+'><span class="knob" style="width:14px;height:14px;top:3px;left:'+(checked?'17px':'3px')+';"></span></button></td>';
     }).join('');
     const noteVal = (marks[-1] && marks[-1].note) || '';
     return '<tr><td style="padding:6px 8px;font-size:11px;color:var(--ink-faint);white-space:nowrap;">'+escapeHtml(s.no||'')+'</td>' +
@@ -2118,26 +2447,36 @@ function renderClassEvalMatrix(app){
   }).join('');
   app.innerHTML =
     '<button class="backlink" id="backCEM">'+ic('chevron')+' Değerlendirme listesine dön</button>' +
+    (state.isAdmin ? '<div style="background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius-sm);padding:8px 14px;margin-bottom:12px;color:#8a4d05;font-size:12.5px;font-weight:700;">👁️ Yönetici İzleme Modu (Salt Okunur)</div>' : '') +
     '<div class="pagehead"><h2>'+escapeHtml(ev.period)+'</h2></div>' +
-    '<div class="card" style="margin-bottom:14px;">' +
-      '<button class="btn btn-danger full" id="delCEBtn">Bu Dönemi Sil</button>' +
-    '</div>' +
+    (!state.isAdmin ? (
+      '<div class="card" style="margin-bottom:14px;">' +
+        '<button class="btn btn-danger full" id="delCEBtn">Bu Dönemi Sil</button>' +
+      '</div>'
+    ) : '') +
     '<div class="card" style="overflow-x:auto;">' +
       '<table style="border-collapse:collapse;width:100%;"><thead><tr><th></th><th></th>'+headerCells+'<th></th></tr></thead><tbody>'+(rows||'')+'</tbody></table>' +
     '</div>' +
-    '<p style="font-size:12px;color:var(--ink-faint);margin-top:14px;">Dosya ikonuna basarak her öğrenci için özel not ekleyebilirsin.</p>';
+    '<p style="font-size:12px;color:var(--ink-faint);margin-top:14px;">Dosya ikonuna basarak her öğrenci için özel not '+(state.isAdmin?'görüntüleyebilirsin':'ekleyebilirsin')+'.</p>';
   document.getElementById('backCEM').onclick = ()=>{ state.view='classEvalList'; render(); };
-  document.getElementById('delCEBtn').onclick = ()=> deleteClassEvaluation(ev.id);
-  app.querySelectorAll('[data-markcell]').forEach(btn=>{
-    btn.onclick = ()=>{
-      const [sid, ci] = btn.dataset.markcell.split(':');
-      toggleEvaluationMark(ev.id, sid, parseInt(ci));
-    };
-  });
+  const delCEBtn = document.getElementById('delCEBtn');
+  if(delCEBtn) delCEBtn.onclick = ()=> deleteClassEvaluation(ev.id);
+  if(!state.isAdmin){
+    app.querySelectorAll('[data-markcell]').forEach(btn=>{
+      btn.onclick = ()=>{
+        const [sid, ci] = btn.dataset.markcell.split(':');
+        toggleEvaluationMark(ev.id, sid, parseInt(ci));
+      };
+    });
+  }
   app.querySelectorAll('[data-notebtn]').forEach(btn=>{
     btn.onclick = ()=>{
       const sid = btn.dataset.notebtn;
       const cur = ((state.cls.classEvaluationMarks[ev.id]||{})[sid]||{})[-1];
+      if(state.isAdmin){
+        alert('Özel Not:\n\n' + ((cur&&cur.note) ? cur.note : 'Henüz not eklenmemiş.'));
+        return;
+      }
       const val = prompt('Özel not:', (cur&&cur.note)||'');
       if(val!==null) setEvaluationNote(ev.id, sid, val);
     };
@@ -2148,26 +2487,30 @@ function renderHomeworksEdit(app){
   const rows = state.cls.homeworks.map(h=>
     '<div class="listedit-row">' +
       '<div class="slot">#'+h.slot_no+'</div>' +
-      '<input type="text" placeholder="Konu" value="'+escapeHtml(h.topic||'')+'" data-slot="'+h.slot_no+'" data-f="topic">' +
-      '<div class="datewrap"><label>Verildi</label><input type="date" value="'+(h.hw_date||'')+'" data-slot="'+h.slot_no+'" data-f="hw_date"></div>' +
-      '<div class="datewrap"><label>Kontrol</label><input type="date" value="'+(h.check_date||'')+'" data-slot="'+h.slot_no+'" data-f="check_date"></div>' +
-      '<button class="iconbtn" data-del="'+h.slot_no+'">'+ic('trash')+'</button>' +
+      '<input type="text" placeholder="Konu" value="'+escapeHtml(h.topic||'')+'" data-slot="'+h.slot_no+'" data-f="topic" '+(state.isAdmin?'disabled readonly style="background:var(--surface-2);cursor:not-allowed;"':'')+'>' +
+      '<div class="datewrap"><label>Verildi</label><input type="date" value="'+(h.hw_date||'')+'" data-slot="'+h.slot_no+'" data-f="hw_date" '+(state.isAdmin?'disabled readonly style="background:var(--surface-2);cursor:not-allowed;"':'')+'></div>' +
+      '<div class="datewrap"><label>Kontrol</label><input type="date" value="'+(h.check_date||'')+'" data-slot="'+h.slot_no+'" data-f="check_date" '+(state.isAdmin?'disabled readonly style="background:var(--surface-2);cursor:not-allowed;"':'')+'></div>' +
+      (!state.isAdmin ? '<button class="iconbtn" data-del="'+h.slot_no+'">'+ic('trash')+'</button>' : '') +
     '</div>'
   ).join('');
   app.innerHTML =
     '<button class="backlink" id="back1">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
+    (state.isAdmin ? '<div style="background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius-sm);padding:8px 14px;margin-bottom:12px;color:#8a4d05;font-size:12.5px;font-weight:700;">👁️ Yönetici İzleme Modu (Salt Okunur)</div>' : '') +
     '<div class="pagehead"><h2>Ödevleri Düzenle</h2></div>' +
     '<div class="card">'+(rows||'<div class="empty">Henüz ödev yok.</div>')+'</div>' +
-    '<button class="btn btn-soft full" id="addHwBtn">'+ic('plus')+'Ödev Ekle</button>' +
+    (!state.isAdmin ? '<button class="btn btn-soft full" id="addHwBtn">'+ic('plus')+'Ödev Ekle</button>' : '') +
     '<p style="font-size:12px;color:var(--ink-faint);margin-top:14px;">Tamamlanma yüzdesi "Kontrol Tarihi" geldiğinde hesaba katılır.</p>';
   document.getElementById('back1').onclick = backToRoster;
-  document.getElementById('addHwBtn').onclick = addHomework;
-  app.querySelectorAll('input[data-f]').forEach(inp=>{
-    inp.onblur = ()=> updateHomework(parseInt(inp.dataset.slot), inp.dataset.f, inp.value||null);
-  });
-  app.querySelectorAll('[data-del]').forEach(btn=>{
-    btn.onclick = ()=>{ if(confirm('Bu ödev silinsin mi?')) deleteHomework(parseInt(btn.dataset.del)); };
-  });
+  const addHwBtn = document.getElementById('addHwBtn');
+  if(addHwBtn) addHwBtn.onclick = addHomework;
+  if(!state.isAdmin){
+    app.querySelectorAll('input[data-f]').forEach(inp=>{
+      inp.onblur = ()=> updateHomework(parseInt(inp.dataset.slot), inp.dataset.f, inp.value||null);
+    });
+    app.querySelectorAll('[data-del]').forEach(btn=>{
+      btn.onclick = ()=>{ if(confirm('Bu ödev silinsin mi?')) deleteHomework(parseInt(btn.dataset.del)); };
+    });
+  }
 }
 function renderHwPicker(app){
   const today = todayStr();
@@ -2180,6 +2523,7 @@ function renderHwPicker(app){
   }).join('');
   app.innerHTML =
     '<button class="backlink" id="back2">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
+    (state.isAdmin ? '<div style="background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius-sm);padding:8px 14px;margin-bottom:12px;color:#8a4d05;font-size:12.5px;font-weight:700;">👁️ Yönetici İzleme Modu (Salt Okunur)</div>' : '') +
     '<div class="pagehead"><h2>Ödevleri Kontrol Et</h2></div>' +
     (rows || '<div class="empty">Henüz ödev tanımlanmadı.</div>');
   document.getElementById('back2').onclick = backToRoster;
@@ -2194,57 +2538,65 @@ function renderQuickHw(app){
   const rows = sortedStudents().map(s=>{
     const done = !!(state.cls.hwStatus[s.id]||{})[slotNo];
     return '<div class="card" style="display:flex;align-items:center;gap:10px;">' +
-      '<div class="no" style="width:22px;font-size:11.5px;color:var(--ink-faint);font-weight:700;">'+escapeHtml(s.no||'')+'</div>' +
+      '<div class="no" style="min-width:36px;padding:0 4px;font-size:11.5px;color:var(--ink-faint);font-weight:700;text-align:center;flex-shrink:0;">'+escapeHtml(s.no||'—')+'</div>' +
       '<div class="name" style="flex:1;font-size:14.5px;font-weight:700;">'+escapeHtml(s.name)+'</div>' +
-      '<button class="toggle '+(done?'on':'')+'" data-id="'+s.id+'"><span class="knob"></span></button>' +
+      '<button class="toggle '+(done?'on':'')+'" data-id="'+s.id+'" '+(state.isAdmin?'disabled style="cursor:not-allowed;"':'')+'><span class="knob"></span></button>' +
     '</div>';
   }).join('');
   app.innerHTML =
     '<button class="backlink" id="back3">'+ic('chevron')+' Ödev listesine dön</button>' +
+    (state.isAdmin ? '<div style="background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius-sm);padding:8px 14px;margin-bottom:12px;color:#8a4d05;font-size:12.5px;font-weight:700;">👁️ Yönetici İzleme Modu (Salt Okunur)</div>' : '') +
     '<div class="infobar"><div class="item"><div class="v" style="font-size:15px;">'+escapeHtml(hw.topic||('Ödev #'+hw.slot_no))+'</div><div class="k">Kontrol: '+(hw.check_date?fmtDate(hw.check_date):'belirtilmemiş')+'</div></div></div>' +
     '<div class="section-title"><span>Ödevi Yapanları İşaretle</span><span class="line"></span></div>' +
     (rows || '<div class="empty">Öğrenci yok.</div>') +
     '<div class="section-title"><span>Notlar</span><span class="line"></span></div>' +
-    '<textarea class="note" id="hwNoteBox" placeholder="Bu ödevle ilgili genel not...">'+escapeHtml(hw.note||'')+'</textarea>';
+    '<textarea class="note" id="hwNoteBox" placeholder="Bu ödevle ilgili genel not..." '+(state.isAdmin?'readonly style="background:var(--surface-2);cursor:not-allowed;"':'')+'>'+escapeHtml(hw.note||'')+'</textarea>';
   document.getElementById('back3').onclick = ()=>{ state.view = state.checkFrom||'hw_picker'; render(); };
-  document.getElementById('hwNoteBox').onblur = (e)=> updateHomework(slotNo, 'note', e.target.value);
-  app.querySelectorAll('.toggle').forEach(btn=>{
-    btn.onclick = async ()=>{ await toggleHw(btn.dataset.id, slotNo); render(); };
-  });
+  if(!state.isAdmin){
+    document.getElementById('hwNoteBox').onblur = (e)=> updateHomework(slotNo, 'note', e.target.value);
+    app.querySelectorAll('.toggle').forEach(btn=>{
+      btn.onclick = async ()=>{ await toggleHw(btn.dataset.id, slotNo); render(); };
+    });
+  }
 }
 
 function renderPerfTasksList(app){
   const rows = state.cls.perfTasks.map(t=>{
     const avg = perfTaskAvg(t.label);
     return '<div class="listedit-row">' +
-      '<input type="text" value="'+escapeHtml(t.label)+'" data-old="'+escapeHtml(t.label)+'">' +
+      '<input type="text" value="'+escapeHtml(t.label)+'" data-old="'+escapeHtml(t.label)+'" '+(state.isAdmin?'disabled readonly style="background:var(--surface-2);cursor:not-allowed;"':'')+'>' +
       '<div style="font-size:11.5px;color:var(--ink-soft);font-weight:700;padding-top:9px;white-space:nowrap;">Ort: '+(avg!=null?avg:'-')+'</div>' +
-      '<button class="btn btn-soft btn-sm" data-enter="'+escapeHtml(t.label)+'">Not Gir</button>' +
-      '<button class="iconbtn" data-del="'+escapeHtml(t.label)+'">'+ic('trash')+'</button>' +
+      '<button class="btn btn-soft btn-sm" data-enter="'+escapeHtml(t.label)+'">'+(state.isAdmin?'Puanları İncele':'Not Gir')+'</button>' +
+      (!state.isAdmin ? '<button class="iconbtn" data-del="'+escapeHtml(t.label)+'">'+ic('trash')+'</button>' : '') +
     '</div>';
   }).join('');
   app.innerHTML =
     '<button class="backlink" id="back4">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
+    (state.isAdmin ? '<div style="background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius-sm);padding:8px 14px;margin-bottom:12px;color:#8a4d05;font-size:12.5px;font-weight:700;">👁️ Yönetici İzleme Modu (Salt Okunur)</div>' : '') +
     '<div class="pagehead"><h2>Performans Ödevlerini Düzenle</h2></div>' +
     '<div class="card">'+(rows||'<div class="empty">Henüz performans ödevi yok.</div>')+'</div>' +
-    '<button class="btn btn-soft full" id="addPerfBtn">'+ic('plus')+'Yeni Performans Ödevi Ekle</button>';
+    (!state.isAdmin ? '<button class="btn btn-soft full" id="addPerfBtn">'+ic('plus')+'Yeni Performans Ödevi Ekle</button>' : '');
   document.getElementById('back4').onclick = backToRoster;
-  document.getElementById('addPerfBtn').onclick = ()=>{
+  const addPBtn = document.getElementById('addPerfBtn');
+  if(addPBtn) addPBtn.onclick = ()=>{
     const label = prompt('Yeni performans ödevinin adı:');
     if(label && label.trim()) addPerfTask(label.trim());
   };
-  app.querySelectorAll('input[data-old]').forEach(inp=>{
-    inp.onblur = ()=>{ if(inp.value.trim() && inp.value.trim()!==inp.dataset.old) renamePerfTask(inp.dataset.old, inp.value.trim()); };
-  });
+  if(!state.isAdmin){
+    app.querySelectorAll('input[data-old]').forEach(inp=>{
+      inp.onblur = ()=>{ if(inp.value.trim() && inp.value.trim()!==inp.dataset.old) renamePerfTask(inp.dataset.old, inp.value.trim()); };
+    });
+    app.querySelectorAll('[data-del]').forEach(btn=>{
+      btn.onclick = ()=>{ if(confirm('"'+btn.dataset.del+'" silinsin mi? Tüm ölçüt ve puanlar da silinir.')) deletePerfTask(btn.dataset.del); };
+    });
+  }
   app.querySelectorAll('[data-enter]').forEach(btn=>{
     btn.onclick = ()=>{ state.rubricLevel = btn.dataset.enter; state.view='rubric'; render(); };
-  });
-  app.querySelectorAll('[data-del]').forEach(btn=>{
-    btn.onclick = ()=>{ if(confirm('"'+btn.dataset.del+'" silinsin mi? Tüm ölçüt ve puanlar da silinir.')) deletePerfTask(btn.dataset.del); };
   });
 }
 
 function renderRubric(app){
+  if(state.isAdmin) state.rubricEdit = false;
   const level = state.rubricLevel;
   const crit = state.cls.rubrics[level] || [];
   const sid = state.studentId;
@@ -2252,11 +2604,12 @@ function renderRubric(app){
 
   const topControls =
     '<button class="backlink" id="back5">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
+    (state.isAdmin ? '<div style="background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius-sm);padding:8px 14px;margin-bottom:12px;color:#8a4d05;font-size:12.5px;font-weight:700;">👁️ Yönetici İzleme Modu (Salt Okunur)</div>' : '') +
     '<div class="pagehead"><h2>Performans Ödevi</h2><div class="sub">'+escapeHtml(level||'')+'</div></div>' +
     '<div class="levelpicker">' +
       state.cls.perfTasks.map(t=>'<button class="'+(t.label===level?'active':'')+'" data-lvl="'+escapeHtml(t.label)+'">'+escapeHtml(t.label)+'</button>').join('') +
-      '<button class="btn btn-outline btn-sm" id="editToggle">'+(state.rubricEdit?'Bitti':'Ölçütleri Düzenle')+'</button>' +
-      '<button class="btn btn-outline btn-sm" id="manageTasksBtn">'+ic('book')+'Ödevleri Yönet</button>' +
+      (!state.isAdmin ? '<button class="btn btn-outline btn-sm" id="editToggle">'+(state.rubricEdit?'Bitti':'Ölçütleri Düzenle')+'</button>' : '') +
+      (!state.isAdmin ? '<button class="btn btn-outline btn-sm" id="manageTasksBtn">'+ic('book')+'Ödevleri Yönet</button>' : '') +
     '</div>';
 
   let body = '';
@@ -2298,7 +2651,7 @@ function renderRubric(app){
     const critHtml = crit.map((c,ci)=>{
       const curScore = sid ? ((state.cls.rubricScores[sid]||{})[level]||{})[ci] : null;
       const levels = (c.levels||[]).map(lv=>
-        '<div class="levelcard '+(curScore===lv.score?'sel':'')+'" data-ci="'+ci+'" data-score="'+lv.score+'">' +
+        '<div class="levelcard '+(curScore===lv.score?'sel':'')+'" data-ci="'+ci+'" data-score="'+lv.score+'" '+(state.isAdmin?'style="cursor:default;"':'')+'>' +
           '<div class="lh"><span>'+escapeHtml(lv.label)+'</span><span class="score">'+lv.score+' puan</span></div>' +
           '<div class="desc">'+escapeHtml(lv.desc)+'</div>' +
         '</div>'
@@ -2321,13 +2674,15 @@ function renderRubric(app){
   app.innerHTML = topControls + body;
 
   document.getElementById('back5').onclick = backToRoster;
-  document.getElementById('editToggle').onclick = ()=>{ state.rubricEdit = !state.rubricEdit; render(); };
-  document.getElementById('manageTasksBtn').onclick = ()=>{ state.view='perfTasks'; render(); };
+  const editToggleBtn = document.getElementById('editToggle');
+  if(editToggleBtn) editToggleBtn.onclick = ()=>{ state.rubricEdit = !state.rubricEdit; render(); };
+  const manageTasksBtn = document.getElementById('manageTasksBtn');
+  if(manageTasksBtn) manageTasksBtn.onclick = ()=>{ state.view='perfTasks'; render(); };
   app.querySelectorAll('.levelpicker button[data-lvl]').forEach(b=>{
     b.onclick = ()=>{ state.rubricLevel = b.dataset.lvl; render(); };
   });
 
-  if(state.rubricEdit){
+  if(state.rubricEdit && !state.isAdmin){
     document.getElementById('addCritBtn').onclick = ()=> addCriterion(level);
     app.querySelectorAll('[data-delcrit]').forEach(b=> b.onclick = ()=> deleteCriterion(level, parseInt(b.dataset.delcrit)));
     app.querySelectorAll('[data-addlvl]').forEach(b=> b.onclick = ()=> addLevel(level, parseInt(b.dataset.addlvl)));
@@ -2357,13 +2712,15 @@ function renderRubric(app){
         if(picker) picker.scrollIntoView({behavior:'smooth', block:'center'});
       };
     });
-    app.querySelectorAll('.levelcard[data-ci]').forEach(el=>{
-      el.onclick = ()=>{
-        const ci = parseInt(el.dataset.ci), score = parseInt(el.dataset.score);
-        const cur = ((state.cls.rubricScores[sid]||{})[level]||{})[ci];
-        setRubricScore(sid, level, ci, cur===score?null:score);
-      };
-    });
+    if(!state.isAdmin){
+      app.querySelectorAll('.levelcard[data-ci]').forEach(el=>{
+        el.onclick = ()=>{
+          const ci = parseInt(el.dataset.ci), score = parseInt(el.dataset.score);
+          const cur = ((state.cls.rubricScores[sid]||{})[level]||{})[ci];
+          setRubricScore(sid, level, ci, cur===score?null:score);
+        };
+      });
+    }
   }
 }
 
@@ -2372,23 +2729,26 @@ function renderQuizzesEdit(app){
   const rows = state.cls.quizzes.map(q=>
     '<div class="listedit-row">' +
       '<div class="slot">#'+q.slot_no+'</div>' +
-      '<input type="text" value="'+escapeHtml(q.label||'')+'" data-slot="'+q.slot_no+'">' +
-      '<button class="iconbtn" data-del="'+q.slot_no+'">'+ic('trash')+'</button>' +
+      '<input type="text" value="'+escapeHtml(q.label||'')+'" data-slot="'+q.slot_no+'" '+(state.isAdmin?'readonly style="background:var(--surface-2);cursor:not-allowed;"':'')+'>' +
+      (!state.isAdmin ? '<button class="iconbtn" data-del="'+q.slot_no+'">'+ic('trash')+'</button>' : '') +
     '</div>'
   ).join('');
   app.innerHTML =
     '<button class="backlink" id="back6">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
+    (state.isAdmin ? '<div class="admin-badge-banner" style="background:var(--amber-soft);border:1px solid var(--amber);color:var(--amber);padding:10px 14px;border-radius:10px;font-size:12.5px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;">Yönetici Modu (Salt Okunur) — Sınav listesi sadece incelenebilir.</div>' : '') +
     '<div class="pagehead"><h2>'+exWordPl+' Düzenle</h2></div>' +
     '<div class="card">'+(rows||'<div class="empty">Henüz '+exWord+' yok.</div>')+'</div>' +
-    '<button class="btn btn-soft full" id="addQuizBtn">'+ic('plus')+exWord+' Ekle</button>';
+    (!state.isAdmin ? '<button class="btn btn-soft full" id="addQuizBtn">'+ic('plus')+exWord+' Ekle</button>' : '');
   document.getElementById('back6').onclick = backToRoster;
-  document.getElementById('addQuizBtn').onclick = addQuiz;
-  app.querySelectorAll('input[data-slot]').forEach(inp=>{
-    inp.onblur = ()=> renameQuiz(parseInt(inp.dataset.slot), inp.value);
-  });
-  app.querySelectorAll('[data-del]').forEach(btn=>{
-    btn.onclick = ()=> deleteQuiz(parseInt(btn.dataset.del));
-  });
+  if(!state.isAdmin){
+    document.getElementById('addQuizBtn').onclick = addQuiz;
+    app.querySelectorAll('input[data-slot]').forEach(inp=>{
+      inp.onblur = ()=> renameQuiz(parseInt(inp.dataset.slot), inp.value);
+    });
+    app.querySelectorAll('[data-del]').forEach(btn=>{
+      btn.onclick = ()=> deleteQuiz(parseInt(btn.dataset.del));
+    });
+  }
 }
 function renderQuizPicker(app){
   const exWord = examWord();
@@ -2401,23 +2761,32 @@ function renderQuizPicker(app){
   }).join('');
   app.innerHTML =
     '<button class="backlink" id="back7">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
-    '<div class="pagehead"><h2>'+exWord+' Notu Gir</h2></div>' +
-    '<div class="card" style="background:var(--primary-soft);border:none;">' +
-      '<div style="font-weight:800;font-size:14px;color:var(--primary-deep);margin-bottom:4px;">Branş Bazlı Rapor Yükle</div>' +
-      '<div style="font-size:12.5px;color:var(--primary-deep);opacity:.85;margin-bottom:12px;">Okuldan aldığın "Branş Bazlı Sınavlar Raporu" Excel dosyasını doğrudan yükle. İçindeki Matematik sınavlarının hepsi otomatik olarak ayrı '+exWord+' olarak eklenir, isimler otomatik atanır, öğrenci doğru/yanlış/boşları otomatik girilir.</div>' +
-      '<button class="btn btn-primary full" id="addKdsRaporBtn">'+ic('upload')+'Rapor Excelini Yükle</button>' +
-      '<input type="file" id="kdsRaporFile" accept=".xlsx,.xls,.csv" style="display:none;">' +
-    '</div>' +
-    '<div class="section-title"><span>Tek '+exWord+' Ekle (elle)</span><span class="line"></span></div>' +
-    '<button class="btn btn-soft full" id="addQuizExcelBtn" style="margin-bottom:16px;">'+ic('upload')+'Excelden Tek '+exWord+' Ekle</button>' +
-    '<input type="file" id="addQuizExcelFile" accept=".xlsx,.xls,.csv" style="display:none;">' +
+    (state.isAdmin ? '<div class="admin-badge-banner" style="background:var(--amber-soft);border:1px solid var(--amber);color:var(--amber);padding:10px 14px;border-radius:10px;font-size:12.5px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;">Yönetici Modu (Salt Okunur) — Sınavlar ve notlar sadece incelenebilir.</div>' : '') +
+    '<div class="pagehead"><h2>'+exWord+' Notu '+(state.isAdmin?'İncele':'Gir')+'</h2></div>' +
+    (!state.isAdmin ? (
+      '<div class="card" style="background:var(--primary-soft);border:none;">' +
+        '<div style="font-weight:800;font-size:14px;color:var(--primary-deep);margin-bottom:4px;">Branş Bazlı Rapor Yükle</div>' +
+        '<div style="font-size:12.5px;color:var(--primary-deep);opacity:.85;margin-bottom:12px;">Okuldan aldığın "Branş Bazlı Sınavlar Raporu" Excel dosyasını doğrudan yükle. İçindeki Matematik sınavlarının hepsi otomatik olarak ayrı '+exWord+' olarak eklenir, isimler otomatik atanır, öğrenci doğru/yanlış/boşları otomatik girilir.</div>' +
+        '<button class="btn btn-primary full" id="addKdsRaporBtn">'+ic('upload')+'Rapor Excelini Yükle</button>' +
+        '<input type="file" id="kdsRaporFile" accept=".xlsx,.xls,.csv" style="display:none;">' +
+      '</div>' +
+      '<div class="section-title"><span>Tek '+exWord+' Ekle (elle)</span><span class="line"></span></div>' +
+      '<button class="btn btn-soft full" id="addQuizExcelBtn" style="margin-bottom:16px;">'+ic('upload')+'Excelden Tek '+exWord+' Ekle</button>' +
+      '<input type="file" id="addQuizExcelFile" accept=".xlsx,.xls,.csv" style="display:none;">'
+    ) : '') +
     '<div class="section-title"><span>Var Olan '+examWordPlural()+'</span><span class="line"></span></div>' +
-    (rows || '<div class="empty">Henüz '+exWord+' tanımlanmadı, yukarıdan ekleyebilirsin.</div>');
+    (rows || '<div class="empty">Henüz '+exWord+' tanımlanmadı'+(state.isAdmin?'.':', yukarıdan ekleyebilirsin.')+'</div>');
   document.getElementById('back7').onclick = backToRoster;
-  document.getElementById('addKdsRaporBtn').onclick = ()=> document.getElementById('kdsRaporFile').click();
-  document.getElementById('kdsRaporFile').onchange = (e)=> importKdsRaporuFromExcel(e.target.files[0]);
-  document.getElementById('addQuizExcelBtn').onclick = ()=> document.getElementById('addQuizExcelFile').click();
-  document.getElementById('addQuizExcelFile').onchange = (e)=> addQuizFromExcel(e.target.files[0]);
+  if(!state.isAdmin){
+    const rapBtn = document.getElementById('addKdsRaporBtn');
+    if(rapBtn) rapBtn.onclick = ()=> document.getElementById('kdsRaporFile').click();
+    const rapFile = document.getElementById('kdsRaporFile');
+    if(rapFile) rapFile.onchange = (e)=> importKdsRaporuFromExcel(e.target.files[0]);
+    const qzBtn = document.getElementById('addQuizExcelBtn');
+    if(qzBtn) qzBtn.onclick = ()=> document.getElementById('addQuizExcelFile').click();
+    const qzFile = document.getElementById('addQuizExcelFile');
+    if(qzFile) qzFile.onchange = (e)=> addQuizFromExcel(e.target.files[0]);
+  }
   app.querySelectorAll('[data-pick]').forEach(el=>{
     el.onclick = ()=>{ state.activeSlot=parseInt(el.dataset.pick); state.checkFrom='quiz_picker'; state.view='quick_quiz'; render(); };
   });
@@ -2429,19 +2798,22 @@ function renderQuickQuiz(app){
   const rows = sortedStudents().map(s=>{
     const v = (state.cls.quizScores[s.id]||{})[slotNo] || {};
     return '<div class="scorerow">' +
-      '<div class="no">'+escapeHtml(s.no||'')+'</div>' +
+      '<div class="no">'+escapeHtml(s.no||'—')+'</div>' +
       '<div class="name">'+escapeHtml(s.name)+'</div>' +
-      '<input type="text" inputmode="numeric" placeholder="D" title="Doğru" value="'+(v.dogru!=null?v.dogru:'')+'" data-id="'+s.id+'" data-f="dogru" style="width:50px;">' +
-      '<input type="text" inputmode="numeric" placeholder="Y" title="Yanlış" value="'+(v.yanlis!=null?v.yanlis:'')+'" data-id="'+s.id+'" data-f="yanlis" style="width:50px;">' +
-      '<input type="text" inputmode="numeric" placeholder="B" title="Boş" value="'+(v.bos!=null?v.bos:'')+'" data-id="'+s.id+'" data-f="bos" style="width:50px;">' +
+      '<input type="text" inputmode="numeric" placeholder="D" title="Doğru" value="'+(v.dogru!=null?v.dogru:'')+'" data-id="'+s.id+'" data-f="dogru" '+(state.isAdmin?'readonly style="width:50px;background:var(--surface-2);cursor:not-allowed;"':'style="width:50px;"')+'>' +
+      '<input type="text" inputmode="numeric" placeholder="Y" title="Yanlış" value="'+(v.yanlis!=null?v.yanlis:'')+'" data-id="'+s.id+'" data-f="yanlis" '+(state.isAdmin?'readonly style="width:50px;background:var(--surface-2);cursor:not-allowed;"':'style="width:50px;"')+'>' +
+      '<input type="text" inputmode="numeric" placeholder="B" title="Boş" value="'+(v.bos!=null?v.bos:'')+'" data-id="'+s.id+'" data-f="bos" '+(state.isAdmin?'readonly style="width:50px;background:var(--surface-2);cursor:not-allowed;"':'style="width:50px;"')+'>' +
     '</div>';
   }).join('');
   const avg = quizSlotAvgDYB(slotNo);
   app.innerHTML =
     '<button class="backlink" id="back8">'+ic('chevron')+' Not girme listesine dön</button>' +
+    (state.isAdmin ? '<div class="admin-badge-banner" style="background:var(--amber-soft);border:1px solid var(--amber);color:var(--amber);padding:10px 14px;border-radius:10px;font-size:12.5px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;">Yönetici Modu (Salt Okunur) — Notlar sadece incelenebilir.</div>' : '') +
     '<div class="pagehead"><h2>'+escapeHtml(q.label)+'</h2></div>' +
-    '<button class="btn btn-outline full" id="excelQuizBtn" style="margin-bottom:14px;">'+ic('upload')+'Excelden Yükle (No, Doğru, Yanlış, Boş)</button>' +
-    '<input type="file" id="excelQuizFile" accept=".xlsx,.xls,.csv" style="display:none;">' +
+    (!state.isAdmin ? (
+      '<button class="btn btn-outline full" id="excelQuizBtn" style="margin-bottom:14px;">'+ic('upload')+'Excelden Yükle (No, Doğru, Yanlış, Boş)</button>' +
+      '<input type="file" id="excelQuizFile" accept=".xlsx,.xls,.csv" style="display:none;">'
+    ) : '') +
     '<div class="card" style="padding:8px 4px;">' +
       '<div class="scorerow" style="font-size:10.5px;color:var(--ink-soft);font-weight:800;text-transform:uppercase;">' +
         '<div class="no"></div><div class="name"></div><div style="width:50px;text-align:center;">D</div><div style="width:50px;text-align:center;">Y</div><div style="width:50px;text-align:center;">B</div>' +
@@ -2454,11 +2826,15 @@ function renderQuickQuiz(app){
       '<div class="item"><div class="v">'+(avg&&avg.bos!=null?avg.bos:'-')+'</div><div class="k">Ort. Boş</div></div>' +
     '</div>';
   document.getElementById('back8').onclick = ()=>{ state.view = state.checkFrom||'quiz_picker'; render(); };
-  document.getElementById('excelQuizBtn').onclick = ()=> document.getElementById('excelQuizFile').click();
-  document.getElementById('excelQuizFile').onchange = (e)=> importQuizScoresFromExcel(e.target.files[0], slotNo);
-  app.querySelectorAll('input[data-id]').forEach(inp=>{
-    inp.onblur = ()=> updateQuizDYB(inp.dataset.id, slotNo, inp.dataset.f, inp.value);
-  });
+  if(!state.isAdmin){
+    const eqBtn = document.getElementById('excelQuizBtn');
+    if(eqBtn) eqBtn.onclick = ()=> document.getElementById('excelQuizFile').click();
+    const eqFile = document.getElementById('excelQuizFile');
+    if(eqFile) eqFile.onchange = (e)=> importQuizScoresFromExcel(e.target.files[0], slotNo);
+    app.querySelectorAll('input[data-id]').forEach(inp=>{
+      inp.onblur = ()=> updateQuizDYB(inp.dataset.id, slotNo, inp.dataset.f, inp.value);
+    });
+  }
 }
 
 function renderDenemeList(app, examType){
@@ -2470,35 +2846,47 @@ function renderDenemeList(app, examType){
         '<div style="font-weight:700;font-size:14px;">'+escapeHtml(e.label)+'</div>' +
         '<div style="font-size:11.5px;color:var(--ink-soft);">'+ (e.subjects||[]).map(s=>escapeHtml(s)).join(', ') +'</div>' +
       '</div>' +
-      '<button class="btn btn-soft btn-sm" data-enter="'+e.id+'">Notları Gör</button>' +
-      '<button class="iconbtn" data-del="'+e.id+'">'+ic('trash')+'</button>' +
+      '<button class="btn btn-soft btn-sm" data-enter="'+e.id+'">'+(state.isAdmin ? 'Notları İncele' : 'Notları Gör')+'</button>' +
+      (!state.isAdmin ? '<button class="iconbtn" data-del="'+e.id+'">'+ic('trash')+'</button>' : '') +
     '</div>';
   }).join('');
   app.innerHTML =
     '<button class="backlink" id="backDL">'+ic('chevron')+' '+escapeHtml(state.cls.name)+' paneline dön</button>' +
+    (state.isAdmin ? '<div class="admin-badge-banner" style="background:var(--amber-soft);border:1px solid var(--amber);color:var(--amber);padding:10px 14px;border-radius:10px;font-size:12.5px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;">Yönetici Modu (Salt Okunur) — Deneme sınavları ve notları sadece incelenebilir.</div>' : '') +
     '<div class="pagehead"><h2>'+escapeHtml(label)+' Denemeleri</h2></div>' +
-    '<div class="card" style="background:var(--primary-soft);border:none;">' +
-      '<div style="font-weight:800;font-size:14px;color:var(--primary-deep);margin-bottom:4px;">Sınav Sonuç Raporu (PDF) Yükle</div>' +
-      '<div style="font-size:12.5px;color:var(--primary-deep);opacity:.85;margin-bottom:12px;">Kurumdan gelen "Sıralı Liste" PDF raporunu doğrudan yükle. Sınıfındaki öğrenciler isimle otomatik bulunur, '+label+' dersleri ve doğru/yanlış/boş notları otomatik girilir. Aynı raporu TYT ve AYT sekmelerinde ayrı ayrı yükleyebilirsin.</div>' +
-      '<button class="btn btn-primary full" id="addDenemePdfBtn">'+ic('upload')+'PDF Raporu Yükle</button>' +
-      '<input type="file" id="denemePdfFile" accept=".pdf" style="display:none;">' +
-    '</div>' +
-    '<div class="section-title"><span>Var Olan Denemeler</span><span class="line"></span></div>' +
-    '<div class="card">'+(rows||'<div class="empty">Henüz '+label+' denemesi eklenmedi.</div>')+'</div>' +
-    '<div class="section-title"><span>Elle Ekle (Excel)</span><span class="line"></span></div>' +
-    '<button class="btn btn-soft full" id="addDenemeBtn">'+ic('upload')+'Excelden '+label+' Denemesi Ekle</button>' +
-    '<input type="file" id="denemeExcelFile" accept=".xlsx,.xls,.csv" style="display:none;">' +
-    '<p style="font-size:12px;color:var(--ink-faint);margin-top:14px;">Excel formatı: 1. sütun Öğrenci No, sonrasında her ders için 3 sütun (Doğru, Yanlış, Boş) yan yana. Başlık satırında ders adını yaz (örn. "Türkçe D", "Türkçe Y", "Türkçe B").</p>';
+    (!state.isAdmin ? (
+      '<div class="card" style="background:var(--primary-soft);border:none;">' +
+        '<div style="font-weight:800;font-size:14px;color:var(--primary-deep);margin-bottom:4px;">Sınav Sonuç Raporu (PDF) Yükle</div>' +
+        '<div style="font-size:12.5px;color:var(--primary-deep);opacity:.85;margin-bottom:12px;">Kurumdan gelen "Sıralı Liste" PDF raporunu doğrudan yükle. Sınıfındaki öğrenciler isimle otomatik bulunur, '+label+' dersleri ve doğru/yanlış/boş notları otomatik girilir. Aynı raporu TYT ve AYT sekmelerinde ayrı ayrı yükleyebilirsin.</div>' +
+        '<button class="btn btn-primary full" id="addDenemePdfBtn">'+ic('upload')+'PDF Raporu Yükle</button>' +
+        '<input type="file" id="denemePdfFile" accept=".pdf" style="display:none;">' +
+      '</div>' +
+      '<div class="section-title"><span>Var Olan Denemeler</span><span class="line"></span></div>' +
+      '<div class="card">'+(rows||'<div class="empty">Henüz '+label+' denemesi eklenmedi.</div>')+'</div>' +
+      '<div class="section-title"><span>Elle Ekle (Excel)</span><span class="line"></span></div>' +
+      '<button class="btn btn-soft full" id="addDenemeBtn">'+ic('upload')+'Excelden '+label+' Denemesi Ekle</button>' +
+      '<input type="file" id="denemeExcelFile" accept=".xlsx,.xls,.csv" style="display:none;">' +
+      '<p style="font-size:12px;color:var(--ink-faint);margin-top:14px;">Excel formatı: 1. sütun Öğrenci No, sonrasında her ders için 3 sütun (Doğru, Yanlış, Boş) yan yana. Başlık satırında ders adını yaz (örn. "Türkçe D", "Türkçe Y", "Türkçe B").</p>'
+    ) : (
+      '<div class="section-title"><span>Var Olan Denemeler</span><span class="line"></span></div>' +
+      '<div class="card">'+(rows||'<div class="empty">Henüz '+label+' denemesi eklenmedi.</div>')+'</div>'
+    ));
   document.getElementById('backDL').onclick = backToRoster;
-  document.getElementById('addDenemePdfBtn').onclick = ()=> document.getElementById('denemePdfFile').click();
-  document.getElementById('denemePdfFile').onchange = (e)=> importDenemeFromPdf(e.target.files[0], examType);
-  document.getElementById('addDenemeBtn').onclick = ()=> document.getElementById('denemeExcelFile').click();
-  document.getElementById('denemeExcelFile').onchange = (e)=> importDenemeFromExcel(e.target.files[0], examType);
+  if(!state.isAdmin){
+    const pdfBtn = document.getElementById('addDenemePdfBtn');
+    if(pdfBtn) pdfBtn.onclick = ()=> document.getElementById('denemePdfFile').click();
+    const pdfFile = document.getElementById('denemePdfFile');
+    if(pdfFile) pdfFile.onchange = (e)=> importDenemeFromPdf(e.target.files[0], examType);
+    const xlBtn = document.getElementById('addDenemeBtn');
+    if(xlBtn) xlBtn.onclick = ()=> document.getElementById('denemeExcelFile').click();
+    const xlFile = document.getElementById('denemeExcelFile');
+    if(xlFile) xlFile.onchange = (e)=> importDenemeFromExcel(e.target.files[0], examType);
+    app.querySelectorAll('[data-del]').forEach(btn=>{
+      btn.onclick = ()=>{ if(confirm('Bu deneme silinsin mi? Tüm ders notları da silinir.')) deleteDenemeExam(btn.dataset.del, examType); };
+    });
+  }
   app.querySelectorAll('[data-enter]').forEach(btn=>{
     btn.onclick = ()=>{ state.activeExamId = btn.dataset.enter; state.view='deneme_scores'; render(); };
-  });
-  app.querySelectorAll('[data-del]').forEach(btn=>{
-    btn.onclick = ()=>{ if(confirm('Bu deneme silinsin mi? Tüm ders notları da silinir.')) deleteDenemeExam(btn.dataset.del, examType); };
   });
 }
 function renderDenemeScores(app){
@@ -2514,29 +2902,34 @@ function renderDenemeScores(app){
     const rec = scores[s.id]||{};
     const cells = subjects.map(subj=>{
       const v = rec[subj]||{};
-      return '<td style="padding:2px;"><input type="text" inputmode="numeric" value="'+(v.dogru!=null?v.dogru:'')+'" data-id="'+s.id+'" data-subj="'+escapeHtml(subj)+'" data-f="dogru" style="width:34px;text-align:center;border:1px solid var(--line);border-radius:5px;padding:4px 2px;font-size:12px;"></td>' +
-        '<td style="padding:2px;"><input type="text" inputmode="numeric" value="'+(v.yanlis!=null?v.yanlis:'')+'" data-id="'+s.id+'" data-subj="'+escapeHtml(subj)+'" data-f="yanlis" style="width:34px;text-align:center;border:1px solid var(--line);border-radius:5px;padding:4px 2px;font-size:12px;"></td>' +
-        '<td style="padding:2px;"><input type="text" inputmode="numeric" value="'+(v.bos!=null?v.bos:'')+'" data-id="'+s.id+'" data-subj="'+escapeHtml(subj)+'" data-f="bos" style="width:34px;text-align:center;border:1px solid var(--line);border-radius:5px;padding:4px 2px;font-size:12px;"></td>';
+      return '<td style="padding:2px;"><input type="text" inputmode="numeric" value="'+(v.dogru!=null?v.dogru:'')+'" data-id="'+s.id+'" data-subj="'+escapeHtml(subj)+'" data-f="dogru" '+(state.isAdmin?'readonly disabled style="width:34px;text-align:center;border:1px solid var(--line);border-radius:5px;padding:4px 2px;font-size:12px;background:var(--surface-2);cursor:not-allowed;"':'style="width:34px;text-align:center;border:1px solid var(--line);border-radius:5px;padding:4px 2px;font-size:12px;"')+'></td>' +
+        '<td style="padding:2px;"><input type="text" inputmode="numeric" value="'+(v.yanlis!=null?v.yanlis:'')+'" data-id="'+s.id+'" data-subj="'+escapeHtml(subj)+'" data-f="yanlis" '+(state.isAdmin?'readonly disabled style="width:34px;text-align:center;border:1px solid var(--line);border-radius:5px;padding:4px 2px;font-size:12px;background:var(--surface-2);cursor:not-allowed;"':'style="width:34px;text-align:center;border:1px solid var(--line);border-radius:5px;padding:4px 2px;font-size:12px;"')+'></td>' +
+        '<td style="padding:2px;"><input type="text" inputmode="numeric" value="'+(v.bos!=null?v.bos:'')+'" data-id="'+s.id+'" data-subj="'+escapeHtml(subj)+'" data-f="bos" '+(state.isAdmin?'readonly disabled style="width:34px;text-align:center;border:1px solid var(--line);border-radius:5px;padding:4px 2px;font-size:12px;background:var(--surface-2);cursor:not-allowed;"':'style="width:34px;text-align:center;border:1px solid var(--line);border-radius:5px;padding:4px 2px;font-size:12px;"')+'></td>';
     }).join('');
     return '<tr><td style="padding:6px 8px;font-size:11px;color:var(--ink-faint);">'+escapeHtml(s.no||'')+'</td><td style="padding:6px 8px;font-size:13px;font-weight:700;white-space:nowrap;">'+escapeHtml(s.name)+'</td>'+cells+'</tr>';
   }).join('');
   app.innerHTML =
     '<button class="backlink" id="backDS">'+ic('chevron')+' '+(examType==='tyt'?'TYT':'AYT')+' listesine dön</button>' +
+    (state.isAdmin ? '<div class="admin-badge-banner" style="background:var(--amber-soft);border:1px solid var(--amber);color:var(--amber);padding:10px 14px;border-radius:10px;font-size:12.5px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;">Yönetici Modu (Salt Okunur) — Deneme notları sadece incelenebilir.</div>' : '') +
     '<div class="pagehead"><h2>'+escapeHtml(exam.label)+'</h2></div>' +
     '<div class="card" style="overflow-x:auto;">' +
       '<table style="border-collapse:collapse;width:100%;"><thead><tr><th></th><th></th>'+headerCells+'</tr><tr><th></th><th></th>'+subHeaderCells+'</tr></thead><tbody>'+(rows||'')+'</tbody></table>' +
     '</div>';
   document.getElementById('backDS').onclick = ()=>{ state.view='deneme_list'; render(); };
-  app.querySelectorAll('input[data-id]').forEach(inp=>{
-    inp.onblur = ()=> updateDenemeScore(inp.dataset.id, examId, inp.dataset.subj, inp.dataset.f, inp.value);
-  });
+  if(!state.isAdmin){
+    app.querySelectorAll('input[data-id]').forEach(inp=>{
+      inp.onblur = ()=> updateDenemeScore(inp.dataset.id, examId, inp.dataset.subj, inp.dataset.f, inp.value);
+    });
+  }
 }
 
 (async function init(){
   const { data: { session } } = await sb.auth.getSession();
   if(session){ await startApp(); } else { state.page='login'; render(); }
   sb.auth.onAuthStateChange((event)=>{
-    if(event==='SIGNED_OUT'){ document.getElementById('teacherBtn').style.display='none'; }
+    if(event==='SIGNED_OUT'){
+      document.getElementById('teacherBtn').style.display='none';
+    }
   });
 })();
 </script>

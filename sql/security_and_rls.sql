@@ -7,8 +7,11 @@
 -- 2. Çok kiracılı (multi-tenant) veri izolasyonu sağlamak: Her öğretmen yalnızca
 --    kendi sınıflarını (owner_id = auth.uid()) ve bu sınıflara bağlı öğrenci, not,
 --    ödev ve rehberlik verilerini görüntüleyebilir, düzenleyebilir ve silebilir.
--- 3. Yetkisiz veri erişimini ve IDOR (BOLA) zafiyetlerini veritabanı seviyesinde önlemek.
--- 4. Performansı artırmak için RLS sorgularında kullanılan yabancı anahtar indekslerini eklemek.
+-- 3. YÖNETİCİ (ADMIN) MODU: 'admin@takip.local' veya admin rolündeki kullanıcı
+--    tüm öğretmenlerin sınıflarını ve verilerini SALT OKUNUR (READ-ONLY) olarak görebilir,
+--    ancak hiçbir değişiklik (INSERT, UPDATE, DELETE) yapamaz.
+-- 4. Yetkisiz veri erişimini ve IDOR zafiyetlerini veritabanı seviyesinde önlemek.
+-- 5. Performansı artırmak için yabancı anahtar indekslerini eklemek.
 -- ==============================================================================
 
 BEGIN;
@@ -35,7 +38,7 @@ ALTER TABLE IF EXISTS public.class_evaluation_marks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.activity_log ENABLE ROW LEVEL SECURITY;
 
 -- ------------------------------------------------------------------------------
--- 2. ESKİ VEYA GEVŞEK POLİTİKALARI TEMİZLE (ÇAKIŞMAYI ÖNLEMEK İÇİN)
+-- 2. ESKİ POLİTİKALARI TEMİZLE (ÇAKIŞMAYI ÖNLEMEK İÇİN)
 -- ------------------------------------------------------------------------------
 DO $$
 DECLARE
@@ -57,199 +60,307 @@ BEGIN
 END $$;
 
 -- ------------------------------------------------------------------------------
+-- 2.1. YÖNETİCİ (ADMIN) TESPİT FONKSİYONU
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+AS $$
+  SELECT (coalesce(auth.jwt() ->> 'email', '') = 'admin@takip.local')
+      OR (coalesce(auth.jwt() -> 'user_metadata' ->> 'role', '') = 'admin')
+      OR (coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') = 'admin');
+$$;
+
+-- ------------------------------------------------------------------------------
 -- 3. CLASSES (SINIFLAR) POLİTİKALARI
 -- ------------------------------------------------------------------------------
-CREATE POLICY "classes_owner_select" ON public.classes
+-- Öğretmen kendi sınıflarını, admin ise TÜM sınıfları okuyabilir
+CREATE POLICY "classes_select" ON public.classes
     FOR SELECT TO authenticated
-    USING (owner_id = auth.uid());
+    USING (owner_id = auth.uid() OR public.is_admin());
 
-CREATE POLICY "classes_owner_insert" ON public.classes
+-- Sadece sınıfın gerçek sahibi öğretmen ekleyebilir/güncelleyebilir/silebilir (Admin salt okunurdur)
+CREATE POLICY "classes_insert" ON public.classes
     FOR INSERT TO authenticated
-    WITH CHECK (owner_id = auth.uid());
+    WITH CHECK (owner_id = auth.uid() AND NOT public.is_admin());
 
-CREATE POLICY "classes_owner_update" ON public.classes
+CREATE POLICY "classes_update" ON public.classes
     FOR UPDATE TO authenticated
-    USING (owner_id = auth.uid())
-    WITH CHECK (owner_id = auth.uid());
+    USING (owner_id = auth.uid() AND NOT public.is_admin())
+    WITH CHECK (owner_id = auth.uid() AND NOT public.is_admin());
 
-CREATE POLICY "classes_owner_delete" ON public.classes
+CREATE POLICY "classes_delete" ON public.classes
     FOR DELETE TO authenticated
-    USING (owner_id = auth.uid());
+    USING (owner_id = auth.uid() AND NOT public.is_admin());
 
 -- ------------------------------------------------------------------------------
 -- 4. SINIF BAZLI TABLOLAR (class_id ile bağlı olanlar)
 -- ------------------------------------------------------------------------------
 
 -- STUDENTS
-CREATE POLICY "students_owner_all" ON public.students
+CREATE POLICY "students_select" ON public.students
+    FOR SELECT TO authenticated
+    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) OR public.is_admin());
+
+CREATE POLICY "students_modify" ON public.students
     FOR ALL TO authenticated
-    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()))
-    WITH CHECK (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()));
+    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) AND NOT public.is_admin())
+    WITH CHECK (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) AND NOT public.is_admin());
 
 -- HOMEWORKS
-CREATE POLICY "homeworks_owner_all" ON public.homeworks
+CREATE POLICY "homeworks_select" ON public.homeworks
+    FOR SELECT TO authenticated
+    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) OR public.is_admin());
+
+CREATE POLICY "homeworks_modify" ON public.homeworks
     FOR ALL TO authenticated
-    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()))
-    WITH CHECK (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()));
+    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) AND NOT public.is_admin())
+    WITH CHECK (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) AND NOT public.is_admin());
 
 -- QUIZZES
-CREATE POLICY "quizzes_owner_all" ON public.quizzes
+CREATE POLICY "quizzes_select" ON public.quizzes
+    FOR SELECT TO authenticated
+    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) OR public.is_admin());
+
+CREATE POLICY "quizzes_modify" ON public.quizzes
     FOR ALL TO authenticated
-    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()))
-    WITH CHECK (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()));
+    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) AND NOT public.is_admin())
+    WITH CHECK (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) AND NOT public.is_admin());
 
 -- PERFORMANCE_TASKS
-CREATE POLICY "performance_tasks_owner_all" ON public.performance_tasks
+CREATE POLICY "performance_tasks_select" ON public.performance_tasks
+    FOR SELECT TO authenticated
+    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) OR public.is_admin());
+
+CREATE POLICY "performance_tasks_modify" ON public.performance_tasks
     FOR ALL TO authenticated
-    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()))
-    WITH CHECK (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()));
+    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) AND NOT public.is_admin())
+    WITH CHECK (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) AND NOT public.is_admin());
 
 -- RUBRICS
-CREATE POLICY "rubrics_owner_all" ON public.rubrics
+CREATE POLICY "rubrics_select" ON public.rubrics
+    FOR SELECT TO authenticated
+    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) OR public.is_admin());
+
+CREATE POLICY "rubrics_modify" ON public.rubrics
     FOR ALL TO authenticated
-    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()))
-    WITH CHECK (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()));
+    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) AND NOT public.is_admin())
+    WITH CHECK (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) AND NOT public.is_admin());
 
 -- DENEME_EXAMS
-CREATE POLICY "deneme_exams_owner_all" ON public.deneme_exams
+CREATE POLICY "deneme_exams_select" ON public.deneme_exams
+    FOR SELECT TO authenticated
+    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) OR public.is_admin());
+
+CREATE POLICY "deneme_exams_modify" ON public.deneme_exams
     FOR ALL TO authenticated
-    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()))
-    WITH CHECK (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()));
+    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) AND NOT public.is_admin())
+    WITH CHECK (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) AND NOT public.is_admin());
 
 -- CLASS_EVALUATIONS
-CREATE POLICY "class_evaluations_owner_all" ON public.class_evaluations
+CREATE POLICY "class_evaluations_select" ON public.class_evaluations
+    FOR SELECT TO authenticated
+    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) OR public.is_admin());
+
+CREATE POLICY "class_evaluations_modify" ON public.class_evaluations
     FOR ALL TO authenticated
-    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()))
-    WITH CHECK (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()));
+    USING (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) AND NOT public.is_admin())
+    WITH CHECK (class_id IN (SELECT id FROM public.classes WHERE owner_id = auth.uid()) AND NOT public.is_admin());
 
 -- ------------------------------------------------------------------------------
 -- 5. ÖĞRENCİ BAZLI TABLOLAR (student_id ile bağlı olanlar)
 -- ------------------------------------------------------------------------------
 
 -- HOMEWORK_STATUS
-CREATE POLICY "homework_status_owner_all" ON public.homework_status
+CREATE POLICY "homework_status_select" ON public.homework_status
+    FOR SELECT TO authenticated
+    USING (student_id IN (
+        SELECT s.id FROM public.students s
+        JOIN public.classes c ON s.class_id = c.id
+        WHERE c.owner_id = auth.uid()
+    ) OR public.is_admin());
+
+CREATE POLICY "homework_status_modify" ON public.homework_status
     FOR ALL TO authenticated
     USING (student_id IN (
         SELECT s.id FROM public.students s
         JOIN public.classes c ON s.class_id = c.id
         WHERE c.owner_id = auth.uid()
-    ))
+    ) AND NOT public.is_admin())
     WITH CHECK (student_id IN (
         SELECT s.id FROM public.students s
         JOIN public.classes c ON s.class_id = c.id
         WHERE c.owner_id = auth.uid()
-    ));
+    ) AND NOT public.is_admin());
 
 -- QUIZ_SCORES
-CREATE POLICY "quiz_scores_owner_all" ON public.quiz_scores
+CREATE POLICY "quiz_scores_select" ON public.quiz_scores
+    FOR SELECT TO authenticated
+    USING (student_id IN (
+        SELECT s.id FROM public.students s
+        JOIN public.classes c ON s.class_id = c.id
+        WHERE c.owner_id = auth.uid()
+    ) OR public.is_admin());
+
+CREATE POLICY "quiz_scores_modify" ON public.quiz_scores
     FOR ALL TO authenticated
     USING (student_id IN (
         SELECT s.id FROM public.students s
         JOIN public.classes c ON s.class_id = c.id
         WHERE c.owner_id = auth.uid()
-    ))
+    ) AND NOT public.is_admin())
     WITH CHECK (student_id IN (
         SELECT s.id FROM public.students s
         JOIN public.classes c ON s.class_id = c.id
         WHERE c.owner_id = auth.uid()
-    ));
+    ) AND NOT public.is_admin());
 
 -- RUBRIC_SCORES
-CREATE POLICY "rubric_scores_owner_all" ON public.rubric_scores
+CREATE POLICY "rubric_scores_select" ON public.rubric_scores
+    FOR SELECT TO authenticated
+    USING (student_id IN (
+        SELECT s.id FROM public.students s
+        JOIN public.classes c ON s.class_id = c.id
+        WHERE c.owner_id = auth.uid()
+    ) OR public.is_admin());
+
+CREATE POLICY "rubric_scores_modify" ON public.rubric_scores
     FOR ALL TO authenticated
     USING (student_id IN (
         SELECT s.id FROM public.students s
         JOIN public.classes c ON s.class_id = c.id
         WHERE c.owner_id = auth.uid()
-    ))
+    ) AND NOT public.is_admin())
     WITH CHECK (student_id IN (
         SELECT s.id FROM public.students s
         JOIN public.classes c ON s.class_id = c.id
         WHERE c.owner_id = auth.uid()
-    ));
+    ) AND NOT public.is_admin());
 
 -- COUNSELING_NOTES (Hassas Rehberlik Notları)
-CREATE POLICY "counseling_notes_owner_all" ON public.counseling_notes
+CREATE POLICY "counseling_notes_select" ON public.counseling_notes
+    FOR SELECT TO authenticated
+    USING (student_id IN (
+        SELECT s.id FROM public.students s
+        JOIN public.classes c ON s.class_id = c.id
+        WHERE c.owner_id = auth.uid()
+    ) OR public.is_admin());
+
+CREATE POLICY "counseling_notes_modify" ON public.counseling_notes
     FOR ALL TO authenticated
     USING (student_id IN (
         SELECT s.id FROM public.students s
         JOIN public.classes c ON s.class_id = c.id
         WHERE c.owner_id = auth.uid()
-    ))
+    ) AND NOT public.is_admin())
     WITH CHECK (student_id IN (
         SELECT s.id FROM public.students s
         JOIN public.classes c ON s.class_id = c.id
         WHERE c.owner_id = auth.uid()
-    ));
+    ) AND NOT public.is_admin());
 
 -- UNIVERSITY_GOALS (Üniversite Hedefleri)
-CREATE POLICY "university_goals_owner_all" ON public.university_goals
+CREATE POLICY "university_goals_select" ON public.university_goals
+    FOR SELECT TO authenticated
+    USING (student_id IN (
+        SELECT s.id FROM public.students s
+        JOIN public.classes c ON s.class_id = c.id
+        WHERE c.owner_id = auth.uid()
+    ) OR public.is_admin());
+
+CREATE POLICY "university_goals_modify" ON public.university_goals
     FOR ALL TO authenticated
     USING (student_id IN (
         SELECT s.id FROM public.students s
         JOIN public.classes c ON s.class_id = c.id
         WHERE c.owner_id = auth.uid()
-    ))
+    ) AND NOT public.is_admin())
     WITH CHECK (student_id IN (
         SELECT s.id FROM public.students s
         JOIN public.classes c ON s.class_id = c.id
         WHERE c.owner_id = auth.uid()
-    ));
+    ) AND NOT public.is_admin());
 
 -- ABROAD_CONSULTING (Yurtdışı Danışmanlık)
-CREATE POLICY "abroad_consulting_owner_all" ON public.abroad_consulting
+CREATE POLICY "abroad_consulting_select" ON public.abroad_consulting
+    FOR SELECT TO authenticated
+    USING (student_id IN (
+        SELECT s.id FROM public.students s
+        JOIN public.classes c ON s.class_id = c.id
+        WHERE c.owner_id = auth.uid()
+    ) OR public.is_admin());
+
+CREATE POLICY "abroad_consulting_modify" ON public.abroad_consulting
     FOR ALL TO authenticated
     USING (student_id IN (
         SELECT s.id FROM public.students s
         JOIN public.classes c ON s.class_id = c.id
         WHERE c.owner_id = auth.uid()
-    ))
+    ) AND NOT public.is_admin())
     WITH CHECK (student_id IN (
         SELECT s.id FROM public.students s
         JOIN public.classes c ON s.class_id = c.id
         WHERE c.owner_id = auth.uid()
-    ));
+    ) AND NOT public.is_admin());
 
 -- CLASS_EVALUATION_MARKS
-CREATE POLICY "class_evaluation_marks_owner_all" ON public.class_evaluation_marks
+CREATE POLICY "class_evaluation_marks_select" ON public.class_evaluation_marks
+    FOR SELECT TO authenticated
+    USING (student_id IN (
+        SELECT s.id FROM public.students s
+        JOIN public.classes c ON s.class_id = c.id
+        WHERE c.owner_id = auth.uid()
+    ) OR public.is_admin());
+
+CREATE POLICY "class_evaluation_marks_modify" ON public.class_evaluation_marks
     FOR ALL TO authenticated
     USING (student_id IN (
         SELECT s.id FROM public.students s
         JOIN public.classes c ON s.class_id = c.id
         WHERE c.owner_id = auth.uid()
-    ))
+    ) AND NOT public.is_admin())
     WITH CHECK (student_id IN (
         SELECT s.id FROM public.students s
         JOIN public.classes c ON s.class_id = c.id
         WHERE c.owner_id = auth.uid()
-    ));
+    ) AND NOT public.is_admin());
 
 -- ------------------------------------------------------------------------------
 -- 6. DENEME_SCORES (exam_id ile bağlı olanlar)
 -- ------------------------------------------------------------------------------
-CREATE POLICY "deneme_scores_owner_all" ON public.deneme_scores
+CREATE POLICY "deneme_scores_select" ON public.deneme_scores
+    FOR SELECT TO authenticated
+    USING (exam_id IN (
+        SELECT e.id FROM public.deneme_exams e
+        JOIN public.classes c ON e.class_id = c.id
+        WHERE c.owner_id = auth.uid()
+    ) OR public.is_admin());
+
+CREATE POLICY "deneme_scores_modify" ON public.deneme_scores
     FOR ALL TO authenticated
     USING (exam_id IN (
         SELECT e.id FROM public.deneme_exams e
         JOIN public.classes c ON e.class_id = c.id
         WHERE c.owner_id = auth.uid()
-    ))
+    ) AND NOT public.is_admin())
     WITH CHECK (exam_id IN (
         SELECT e.id FROM public.deneme_exams e
         JOIN public.classes c ON e.class_id = c.id
         WHERE c.owner_id = auth.uid()
-    ));
+    ) AND NOT public.is_admin());
 
 -- ------------------------------------------------------------------------------
 -- 7. ACTIVITY_LOG (İşlem Günlüğü)
 -- ------------------------------------------------------------------------------
-CREATE POLICY "activity_log_owner_select" ON public.activity_log
+CREATE POLICY "activity_log_select" ON public.activity_log
     FOR SELECT TO authenticated
-    USING (user_id = auth.uid());
+    USING (user_id = auth.uid() OR public.is_admin());
 
-CREATE POLICY "activity_log_owner_insert" ON public.activity_log
+CREATE POLICY "activity_log_insert" ON public.activity_log
     FOR INSERT TO authenticated
-    WITH CHECK (user_id = auth.uid());
+    WITH CHECK (user_id = auth.uid() AND NOT public.is_admin());
 
 -- ------------------------------------------------------------------------------
 -- 8. PERFORMANS VE RLS HIZLANDIRMA İNDEKSLERİ
