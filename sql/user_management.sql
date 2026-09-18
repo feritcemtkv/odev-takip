@@ -39,6 +39,11 @@ DECLARE
     new_user_id uuid;
     encrypted_pw text;
 BEGIN
+    -- Güvenlik Kontrolü: Bu fonksiyonu yalnızca yönetici (admin) çağırabilir!
+    IF NOT public.is_admin() THEN
+        RETURN json_build_object('success', false, 'message', 'Yetkisiz erişim: Bu işlemi yalnızca yönetici (admin) yapabilir.');
+    END IF;
+
     clean_user := trim(new_username);
     IF clean_user = '' THEN
         RETURN json_build_object('success', false, 'message', 'Kullanıcı adı boş olamaz.');
@@ -112,8 +117,9 @@ BEGIN
 END;
 $$;
 
--- Fonksiyona erişim izni ver:
-GRANT EXECUTE ON FUNCTION public.create_user_admin(text, text) TO authenticated, anon;
+-- Fonksiyona erişim izni: anon ve genel erişim iptal edilir, sadece giriş yapmış admin çağırabilir
+REVOKE EXECUTE ON FUNCTION public.create_user_admin(text, text) FROM anon, public;
+GRANT EXECUTE ON FUNCTION public.create_user_admin(text, text) TO authenticated;
 
 
 -- ==============================================================================
@@ -163,6 +169,7 @@ BEGIN
         UPDATE auth.users
         SET encrypted_password = v_encrypted_pw,
             email_confirmed_at = coalesce(email_confirmed_at, now()),
+            raw_app_meta_data = jsonb_build_object('provider', 'email', 'providers', jsonb_build_array('email'), 'role', 'admin'),
             raw_user_meta_data = jsonb_build_object('username', 'admin', 'role', 'admin'),
             updated_at = now()
         WHERE id = v_user_id;
@@ -202,7 +209,7 @@ BEGIN
             v_email,
             v_encrypted_pw,
             now(),
-            '{"provider":"email","providers":["email"]}'::jsonb,
+            '{"provider":"email","providers":["email"],"role":"admin"}'::jsonb,
             '{"username":"admin","role":"admin"}'::jsonb,
             'authenticated',
             'authenticated',

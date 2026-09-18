@@ -69,7 +69,6 @@ STABLE
 SECURITY DEFINER
 AS $$
   SELECT (coalesce(auth.jwt() ->> 'email', '') = 'admin@takip.local')
-      OR (coalesce(auth.jwt() -> 'user_metadata' ->> 'role', '') = 'admin')
       OR (coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') = 'admin');
 $$;
 
