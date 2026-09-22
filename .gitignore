@@ -8,5 +8,6 @@ Thumbs.db
 # Öğrenci verileri ve yerel Excel çıktıları (KVKK / Gizlilik)
 *.xlsx
 *.xls
-scripts/
+scripts/*
+!scripts/get_google_token.mjs
 
