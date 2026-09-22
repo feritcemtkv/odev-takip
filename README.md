@@ -20,13 +20,22 @@ GitHub Actions iş akışının (`.github/workflows/backup.yml`) çalışabilmes
 | Secret Adı | Açıklama |
 |---|---|
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase Dashboard > Project Settings > API > `service_role` (gizli) anahtarı |
-| `TEACHER_USERNAME` | Yedeklenecek öğretmenin kullanıcı adı (veya e-posta adresi) |
+| `TEACHER_USERNAME` | (Opsiyonel) Belirli bir öğretmenin kullanıcı adı. Boş bırakılırsa tüm öğretmenler yedeklenir |
 | `GOOGLE_CLIENT_ID` | Google Cloud Console OAuth 2.0 Client ID |
 | `GOOGLE_CLIENT_SECRET` | Google Cloud Console OAuth 2.0 Client Secret |
 | `GOOGLE_REFRESH_TOKEN` | Google Drive API için oluşturulan Refresh Token |
 | `GOOGLE_DRIVE_FOLDER_ID` | Yedek .json dosyalarının kaydedileceği Google Drive klasörünün ID'si |
+| `GOOGLE_SERVICE_ACCOUNT_KEY` | (Opsiyonel alternatif) Hizmet Hesabı JSON anahtarı (OAuth yerine kalıcı kullanım için) |
+
+> [!IMPORTANT]
+> **Token 7 Günde Bir Bozulmasın Diye (Önemli Ayar):**
+> Google Cloud Console > **APIs & Services > OAuth consent screen** sekmesine gidin. "Publishing status" altındaki **"PUBLISH APP"** butonuna basarak uygulamayı **"In production"** durumuna getirin. Aksi takdirde ("Testing" modunda kalırsa) Google, güvenlik gereği token'ınızı 7 gün sonra iptal eder (`invalid_grant`).
+> 
+> **Kolayca Yeni Refresh Token Almak İçin:**
+> Terminalinizde `npm run get-token` komutunu çalıştırarak otomatik yetkilendirme aracını kullanabilirsiniz.
 
 ### 3. Yedekleme Zamanlaması
 
 - Yedekleme iş akışı her gün **20:00 UTC (23:00 TSİ)** otomatik olarak çalışır.
 - İstenirse GitHub Actions sekmesinden **"Otomatik Excel Yedek" > "Run workflow"** butonu ile manuel olarak da tetiklenebilir.
+

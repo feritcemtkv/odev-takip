@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "node serve.js",
     "start": "node serve.js",
-    "backup": "node .github/scripts/backup.mjs"
+    "backup": "node .github/scripts/backup.mjs",
+    "get-token": "node scripts/get_google_token.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.1",
