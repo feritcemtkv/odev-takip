@@ -39,7 +39,11 @@
   .ic{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
 
   header.top{position:sticky;top:0;z-index:40;background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:12px 22px;}
-  .brand{display:flex;align-items:center;gap:12px;}
+  button.brand{background:none;border:none;padding:0;text-align:left;color:inherit;font:inherit;}
+  .brand{display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none;-webkit-user-select:none;transition:opacity .15s,transform .1s;}
+  .brand *{pointer-events:none;}
+  .brand:hover{opacity:.88;}
+  .brand:active{opacity:.72;transform:scale(0.98);}
   .brand .logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--primary),var(--primary-deep));display:flex;align-items:center;justify-content:center;color:#fff;}
   .brand .logo .ic{width:22px;height:22px;stroke:#fff;}
   .brand h1{font-size:16.5px;font-weight:800;letter-spacing:.1px;}
@@ -197,10 +201,10 @@
 <body>
 
 <header class="top">
-  <div class="brand">
+  <button class="brand" id="brandBtn" type="button" title="Sınıflar sayfasına dön" aria-label="Sınıflar sayfasına dön">
     <div class="logo"><svg class="ic" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/></svg></div>
     <h1>Sınıf Yönetim Panelim<span class="ver">v.2.4 · bulut</span></h1>
-  </div>
+  </button>
   <div class="spacer"></div>
   <button class="teacherbox" id="teacherBtn" style="display:none;">
     <div class="who"><div class="name" id="teacherNameLbl"></div><div class="branch">Hesap Ayarları</div></div>
@@ -381,6 +385,27 @@ async function startApp(){
   resetIdleTimer();
 }
 document.getElementById('teacherBtn').onclick = openUserProfileModal;
+const goHome = (e)=>{
+  if(e && e.preventDefault) e.preventDefault();
+  if(state.page === 'login') return;
+  backToHome();
+};
+const brandBtn = document.getElementById('brandBtn');
+if(brandBtn){
+  brandBtn.onclick = goHome;
+  brandBtn.addEventListener('keydown', e=>{
+    if(e.key === 'Enter' || e.key === ' '){
+      goHome(e);
+    }
+  });
+}
+document.addEventListener('click', (e)=>{
+  const b = e.target.closest('#brandBtn, .brand');
+  if(b && state.page !== 'login'){
+    e.preventDefault();
+    backToHome();
+  }
+});
 
 function renderLogin(app){
   app.innerHTML =
@@ -2163,7 +2188,15 @@ function renderSinifDetail(app){
   if(state.view==='classEvalMatrix') return renderClassEvalMatrix(app);
 }
 function backToRoster(){ state.view='roster'; state.studentId=null; render(); }
-function backToHome(){ state.page='home'; state.cls=null; render(); }
+function backToHome(){
+  state.page = 'home';
+  state.cls = null;
+  state.classId = null;
+  state.studentId = null;
+  state.view = 'roster';
+  closeModal();
+  render();
+}
 
 function renderRoster(app){
   const cls = state.cls;
@@ -2219,7 +2252,7 @@ function renderRoster(app){
   app.innerHTML =
     '<button class="backlink" id="toHome">'+ic('chevron')+' Sınıflarım listesine dön</button>' +
     adminBadge +
-    '<div class="pagehead"><h2>'+escapeHtml(cls.name)+'</h2><div class="sub">Sınıf paneli</div></div>' +
+    '<div class="pagehead"><h2>'+escapeHtml(cls.name)+'</h2><button class="sub" id="subToHome" style="cursor:pointer;background:none;border:none;padding:0;color:var(--ink-soft);font-size:13px;display:inline-flex;align-items:center;gap:4px;" title="Sınıflar listesine dön">Sınıf paneli &middot; Sınıflara dön &larr;</button></div>' +
     '<div class="infobar">' +
       '<div class="item"><div class="v">'+cls.students.length+'</div><div class="k">Öğrenci</div></div>' +
       (!g12 ? ('<div class="item"><div class="v">'+(hwAvg!=null?hwAvg+'%':'-')+'</div><div class="k">Ödev Tamamlama Ort.</div></div>') : '') +
@@ -2248,6 +2281,8 @@ function renderRoster(app){
     ) : '');
 
   document.getElementById('toHome').onclick = backToHome;
+  const subToHome = document.getElementById('subToHome');
+  if(subToHome) subToHome.onclick = backToHome;
   document.getElementById('backupBtn').onclick = exportClassBackup;
   if(!g12){
     document.getElementById('hwMenuBtn').onclick = ()=>{
@@ -2365,7 +2400,11 @@ function renderStudentDetail(app){
     '</div>' : '';
 
   app.innerHTML =
-    '<button class="backlink" id="toRoster">'+ic('chevron')+' '+escapeHtml(cls.name)+' listesine dön</button>' +
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">' +
+      '<button class="backlink" id="stToHome" style="margin-bottom:0;">'+ic('chevron')+' Sınıflarım</button>' +
+      '<span style="color:var(--ink-faint);font-size:12px;">/</span>' +
+      '<button class="backlink" id="toRoster" style="margin-bottom:0;">'+escapeHtml(cls.name)+' listesi</button>' +
+    '</div>' +
     adminBadge +
     (g12 ? ('<div style="display:flex;align-items:center;gap:8px;margin:-8px 0 14px;flex-wrap:wrap;">' +
       '<label style="font-size:12px;color:var(--ink-soft);font-weight:700;">Dershane/Etüt:</label>' +
@@ -2404,6 +2443,8 @@ function renderStudentDetail(app){
     ) : '');
 
   document.getElementById('toRoster').onclick = backToRoster;
+  const stToHome = document.getElementById('stToHome');
+  if(stToHome) stToHome.onclick = backToHome;
   document.getElementById('parentReportBtn').onclick = ()=> exportParentReport(s.id);
   if(g12){
     wireMeetingReportsSection(app, s);
