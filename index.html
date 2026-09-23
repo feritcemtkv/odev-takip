@@ -320,6 +320,29 @@ function isGrade11(name){ name = name || (state.cls?state.cls.name:''); return /
 function examWord(name){ return isGrade12(name) ? 'Deneme' : 'KDS'; }
 function examWordPlural(name){ return isGrade12(name) ? 'Denemeleri' : "KDS'leri"; }
 
+function getLocalCounselorMap(){
+  try{ return JSON.parse(localStorage.getItem('takip_danisman_map')||'{}'); }
+  catch(e){ return {}; }
+}
+function saveLocalCounselor(classId, isCounselorVal){
+  try{
+    const m = getLocalCounselorMap();
+    m[classId] = !!isCounselorVal;
+    localStorage.setItem('takip_danisman_map', JSON.stringify(m));
+  }catch(e){}
+}
+function isCounselor(cls){
+  if(!cls) return false;
+  if(cls.is_counselor === true) return true;
+  if(cls.is_counselor === false) return false;
+  const localMap = getLocalCounselorMap();
+  if(cls.id && localMap[cls.id] !== undefined) return localMap[cls.id];
+  if(cls.counselingNotes && Object.keys(cls.counselingNotes).length) return true;
+  if(cls.universityGoals && Object.keys(cls.universityGoals).length) return true;
+  if(cls.classEvaluations && cls.classEvaluations.length) return true;
+  return isGrade12(cls.name);
+}
+
 function toEmail(username){
   username = username.trim();
   if(username.includes('@')) return username;
@@ -567,11 +590,42 @@ function openCreateUserModal(){
 function openNewClassModal(){
   openModalHtml(
     '<h3>Yeni Sınıf Ekle</h3>' +
-    '<label>Sınıf adı (örn. 11-D)</label><input type="text" id="mClassName" placeholder="Sınıf adı">' +
+    '<label>Sınıf adı (örn. 12-D, 11-A)</label><input type="text" id="mClassName" placeholder="Sınıf adı">' +
+    '<div style="margin:14px 0 16px;background:var(--surface-2);border-radius:10px;padding:12px 14px;border:1px solid var(--line);">' +
+      '<div style="font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:8px;">Danışmanlık Rolü</div>' +
+      '<label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;font-size:13px;color:var(--ink);font-weight:700;margin-bottom:8px;">' +
+        '<input type="radio" name="mDanismanRole" value="counselor" id="roleCounselor" style="margin-top:2px;">' +
+        '<div>' +
+          '<div>Bu sınıfın Danışman Öğretmeniyim</div>' +
+          '<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;margin-top:2px;">Ödev ve sınav takibine ek olarak Rehberlik &amp; Danışmanlık formları (Form-2, Form-3a, Form-4) aktif olur.</div>' +
+        '</div>' +
+      '</label>' +
+      '<label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;font-size:13px;color:var(--ink);font-weight:700;">' +
+        '<input type="radio" name="mDanismanRole" value="subject" id="roleSubject" checked style="margin-top:2px;">' +
+        '<div>' +
+          '<div>Sadece Ders Öğretmeniyim</div>' +
+          '<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;margin-top:2px;">Yalnızca Ödev Takibi ve Sınav/Deneme takibi aktif olur; danışmanlık formları gizlenir.</div>' +
+        '</div>' +
+      '</label>' +
+    '</div>' +
     '<div class="modalactions"><button class="btn btn-outline" id="mCancel">Vazgeç</button><button class="btn btn-primary" id="mSave">Sınıfı Oluştur</button></div>'
   );
+  const nameInp = document.getElementById('mClassName');
+  nameInp.addEventListener('input', ()=>{
+    if(isGrade12(nameInp.value)){
+      const rC = document.getElementById('roleCounselor');
+      if(rC && !rC.dataset.userTouched) rC.checked = true;
+    }
+  });
+  document.getElementById('roleSubject').addEventListener('change', ()=>{ document.getElementById('roleCounselor').dataset.userTouched = '1'; });
+  document.getElementById('roleCounselor').addEventListener('change', ()=>{ document.getElementById('roleCounselor').dataset.userTouched = '1'; });
+
   document.getElementById('mCancel').onclick = closeModal;
-  document.getElementById('mSave').onclick = ()=> addClass(document.getElementById('mClassName').value);
+  document.getElementById('mSave').onclick = ()=>{
+    const name = document.getElementById('mClassName').value;
+    const isDanisman = document.getElementById('roleCounselor').checked;
+    addClass(name, isDanisman);
+  };
 }
 function openNewStudentModal(){
   openModalHtml(
@@ -618,22 +672,72 @@ async function loadClasses(){
   }
   const { data, error } = await query;
   if(error) console.error('loadClasses error', error);
-  state.classes = data || [];
+  const localMap = getLocalCounselorMap();
+  state.classes = (data || []).map(c=>{
+    if(c.is_counselor === undefined && localMap[c.id] !== undefined){
+      c.is_counselor = localMap[c.id];
+    }
+    return c;
+  });
 }
-async function addClass(name){
+async function addClass(name, isCounselorVal = false){
   if(state.isAdmin){ showToast('Yönetici modunda sınıf eklenemez (Salt Okunur).'); return; }
   name = name.trim();
   if(!name) return;
   if(state.classes.some(c=>c.name.toLowerCase()===name.toLowerCase())){ showToast('Bu sınıf zaten var'); return; }
   const maxOrder = Math.max(-1, ...state.classes.map(c=>c.sort_order||0));
-  const { data, error } = await sb.from('classes').insert({name, sort_order:maxOrder+1, owner_id: state.userId}).select();
-  if(error){ showToast('Hata: '+error.message); return; }
-  if(data && data[0]) state.classes.push(data[0]);
+
+  let newClass = null;
+  const { data, error } = await sb.from('classes').insert({
+    name,
+    sort_order: maxOrder + 1,
+    owner_id: state.userId,
+    is_counselor: isCounselorVal
+  }).select();
+
+  if(error){
+    if(error.message && error.message.includes('is_counselor')){
+      const { data: d2, error: e2 } = await sb.from('classes').insert({
+        name,
+        sort_order: maxOrder + 1,
+        owner_id: state.userId
+      }).select();
+      if(e2){ showToast('Hata: ' + e2.message); return; }
+      newClass = d2 && d2[0];
+    } else {
+      showToast('Hata: ' + error.message);
+      return;
+    }
+  } else {
+    newClass = data && data[0];
+  }
+
+  if(newClass){
+    newClass.is_counselor = isCounselorVal;
+    saveLocalCounselor(newClass.id, isCounselorVal);
+    state.classes.push(newClass);
+  }
   closeModal();
   showToast('"'+name+'" sınıfı oluşturuldu');
   logActivity('"'+name+'" sınıfını oluşturdu');
-  state.page='sinif_detail'; state.classId=data[0].id; state.view='roster';
+  state.page='sinif_detail'; state.classId=newClass.id; state.view='roster';
   await loadClassDetail(state.classId);
+}
+async function toggleCounselorRole(){
+  const cls = state.cls;
+  if(!cls || state.isAdmin) return;
+  const current = isCounselor(cls);
+  const nextVal = !current;
+  cls.is_counselor = nextVal;
+  saveLocalCounselor(cls.id, nextVal);
+  try{
+    await sb.from('classes').update({ is_counselor: nextVal }).eq('id', cls.id);
+  }catch(e){}
+  const cInList = state.classes.find(x=>x.id===cls.id);
+  if(cInList) cInList.is_counselor = nextVal;
+  showToast(nextVal ? 'Danışmanlık rolü aktif edildi' : 'Danışmanlık rolü kapatıldı');
+  logActivity(cls.name + ' danışmanlık durumunu ' + (nextVal?'aktif':'pasif') + ' yaptı');
+  render();
 }
 async function renameClass(newName){
   if(state.isAdmin){ showToast('Yönetici modunda sınıf düzenlenemez (Salt Okunur).'); return; }
@@ -888,30 +992,28 @@ function exportClassBackup(){
 
   addSheet(wb, sorted.map(s=>{
     const row = { 'No': s.no||'', 'Ad Soyad': s.name };
-    if(!g12) row['Ödev %'] = hwPct(s.id);
+    row['Ödev %'] = hwPct(s.id);
     row['Okulda Yok'] = s.absent?'Evet':'Hayır';
-    if(g12){ row['Dershane/Etüt'] = s.dershane||''; row['Özel Ders'] = s.ozel_ders||''; }
+    if(isCounselor(cls)){ row['Dershane/Etüt'] = s.dershane||''; row['Özel Ders'] = s.ozel_ders||''; }
     row['Öğretmen Notu'] = s.teacher_note||'';
     return row;
   }), 'Öğrenciler');
 
   const today = todayStr();
-  if(!g12){
-    const hwRows = [];
-    sorted.forEach(s=>{
-      cls.homeworks.forEach(h=>{
-        const done = !!(cls.hwStatus[s.id]||{})[h.slot_no];
-        const checked = h.check_date && h.check_date<=today;
-        hwRows.push({
-          'No': s.no||'', 'Ad Soyad': s.name,
-          'Ödev': h.topic||('Ödev #'+h.slot_no),
-          'Veriliş Tarihi': h.hw_date||'', 'Kontrol Tarihi': h.check_date||'',
-          'Durum': !checked ? 'Kontrol tarihi gelmedi' : (done?'Yaptı':'Yapmadı'),
-        });
+  const hwRows = [];
+  sorted.forEach(s=>{
+    cls.homeworks.forEach(h=>{
+      const done = !!(cls.hwStatus[s.id]||{})[h.slot_no];
+      const checked = h.check_date && h.check_date<=today;
+      hwRows.push({
+        'No': s.no||'', 'Ad Soyad': s.name,
+        'Ödev': h.topic||('Ödev #'+h.slot_no),
+        'Veriliş Tarihi': h.hw_date||'', 'Kontrol Tarihi': h.check_date||'',
+        'Durum': !checked ? 'Kontrol tarihi gelmedi' : (done?'Yaptı':'Yapmadı'),
       });
     });
-    addSheet(wb, hwRows, 'Ödevler');
-  }
+  });
+  if(hwRows.length || !g12) addSheet(wb, hwRows, 'Ödevler');
 
   if(!g12 && cls.quizzes.length){
     const rows = [];
@@ -956,7 +1058,7 @@ function exportClassBackup(){
     });
   }
 
-  if(g12){
+  if(isCounselor(cls)){
     const rows = [];
     sorted.forEach(s=>{
       (cls.counselingNotes[s.id]||[]).forEach(n=>{
@@ -1037,23 +1139,21 @@ function exportParentReport(sid){
     if(grades.length) perfAvg = Math.round(grades.reduce((a,b)=>a+b,0)/grades.length);
   }
   const infoRow = { 'No': s.no||'', 'Ad Soyad': s.name, 'Sınıf': cls.name };
-  if(!g12) infoRow['Ödev Tamamlama %'] = hwPct(s.id);
+  infoRow['Ödev Tamamlama %'] = hwPct(s.id);
   infoRow['Performans Ort.'] = perfAvg;
-  if(g12){ infoRow['Dershane/Etüt'] = s.dershane||''; infoRow['Özel Ders'] = s.ozel_ders||''; }
+  if(isCounselor(cls)){ infoRow['Dershane/Etüt'] = s.dershane||''; infoRow['Özel Ders'] = s.ozel_ders||''; }
   addSheet(wb, [infoRow], 'Öğrenci Bilgisi');
 
-  if(!g12){
-    const hwRows = cls.homeworks.map(h=>{
-      const done = !!(cls.hwStatus[s.id]||{})[h.slot_no];
-      const checked = h.check_date && h.check_date<=today;
-      return {
-        'Ödev': h.topic||('Ödev #'+h.slot_no),
-        'Veriliş Tarihi': h.hw_date||'', 'Kontrol Tarihi': h.check_date||'',
-        'Durum': !checked ? 'Kontrol tarihi gelmedi' : (done?'Yaptı':'Yapmadı'),
-      };
-    });
-    addSheet(wb, hwRows, 'Ödev Geçmişi');
-  }
+  const hwRows = cls.homeworks.map(h=>{
+    const done = !!(cls.hwStatus[s.id]||{})[h.slot_no];
+    const checked = h.check_date && h.check_date<=today;
+    return {
+      'Ödev': h.topic||('Ödev #'+h.slot_no),
+      'Veriliş Tarihi': h.hw_date||'', 'Kontrol Tarihi': h.check_date||'',
+      'Durum': !checked ? 'Kontrol tarihi gelmedi' : (done?'Yaptı':'Yapmadı'),
+    };
+  });
+  if(hwRows.length || !g12) addSheet(wb, hwRows, 'Ödev Geçmişi');
 
   if(!g12 && cls.quizzes.length){
     const rows = cls.quizzes.map(q=>{
@@ -1087,7 +1187,7 @@ function exportParentReport(sid){
     });
   }
 
-  if(g12){
+  if(isCounselor(cls)){
     const ugRows = [];
     (cls.universityGoals[s.id]||[]).forEach(g=>{
       (g.goals||[]).forEach((goal,i)=>{
@@ -2151,6 +2251,7 @@ function classGridHtml(){
     let tags = '<span class="tag blue">Ödev Takibi</span>';
     if(!g12) tags += '<span class="tag teal">Performans</span><span class="tag amber">KDS</span>';
     if(g12 || g11) tags += '<span class="tag amber">TYT</span><span class="tag amber">AYT</span>';
+    if(isCounselor(c)) tags += '<span class="tag teal">Danışmanlık</span>';
     html += '<div class="classcard" data-openclass="'+c.id+'">' +
       '<h3>'+escapeHtml(c.name)+'</h3>' +
       '<div class="tags">'+tags+'</div>' +
@@ -2237,7 +2338,7 @@ function renderRoster(app){
       '<div class="section-title"><span>AYT</span><span class="line"></span></div>' +
       '<div class="actionrow"><button class="btn btn-primary full" id="aytBtn">'+ic('clipboard')+'AYT Denemeleri</button></div>';
   }
-  if(g12){
+  if(isCounselor(cls)){
     midSections +=
       '<div class="section-title"><span>Rehberlik &amp; Danışmanlık Formları (TAKEV)</span><span class="line"></span></div>' +
       '<div class="actionrow" style="flex-direction:column;gap:8px;">' +
@@ -2255,12 +2356,12 @@ function renderRoster(app){
     '<div class="pagehead"><h2>'+escapeHtml(cls.name)+'</h2><button class="sub" id="subToHome" style="cursor:pointer;background:none;border:none;padding:0;color:var(--ink-soft);font-size:13px;display:inline-flex;align-items:center;gap:4px;" title="Sınıflar listesine dön">Sınıf paneli &middot; Sınıflara dön &larr;</button></div>' +
     '<div class="infobar">' +
       '<div class="item"><div class="v">'+cls.students.length+'</div><div class="k">Öğrenci</div></div>' +
-      (!g12 ? ('<div class="item"><div class="v">'+(hwAvg!=null?hwAvg+'%':'-')+'</div><div class="k">Ödev Tamamlama Ort.</div></div>') : '') +
+      '<div class="item"><div class="v">'+(hwAvg!=null?hwAvg+'%':'-')+'</div><div class="k">Ödev Tamamlama Ort.</div></div>' +
       (showTytAyt ? ('<div class="item"><div class="v">'+cls.tytExams.length+'</div><div class="k">TYT Denemesi</div></div><div class="item"><div class="v">'+cls.aytExams.length+'</div><div class="k">AYT Denemesi</div></div>') : '') +
       (!g12 ? ('<div class="item"><div class="v">'+(perfClassAvg()!=null?perfClassAvg():'-')+'</div><div class="k">Performans Ort.</div></div>') : '') +
     '</div>' +
-    (!g12 ? ('<div class="section-title"><span>Takip</span><span class="line"></span></div>' +
-    '<div class="actionrow"><button class="btn btn-primary" id="hwMenuBtn">'+ic('flag')+'Ödevler</button></div>') : '') +
+    '<div class="section-title"><span>Takip</span><span class="line"></span></div>' +
+    '<div class="actionrow"><button class="btn btn-primary" id="hwMenuBtn">'+ic('flag')+'Ödevler</button></div>' +
     midSections +
     '<div class="section-title"><span>Öğrenciler</span><span class="line"></span>' +
       '<button class="btn btn-outline btn-sm" id="sortNo">No</button><button class="btn btn-outline btn-sm" id="sortName">İsim</button>' +
@@ -2276,6 +2377,7 @@ function renderRoster(app){
     (!state.isAdmin ? (
       '<div class="card" style="display:flex;gap:10px;flex-wrap:wrap;">' +
         '<button class="btn btn-outline" id="renameClassBtn" style="flex:1;justify-content:center;">Sınıf Adını Düzenle</button>' +
+        '<button class="btn btn-outline" id="toggleCounselorBtn" style="flex:1;justify-content:center;">'+(isCounselor(cls)?'Danışmanlığı Kapat':'Danışman Olarak Ayarla')+'</button>' +
         '<button class="btn btn-danger" id="deleteClassBtn" style="flex:1;justify-content:center;">Sınıfı Sil</button>' +
       '</div>'
     ) : '');
@@ -2284,18 +2386,16 @@ function renderRoster(app){
   const subToHome = document.getElementById('subToHome');
   if(subToHome) subToHome.onclick = backToHome;
   document.getElementById('backupBtn').onclick = exportClassBackup;
-  if(!g12){
-    document.getElementById('hwMenuBtn').onclick = ()=>{
-      if(state.isAdmin){
-        state.view = 'hw_picker'; render();
-      } else {
-        openActionMenu('Ödevler', [
-          {label:'Ödevleri Düzenle', icon:'flag', onClick:()=>{ state.view='homeworks'; render(); }},
-          {label:'Ödevleri Kontrol Et', icon:'clipboard', onClick:()=>{ state.view='hw_picker'; render(); }},
-        ]);
-      }
-    };
-  }
+  document.getElementById('hwMenuBtn').onclick = ()=>{
+    if(state.isAdmin){
+      state.view = 'hw_picker'; render();
+    } else {
+      openActionMenu('Ödevler', [
+        {label:'Ödevleri Düzenle', icon:'flag', onClick:()=>{ state.view='homeworks'; render(); }},
+        {label:'Ödevleri Kontrol Et', icon:'clipboard', onClick:()=>{ state.view='hw_picker'; render(); }},
+      ]);
+    }
+  };
   if(!g12){
     const exWord = examWord(cls.name), exWordPl = examWordPlural(cls.name);
     document.getElementById('quizMenuBtn').onclick = ()=>{
@@ -2318,11 +2418,16 @@ function renderRoster(app){
     document.getElementById('tytBtn').onclick = ()=>{ state.examType='tyt'; state.view='deneme_list'; render(); };
     document.getElementById('aytBtn').onclick = ()=>{ state.examType='ayt'; state.view='deneme_list'; render(); };
   }
-  if(g12){
-    document.getElementById('takevExportBtn').onclick = exportTakevFormsExcel;
-    document.getElementById('form2QuickBtn').onclick = openForm2Modal;
-    document.getElementById('classEvalBtn').onclick = ()=>{ state.view='classEvalList'; render(); };
+  if(isCounselor(cls)){
+    const teBtn = document.getElementById('takevExportBtn');
+    if(teBtn) teBtn.onclick = exportTakevFormsExcel;
+    const f2Btn = document.getElementById('form2QuickBtn');
+    if(f2Btn) f2Btn.onclick = openForm2Modal;
+    const ceBtn = document.getElementById('classEvalBtn');
+    if(ceBtn) ceBtn.onclick = ()=>{ state.view='classEvalList'; render(); };
   }
+  const tColBtn = document.getElementById('toggleCounselorBtn');
+  if(tColBtn) tColBtn.onclick = toggleCounselorRole;
   document.getElementById('sortNo').onclick = ()=>{ state.sortBy='no'; render(); };
   document.getElementById('sortName').onclick = ()=>{ state.sortBy='name'; render(); };
   app.querySelectorAll('[data-student]').forEach(el=>{
@@ -2406,7 +2511,7 @@ function renderStudentDetail(app){
       '<button class="backlink" id="toRoster" style="margin-bottom:0;">'+escapeHtml(cls.name)+' listesi</button>' +
     '</div>' +
     adminBadge +
-    (g12 ? ('<div style="display:flex;align-items:center;gap:8px;margin:-8px 0 14px;flex-wrap:wrap;">' +
+    (isCounselor(cls) ? ('<div style="display:flex;align-items:center;gap:8px;margin:-8px 0 14px;flex-wrap:wrap;">' +
       '<label style="font-size:12px;color:var(--ink-soft);font-weight:700;">Dershane/Etüt:</label>' +
       '<input type="text" data-f="dershane" value="'+escapeHtml(s.dershane||'')+'" placeholder="—" '+(state.isAdmin?'disabled readonly':'')+' style="width:180px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;'+(state.isAdmin?'background:var(--surface-2);cursor:not-allowed;':'')+'">' +
       '<label style="font-size:12px;color:var(--ink-soft);font-weight:700;margin-left:6px;">Özel Ders:</label>' +
@@ -2418,17 +2523,17 @@ function renderStudentDetail(app){
     '</h2></div>' +
     '<div class="infobar">' +
       (!g12 ? '<div class="item"><div class="v">'+perfAvg+'</div><div class="k">Performans Ort.</div></div>' : '') +
-      (!g12 ? '<div class="item"><div class="v">%'+hwP+'</div><div class="k">Ödev Durumu</div></div>' : '') +
+      '<div class="item"><div class="v">%'+hwP+'</div><div class="k">Ödev Durumu</div></div>' +
     '</div>' +
     (!g12 && cls.quizzes.length ? '<div class="section-title"><span>'+escapeHtml(examWord(cls.name))+' Notları</span><span class="line"></span></div><div class="detail-grid">'+quizHtml+'</div>' : '') +
     (!g12 && cls.perfTasks.length ? '<div class="section-title"><span>Performans</span><span class="line"></span></div><div class="detail-grid">'+perfHtml+'</div>' : '') +
     (showTytAyt ? '<div class="section-title"><span>TYT Sonuçları</span><span class="line"></span></div>'+(tytHtml||'<div class="empty">Henüz TYT sonucu yok.</div>') : '') +
     (showTytAyt ? '<div class="section-title"><span>AYT Sonuçları</span><span class="line"></span></div>'+(aytHtml||'<div class="empty">Henüz AYT sonucu yok.</div>') : '') +
-    (g12 ? renderMeetingReportsSection(s) : '') +
-    (g12 ? renderUniversityGoalsSection(s) : '') +
-    (g12 ? renderAbroadConsultingSection(s) : '') +
-    (!g12 ? ('<div class="section-title"><span>Ödev Geçmişi</span><span class="line"></span></div>' +
-    '<div class="card">'+(hwRows||'<div class="empty">Ödev tanımlı değil.</div>')+'</div>') : '') +
+    (isCounselor(cls) ? renderMeetingReportsSection(s) : '') +
+    (isCounselor(cls) ? renderUniversityGoalsSection(s) : '') +
+    (isCounselor(cls) ? renderAbroadConsultingSection(s) : '') +
+    '<div class="section-title"><span>Ödev Geçmişi</span><span class="line"></span></div>' +
+    '<div class="card">'+(hwRows||'<div class="empty">Ödev tanımlı değil.</div>')+'</div>' +
     '<div class="section-title"><span>Öğretmen Notu</span><span class="line"></span></div>' +
     '<textarea class="note" id="noteBox" placeholder="Gözlem, veli görüşmesi notu..." '+(state.isAdmin ? 'readonly style="background:var(--surface-2);cursor:not-allowed;"' : '')+'>'+escapeHtml(s.teacher_note||'')+'</textarea>' +
     '<div class="section-title" style="margin-top:24px;"><span>Veli Görüşmesi</span><span class="line"></span></div>' +
@@ -2446,7 +2551,7 @@ function renderStudentDetail(app){
   const stToHome = document.getElementById('stToHome');
   if(stToHome) stToHome.onclick = backToHome;
   document.getElementById('parentReportBtn').onclick = ()=> exportParentReport(s.id);
-  if(g12){
+  if(isCounselor(cls)){
     wireMeetingReportsSection(app, s);
     wireUniversityGoalsSection(app, s);
     wireAbroadConsultingSection(app, s);
