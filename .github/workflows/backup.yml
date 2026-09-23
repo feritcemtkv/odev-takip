@@ -1,9 +1,12 @@
-name: Otomatik Excel Yedek
+name: Otomatik Yedekleme
 
 on:
   schedule:
-    - cron: '0 20 * * *'   # her gün 20:00 UTC = 23:00 Türkiye saati
-  workflow_dispatch: {}     # bu, "Run workflow" ile elle de tetiklenebilmesini sağlar
+    - cron: '0 20 * * *'   # Her gün 20:00 UTC = 23:00 Türkiye saati
+  workflow_dispatch: {}     # "Run workflow" ile elle tetikleme
+
+permissions:
+  contents: write
 
 jobs:
   backup:
@@ -11,6 +14,8 @@ jobs:
     steps:
       - name: Repoyu indir
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Node.js kur
         uses: actions/setup-node@v4
@@ -18,7 +23,7 @@ jobs:
           node-version: '22'
 
       - name: Paketleri kur
-        run: npm install @supabase/supabase-js googleapis --no-audit --no-fund
+        run: npm install @supabase/supabase-js xlsx googleapis --no-audit --no-fund
 
       - name: Yedekleme scriptini çalıştır
         env:
@@ -30,3 +35,32 @@ jobs:
           GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
           GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
         run: node .github/scripts/backup.mjs
+
+      - name: Yedekleri GitHub Artifact olarak sakla
+        uses: actions/upload-artifact@v4
+        with:
+          name: gunluk-yedekler
+          path: backups/
+          retention-days: 90
+
+      - name: Yedekleri backups dalına kaydet
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin backups; then
+            git fetch origin backups
+            git checkout backups
+          else
+            git checkout --orphan backups
+            git rm -rf .
+          fi
+          mkdir -p arsiv
+          cp -r backups/* arsiv/ 2>/dev/null || true
+          echo -e "# Otomatik Sistem Yedekleri\nBu dalda Supabase veritabanından her gün alınan otomatik JSON ve Excel yedekleri güvenle arşivlenmektedir." > README.md
+          git add arsiv README.md
+          if git diff --staged --quiet; then
+            echo "Yeni değişiklik yok, commit atlanıyor."
+          else
+            git commit -m "Otomatik yedek: $(date -u '+%Y-%m-%d %H:%M UTC')"
+            git push origin backups
+          fi

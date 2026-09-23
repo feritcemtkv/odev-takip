@@ -1,6 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { google } from 'googleapis';
 import { Readable } from 'stream';
+import fs from 'fs';
+import path from 'path';
+import XLSX from 'xlsx';
 
 const SUPABASE_URL = 'https://miekldpkuclbinclnvvu.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
@@ -15,28 +18,16 @@ if (!SUPABASE_SERVICE_ROLE_KEY) {
   console.error('❌ Eksik Secret: SUPABASE_SERVICE_ROLE_KEY tanımlı değil.');
   process.exit(1);
 }
-if (!GOOGLE_DRIVE_FOLDER_ID) {
-  console.error('❌ Eksik Secret: GOOGLE_DRIVE_FOLDER_ID tanımlı değil.');
-  process.exit(1);
-}
 
 const hasServiceAccount = Boolean(GOOGLE_SERVICE_ACCOUNT_KEY);
 const hasOAuth = Boolean(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET && GOOGLE_REFRESH_TOKEN);
-
-if (!hasServiceAccount && !hasOAuth) {
-  console.error('❌ Eksik Google Kimlik Bilgisi!');
-  console.error('Lütfen GitHub Secrets alanında ya (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN)');
-  console.error('ya da (GOOGLE_SERVICE_ACCOUNT_KEY) secret\'larını tanımlayın.');
-  process.exit(1);
-}
+const hasGoogleDrive = Boolean(GOOGLE_DRIVE_FOLDER_ID && (hasServiceAccount || hasOAuth));
 
 const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
 
-function todayStr() { return new Date().toISOString().slice(0, 10); }
 function timestampStrTR() {
-  // Türkiye saatine çevir (UTC+3, DST yok) ve dosya adına uygun formatta döndür
   const d = new Date(Date.now() + 3 * 60 * 60 * 1000);
   const pad = n => String(n).padStart(2, '0');
   return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate())
@@ -44,33 +35,31 @@ function timestampStrTR() {
 }
 
 function getDriveClient() {
-  if (hasServiceAccount) {
-    console.log("Google Drive'a Hizmet Hesabı (Service Account) ile bağlanılıyor...");
-    let credentials;
-    try {
+  if (!hasGoogleDrive) return null;
+  try {
+    if (hasServiceAccount) {
+      let credentials;
       const raw = GOOGLE_SERVICE_ACCOUNT_KEY.startsWith('{')
         ? GOOGLE_SERVICE_ACCOUNT_KEY
         : Buffer.from(GOOGLE_SERVICE_ACCOUNT_KEY, 'base64').toString('utf-8');
       credentials = JSON.parse(raw);
-    } catch (e) {
-      throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY geçerli bir JSON verisi değil: ' + e.message);
+      const auth = new google.auth.GoogleAuth({
+        credentials,
+        scopes: ['https://www.googleapis.com/auth/drive'],
+      });
+      return google.drive({ version: 'v3', auth });
     }
-    const auth = new google.auth.GoogleAuth({
-      credentials,
-      scopes: ['https://www.googleapis.com/auth/drive'],
-    });
-    return google.drive({ version: 'v3', auth });
+    if (hasOAuth) {
+      const oauth2Client = new google.auth.OAuth2(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
+      oauth2Client.setCredentials({ refresh_token: GOOGLE_REFRESH_TOKEN });
+      return google.drive({ version: 'v3', auth: oauth2Client });
+    }
+  } catch (e) {
+    console.warn('⚠️ Google Drive istemcisi başlatılamadı:', e.message);
   }
-
-  console.log("Google Drive'a OAuth 2.0 (Kullanıcı Hesabı) ile bağlanılıyor...");
-  const oauth2Client = new google.auth.OAuth2(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
-  oauth2Client.setCredentials({ refresh_token: GOOGLE_REFRESH_TOKEN });
-  return google.drive({ version: 'v3', auth: oauth2Client });
+  return null;
 }
 
-// Sadece BU öğretmenin kendi sınıflarını (owner_id ile) ve onlara bağlı
-// öğrenci/ödev/not verilerini çeker — sistemdeki diğer öğretmenlerin
-// verilerine dokunmaz.
 async function fetchOwnerScopedTables(ownerId) {
   const dump = {};
 
@@ -124,78 +113,141 @@ async function fetchOwnerScopedTables(ownerId) {
   return dump;
 }
 
-async function main() {
-  const drive = getDriveClient();
+function buildExcelBackup(dump) {
+  const wb = XLSX.utils.book_new();
 
-  console.log('Google Drive klasörüne erişim test ediliyor...');
-  try {
-    const folderCheck = await drive.files.get({
-      fileId: GOOGLE_DRIVE_FOLDER_ID,
-      fields: 'id, name, mimeType',
+  const addSheet = (data, sheetName) => {
+    if (!data || !data.length) return;
+    const ws = XLSX.utils.json_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  };
+
+  const classMap = {};
+  (dump.classes || []).forEach(c => { classMap[c.id] = c.name; });
+
+  const studentMap = {};
+  (dump.students || []).forEach(s => { studentMap[s.id] = (s.no ? s.no + ' - ' : '') + s.name; });
+
+  // 1. Sınıflar
+  addSheet((dump.classes || []).map(c => ({
+    'Sınıf Adı': c.name,
+    'Sıra': c.sort_order,
+    'Danışmanlık': c.is_counselor ? 'Evet' : 'Hayır'
+  })), 'Sınıflar');
+
+  // 2. Öğrenciler
+  addSheet((dump.students || []).map(s => ({
+    'Sınıf': classMap[s.class_id] || '',
+    'No': s.no || '',
+    'Ad Soyad': s.name,
+    'Okulda Yok': s.absent ? 'Evet' : 'Hayır',
+    'Dershane': s.dershane || '',
+    'Özel Ders': s.ozel_ders || '',
+    'Öğretmen Notu': s.teacher_note || ''
+  })), 'Öğrenciler');
+
+  // 3. Ödevler
+  addSheet((dump.homeworks || []).map(h => ({
+    'Sınıf': classMap[h.class_id] || '',
+    'Slot': h.slot_no,
+    'Konu': h.topic || '',
+    'Veriliş Tarihi': h.hw_date || '',
+    'Kontrol Tarihi': h.check_date || ''
+  })), 'Ödevler');
+
+  // 4. Ödev Durumları
+  addSheet((dump.homework_status || []).map(hs => ({
+    'Öğrenci': studentMap[hs.student_id] || hs.student_id,
+    'Ödev Slot': hs.slot_no,
+    'Yapıldı': hs.done ? 'Evet' : 'Hayır'
+  })), 'Ödev Durumları');
+
+  // 5. Deneme Sınavları
+  addSheet((dump.deneme_exams || []).map(e => ({
+    'Sınıf': classMap[e.class_id] || '',
+    'Sınav Türü': e.exam_type ? e.exam_type.toUpperCase() : '',
+    'Sınav Adı': e.label,
+    'Tarih': e.exam_date || '',
+    'Dersler': (e.subjects || []).join(', ')
+  })), 'Denemeler');
+
+  // 6. Deneme Notları
+  addSheet((dump.deneme_scores || []).map(ds => ({
+    'Öğrenci': studentMap[ds.student_id] || ds.student_id,
+    'Ders': ds.subject,
+    'Doğru': ds.dogru ?? '',
+    'Yanlış': ds.yanlis ?? '',
+    'Boş': ds.bos ?? ''
+  })), 'Deneme Notları');
+
+  // 7. Danışmanlık ve Görüşmeler
+  if (dump.counseling_notes && dump.counseling_notes.length) {
+    addSheet(dump.counseling_notes.map(n => ({
+      'Öğrenci': studentMap[n.student_id] || n.student_id,
+      'Tarih': n.note_date || '',
+      'Tür': n.meeting_type === 'veli' ? 'Veli Görüşmesi' : 'Öğrenci Görüşmesi',
+      'Görüşmeyi Yapan': n.interviewer || '',
+      'Neden': n.reason || '',
+      'İçerik': n.content || '',
+      'Değerlendirme': n.evaluation || ''
+    })), 'Görüşmeler');
+  }
+
+  // 8. Üniversite Hedefleri
+  if (dump.university_goals && dump.university_goals.length) {
+    const ugRows = [];
+    dump.university_goals.forEach(g => {
+      (g.goals || []).forEach((goal, i) => {
+        ugRows.push({
+          'Öğrenci': studentMap[g.student_id] || g.student_id,
+          'Dönem': g.period,
+          'Tercih Sırası': i + 1,
+          'Meslek/Bölüm': goal.profession || '',
+          'Üniversite': goal.university || '',
+          'Almanya İsteği': g.germany_interest === true ? 'Evet' : (g.germany_interest === false ? 'Hayır' : '')
+        });
+      });
     });
-    console.log('  ✓ Klasör doğrulandı: "' + folderCheck.data.name + '" (ID: ' + GOOGLE_DRIVE_FOLDER_ID + ')');
-  } catch (folderErr) {
-    const errMsg = String(folderErr?.message || '');
-    const errData = folderErr?.response?.data || {};
-    const errDesc = String(errData?.error_description || errData?.error || '');
+    addSheet(ugRows, 'Üniversite Hedefleri');
+  }
 
-    console.error('\n' + '='.repeat(65));
-    console.error('❌ GOOGLE DRIVE BAĞLANTI HATASI');
-    console.error('='.repeat(65));
+  // 9. Sınıf Durum Değerlendirmeleri
+  if (dump.class_evaluations && dump.class_evaluations.length) {
+    const ceRows = [];
+    (dump.class_evaluations || []).forEach(ev => {
+      (dump.class_evaluation_marks || []).forEach(m => {
+        ceRows.push({
+          'Sınıf': classMap[ev.class_id] || '',
+          'Dönem': ev.period,
+          'Öğrenci': studentMap[m.student_id] || m.student_id,
+          'Özel Not': (m.marks && m.marks[-1] && m.marks[-1].note) || ''
+        });
+      });
+    });
+    addSheet(ceRows, 'Sınıf Değerlendirme');
+  }
 
-    if (errMsg.includes('invalid_grant') || errDesc.includes('invalid_grant') || errDesc.includes('expired') || errDesc.includes('revoked')) {
-      console.error('🚨 SEBEP: Google OAuth Refresh Token süresi dolmuş veya geçersiz (invalid_grant)!');
-      console.error('\n📌 NEDEN KAYNAKLANDI?');
-      console.error('1. Google Cloud Console\'da "OAuth consent screen" (izin ekranı) durumu');
-      console.error('   "Testing" modunda ise, Google token\'ları tam 7 gün sonra iptal eder.');
-      console.error('2. Google hesap şifrenizi değiştirdiyseniz veya yetkiyi kaldırdıysanız.');
-      console.error('\n💡 KALICI ÇÖZÜM:');
-      console.error('1. https://console.cloud.google.com/apis/credentials/consent adresine gidin.');
-      console.error('2. "PUBLISH APP" (Uygulamayı Yayınla) butonuna tıklayıp onaylayın ("In Production").');
-      console.error('3. Yeni bir Refresh Token alıp GitHub Secrets > GOOGLE_REFRESH_TOKEN alanına kaydedin.');
-      console.error('   (Ya da alternatif olarak Service Account key GOOGLE_SERVICE_ACCOUNT_KEY tanımlayın).');
-    } else if (folderErr?.code === 404 || folderErr?.status === 404) {
-      console.error('🚨 SEBEP: Klasör bulunamadı (404 Not Found)!');
-      console.error('👉 GOOGLE_DRIVE_FOLDER_ID değerinin (' + GOOGLE_DRIVE_FOLDER_ID + ') doğru olduğundan ve klasörün çöp kutusuna taşınmadığından emin olun.');
-    } else if (folderErr?.code === 403 || folderErr?.status === 403) {
-      console.error('🚨 SEBEP: Yetki yetersiz (403 Forbidden)!');
-      console.error('👉 Giriş yapılan Google hesabının veya Hizmet Hesabının bu Drive klasörüne erişim ve yazma izni olduğunu doğrulayın.');
-      if (errDesc) console.error('Detay:', errDesc);
-    } else {
-      console.error('Hata detayı:', errMsg);
-      if (errData && Object.keys(errData).length) console.error('Google yanıtı:', JSON.stringify(errData, null, 2));
-    }
-    console.error('='.repeat(65) + '\n');
-    throw folderErr;
+  return wb;
+}
+
+async function main() {
+  const backupDir = path.join(process.cwd(), 'backups');
+  if (!fs.existsSync(backupDir)) {
+    fs.mkdirSync(backupDir, { recursive: true });
   }
 
   console.log('Kullanıcı listesi Supabase\'den alınıyor...');
-  let userList;
-  try {
-    const res = await sb.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    if (res.error) throw res.error;
-    userList = res.data;
-  } catch (userErr) {
-    console.error('\n' + '='.repeat(65));
-    console.error('❌ SUPABASE BAĞLANTI HATASI');
-    console.error('='.repeat(65));
-    console.error('Kullanıcı listesi alınamadı: ' + userErr.message);
-    console.error('👉 SUPABASE_SERVICE_ROLE_KEY anahtarının doğru ve güncel olduğunu kontrol edin.');
-    console.error('='.repeat(65) + '\n');
-    throw userErr;
-  }
-
-  const allUsers = userList.users || [];
+  const res = await sb.auth.admin.listUsers({ page: 1, perPage: 1000 });
+  if (res.error) throw res.error;
+  const allUsers = res.data.users || [];
   console.log('  Toplam ' + allUsers.length + ' kullanıcı bulundu.');
 
-  // Eğer TEACHER_USERNAME belirtilmişse tek bir öğretmen, belirtilmemişse admin hariç tüm öğretmenler
   let targetUsers = allUsers;
   if (TEACHER_USERNAME) {
     const filterEmail = TEACHER_USERNAME.includes('@') ? TEACHER_USERNAME : TEACHER_USERNAME + '@takip.local';
     targetUsers = allUsers.filter(u => u.email === filterEmail || (u.user_metadata && u.user_metadata.username === TEACHER_USERNAME));
     console.log('  Filtre uygulandı (' + TEACHER_USERNAME + '): ' + targetUsers.length + ' kullanıcı hedeflendi.');
   } else {
-    // Admin haricindeki tüm öğretmenleri dahil et
     targetUsers = allUsers.filter(u => {
       const uName = (u.user_metadata?.username || u.email?.split('@')[0] || '').toLowerCase();
       return uName !== 'admin' && u.email !== 'admin@takip.local';
@@ -209,7 +261,8 @@ async function main() {
   }
 
   const dateStr = timestampStrTR();
-  let uploadedCount = 0;
+  const drive = getDriveClient();
+  let completedCount = 0;
 
   for (const user of targetUsers) {
     const teacherName = (user.user_metadata?.username || user.email.split('@')[0]).replace(/[\\/:*?"<>|]/g, '_');
@@ -233,32 +286,48 @@ async function main() {
       generated_at: new Date().toISOString(),
       ...dump,
     };
-    const buf = Buffer.from(JSON.stringify(payload, null, 2), 'utf-8');
 
-    // Dosya adı formatı: [ogretmen_adi]_yedek_[tarih].json
-    const filename = teacherName + '_yedek_' + dateStr + '.json';
-    console.log('  Drive\'a yükleniyor: ' + filename + ' (' + buf.length + ' byte)...');
+    // 1. JSON Yedeğini diske yaz
+    const jsonFilename = teacherName + '_yedek_' + dateStr + '.json';
+    const jsonPath = path.join(backupDir, jsonFilename);
+    const jsonBuf = Buffer.from(JSON.stringify(payload, null, 2), 'utf-8');
+    fs.writeFileSync(jsonPath, jsonBuf);
+    console.log('  ✓ JSON yedeği oluşturuldu: ' + jsonFilename + ' (' + jsonBuf.length + ' byte)');
 
+    // 2. Excel (.xlsx) Yedeğini diske yaz
+    const excelFilename = teacherName + '_yedek_' + dateStr + '.xlsx';
+    const excelPath = path.join(backupDir, excelFilename);
     try {
-      const stream = Readable.from(buf);
-      await drive.files.create({
-        requestBody: { name: filename, parents: [GOOGLE_DRIVE_FOLDER_ID] },
-        media: { mimeType: 'application/json', body: stream },
-        fields: 'id',
-      });
-      console.log('  ✓ ' + filename + ' başarıyla yüklendi.');
-      uploadedCount++;
-    } catch (uploadErr) {
-      console.error('  ❌ ' + filename + ' yüklenirken hata oluştu:', uploadErr.message);
-      throw uploadErr;
+      const wb = buildExcelBackup(dump);
+      XLSX.writeFile(wb, excelPath);
+      console.log('  ✓ Excel yedeği oluşturuldu: ' + excelFilename);
+    } catch (e) {
+      console.warn('  ⚠️ Excel yedeği oluşturulurken hata:', e.message);
     }
+
+    // 3. İsteğe bağlı Google Drive yüklemesi (eğer ayarlıysa)
+    if (drive && GOOGLE_DRIVE_FOLDER_ID) {
+      try {
+        const stream = Readable.from(jsonBuf);
+        await drive.files.create({
+          requestBody: { name: jsonFilename, parents: [GOOGLE_DRIVE_FOLDER_ID] },
+          media: { mimeType: 'application/json', body: stream },
+          fields: 'id',
+        });
+        console.log('  ✓ Google Drive\'a yüklendi: ' + jsonFilename);
+      } catch (uploadErr) {
+        console.warn('  ⚠️ Google Drive yüklemesi atlandı (' + uploadErr.message + ')');
+      }
+    }
+
+    completedCount++;
   }
 
   console.log('\n========================================');
-  console.log('Tüm yedekleme tamamlandı! Toplam ' + uploadedCount + ' öğretmenin yedeği Drive\'a yüklendi.');
+  console.log('Tüm yedekleme başarıyla tamamlandı! Toplam ' + completedCount + ' öğretmenin yedeği hazırlandı.');
 }
 
 main().catch(err => {
-  console.error('\nYedekleme işlemi tamamlanamadı ve sonlandırıldı.');
+  console.error('\nYedekleme işlemi sırasında hata:', err);
   process.exit(1);
 });
