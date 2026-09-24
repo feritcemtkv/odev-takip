@@ -24,11 +24,17 @@ CREATE POLICY "classes_select_names" ON public.classes
     FOR SELECT TO authenticated
     USING (true);
 
+-- Tabloya verilme tarihi ve kontrol tarihi sütunlarını ekle
+ALTER TABLE public.performance_tasks ADD COLUMN IF NOT EXISTS given_date date;
+ALTER TABLE public.performance_tasks ADD COLUMN IF NOT EXISTS due_date date;
+
 -- 2. Tüm Kullanıcıların Sınıflarına Performans Ödevi ve Rubrik Eşitleyen Fonksiyon
 CREATE OR REPLACE FUNCTION public.sync_grade_performance_tasks(
     p_grade text,
     p_label text,
-    p_criteria jsonb DEFAULT NULL
+    p_criteria jsonb DEFAULT NULL,
+    p_given_date text DEFAULT NULL,
+    p_due_date text DEFAULT NULL
 )
 RETURNS json
 LANGUAGE plpgsql
@@ -49,11 +55,22 @@ BEGIN
         SELECT id, name FROM public.classes
         WHERE name ~* ('(^|[^0-9])' || trim(p_grade) || '([^0-9]|$)')
     LOOP
-        -- 1. Performans ödevi henüz sınıfta yoksa ekle
+        -- 1. Performans ödevi henüz sınıfta yoksa ekle, varsa tarihleri güncelle
         IF NOT EXISTS (SELECT 1 FROM public.performance_tasks WHERE class_id = cls.id AND label = trim(p_label)) THEN
             SELECT COALESCE(MAX(slot_no), 0) INTO max_slot FROM public.performance_tasks WHERE class_id = cls.id;
-            INSERT INTO public.performance_tasks (class_id, slot_no, label)
-            VALUES (cls.id, max_slot + 1, trim(p_label));
+            INSERT INTO public.performance_tasks (class_id, slot_no, label, given_date, due_date)
+            VALUES (
+                cls.id,
+                max_slot + 1,
+                trim(p_label),
+                CASE WHEN trim(coalesce(p_given_date, '')) = '' THEN NULL ELSE p_given_date::date END,
+                CASE WHEN trim(coalesce(p_due_date, '')) = '' THEN NULL ELSE p_due_date::date END
+            );
+        ELSE
+            UPDATE public.performance_tasks
+            SET given_date = CASE WHEN p_given_date IS NOT NULL AND trim(p_given_date) <> '' THEN p_given_date::date ELSE given_date END,
+                due_date = CASE WHEN p_due_date IS NOT NULL AND trim(p_due_date) <> '' THEN p_due_date::date ELSE due_date END
+            WHERE class_id = cls.id AND label = trim(p_label);
         END IF;
 
         -- 2. Eğer rubrik kriterleri verildiyse rubrics tablosuna kaydet / güncelle
@@ -189,7 +206,7 @@ END;
 $$;
 
 -- Fonksiyonları tüm giriş yapmış öğretmenlerin çağırabilmesi için yetkilendir
-GRANT EXECUTE ON FUNCTION public.sync_grade_performance_tasks(text, text, jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.sync_grade_performance_tasks(text, text, jsonb, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.rename_grade_performance_task(text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.delete_grade_performance_task(text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.sync_all_grade_performance_from_class(uuid) TO authenticated;
