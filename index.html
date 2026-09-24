@@ -2409,9 +2409,40 @@ function renderRoster(app){
       }
     };
     document.getElementById('perfMenuBtn').onclick = ()=>{
-      if(!state.cls.perfTasks.length){ showToast('Henüz performans ödevi tanımlanmamış'); return; }
-      if(!state.rubricLevel) state.rubricLevel = state.cls.perfTasks[0].label;
-      state.view='rubric'; render();
+      if(state.isAdmin){
+        if(!state.cls.perfTasks.length){
+          state.view = 'perfTasks'; render();
+        } else {
+          openActionMenu('Performans Ödevleri', [
+            {label:'Performans Görevlerini İncele', icon:'target', onClick:()=>{ state.view='perfTasks'; render(); }},
+            {label:'Performans Notlarını İncele (Rubrik)', icon:'clipboard', onClick:()=>{
+              if(!state.rubricLevel) state.rubricLevel = state.cls.perfTasks[0].label;
+              state.view='rubric'; render();
+            }}
+          ]);
+        }
+      } else {
+        openActionMenu('Performans', [
+          {
+            label:'Performans Görevlerini Düzenle / Yeni Ekle',
+            icon:'target',
+            onClick:()=>{ state.view='perfTasks'; render(); }
+          },
+          {
+            label:'Performans Notu Gir (Rubrik)',
+            icon:'clipboard',
+            onClick:()=>{
+              if(!state.cls.perfTasks.length){
+                showToast('Henüz performans ödevi eklenmemiş. Lütfen önce ödev ekleyin.');
+                state.view = 'perfTasks'; render();
+                return;
+              }
+              if(!state.rubricLevel) state.rubricLevel = state.cls.perfTasks[0].label;
+              state.view='rubric'; render();
+            }
+          }
+        ]);
+      }
     };
   }
   if(showTytAyt){
@@ -2541,7 +2572,6 @@ function renderStudentDetail(app){
     (!state.isAdmin ? (
       '<div class="section-title" style="margin-top:24px;"><span>Öğrenci İşlemleri</span><span class="line"></span></div>' +
       '<div class="card" style="display:flex;gap:10px;">' +
-        '<button class="btn btn-outline" id="absentBtn" style="flex:1;justify-content:center;">'+(s.absent?'Aktif Yap':'Okulda Yok İşaretle')+'</button>' +
         '<button class="btn btn-outline" id="editStBtn" style="flex:1;justify-content:center;">'+ic('edit')+'Bilgileri Düzenle</button>' +
         '<button class="btn btn-danger" id="deleteStBtn" style="flex:1;justify-content:center;">'+ic('trash')+'Öğrenciyi Sil</button>' +
       '</div>'
@@ -2565,8 +2595,6 @@ function renderStudentDetail(app){
       inp.onblur = ()=> updateStudentField(s.id, inp.dataset.f, inp.value);
     });
     document.getElementById('noteBox').onblur = (e)=> updateStudentField(s.id, 'teacher_note', e.target.value);
-    const abBtn = document.getElementById('absentBtn');
-    if(abBtn) abBtn.onclick = ()=> toggleAbsent(s.id);
     const edBtn = document.getElementById('editStBtn');
     if(edBtn) edBtn.onclick = ()=> openEditStudentModal(s.id);
     const delStBtn = document.getElementById('deleteStBtn');
@@ -3048,7 +3076,7 @@ function renderRubric(app){
       ).join('');
       return '<div class="critblock"><h3>'+escapeHtml(c.name)+' <span class="max">(tam puan: '+c.max+')</span></h3>'+levels+'</div>';
     }).join('');
-    body = (crit.length===0 ? '<div class="empty">Bu performans için henüz ölçüt tanımlanmadı.<br>Yukarıdaki "Ölçütleri Düzenle" ile ekleyebilirsin.</div>' :
+    body = (crit.length===0 ? '<div class="empty">Bu performans için henüz ölçüt tanımlanmadı.<br>Yukarıdaki "Ölçütleri Düzenle" ile ekleyebilirsin.' + (!state.isAdmin ? '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" id="emptyAddCritBtn">+ Ölçütleri Düzenle / Ekle</button></div>' : '') + '</div>' :
       '<div class="section-title"><span>Sınıf Özeti</span><span class="line"></span></div>' +
       (summaryRows || '<div class="empty">Öğrenci yok.</div>') +
       '<div class="section-title" style="margin-top:24px;"><span>'+(sid?'Puanlama':'Puanlamak için öğrenci seç')+'</span><span class="line"></span></div>' +
@@ -3066,6 +3094,8 @@ function renderRubric(app){
   document.getElementById('back5').onclick = backToRoster;
   const editToggleBtn = document.getElementById('editToggle');
   if(editToggleBtn) editToggleBtn.onclick = ()=>{ state.rubricEdit = !state.rubricEdit; render(); };
+  const emptyAddCritBtn = document.getElementById('emptyAddCritBtn');
+  if(emptyAddCritBtn) emptyAddCritBtn.onclick = ()=>{ state.rubricEdit = true; render(); };
   const manageTasksBtn = document.getElementById('manageTasksBtn');
   if(manageTasksBtn) manageTasksBtn.onclick = ()=>{ state.view='perfTasks'; render(); };
   app.querySelectorAll('.levelpicker button[data-lvl]').forEach(b=>{
