@@ -330,6 +330,19 @@ function getSameGradeClasses(cls){
   if(!g) return [];
   return (state.classes || []).filter(c => c.id !== cls.id && getGradeLevel(c.name) === g);
 }
+async function getAllSameGradeClasses(cls){
+  cls = cls || state.cls;
+  if(!cls || !cls.name) return [];
+  const g = getGradeLevel(cls.name);
+  if(!g) return [];
+  try {
+    const { data, error } = await sb.from('classes').select('id, name, owner_id');
+    if(!error && data && data.length){
+      return data.filter(c => c.id !== cls.id && getGradeLevel(c.name) === g);
+    }
+  } catch(e){}
+  return getSameGradeClasses(cls);
+}
 function examWord(name){ return isGrade12(name) ? 'Deneme' : 'KDS'; }
 function examWordPlural(name){ return isGrade12(name) ? 'Denemeleri' : "KDS'leri"; }
 
@@ -1294,11 +1307,55 @@ async function loadClassDetail(classId){
     classEvaluationMarks[row.evaluation_id][row.student_id] = classEvaluationMarks[row.evaluation_id][row.student_id]||{};
     classEvaluationMarks[row.evaluation_id][row.student_id][row.criteria_index] = { checked: row.checked, note: row.note };
   }
+  let effectivePerfTasks = perfTasks||[];
+  const g = getGradeLevel(classObj?classObj.name:'');
+  // Eğer bu sınıfta henüz performans ödevi yoksa, diğer tüm kullanıcıların aynı seviyedeki sınıflarından otomatik devral
+  if(!effectivePerfTasks.length && g && g!=='12' && !state.isAdmin){
+    try {
+      const { data: allSameClasses } = await sb.from('classes').select('id, name');
+      const targetIds = (allSameClasses||[]).filter(c => c.id !== classId && getGradeLevel(c.name) === g).map(c => c.id);
+      if(targetIds.length){
+        const { data: existingTasks } = await sb.from('performance_tasks').select('*').in('class_id', targetIds).order('slot_no');
+        if(existingTasks && existingTasks.length){
+          const uniqueLabels = [...new Set(existingTasks.map(t=>t.label))];
+          for(let i=0; i<uniqueLabels.length; i++){
+            const lbl = uniqueLabels[i];
+            const { data: ins } = await sb.from('performance_tasks').insert({ class_id: classId, slot_no: i + 1, label: lbl }).select();
+            if(ins && ins[0]) effectivePerfTasks.push(ins[0]);
+
+            const { data: refR } = await sb.from('rubrics').select('criteria').eq('level', lbl).in('class_id', targetIds).limit(1);
+            if(refR && refR[0] && refR[0].criteria){
+              rubrics[lbl] = refR[0].criteria;
+              await sb.from('rubrics').upsert({ class_id: classId, level: lbl, criteria: refR[0].criteria }, { onConflict: 'class_id,level' });
+            }
+          }
+        }
+      }
+    } catch(err){
+      console.warn('Auto-inherit performance tasks error:', err);
+    }
+  }
+
+  // Ödev var ama rubrik ölçütleri boşsa şablonu otomatik tamamla
+  if(effectivePerfTasks.length && g && g!=='12' && !state.isAdmin){
+    for(const t of effectivePerfTasks){
+      if(!rubrics[t.label] || !rubrics[t.label].length){
+        try {
+          const { data: refR } = await sb.from('rubrics').select('criteria').eq('level', t.label).not('criteria', 'is', null).limit(1);
+          if(refR && refR[0] && refR[0].criteria){
+            rubrics[t.label] = refR[0].criteria;
+            await sb.from('rubrics').upsert({ class_id: classId, level: t.label, criteria: refR[0].criteria }, { onConflict: 'class_id,level' });
+          }
+        } catch(e){}
+      }
+    }
+  }
+
   state.cls = {
     id: classId, name: classObj?classObj.name:'',
     students: students||[], homeworks: homeworks||[], hwStatus,
     quizzes: quizzes||[], quizScores,
-    perfTasks: perfTasks||[], rubrics, rubricScores,
+    perfTasks: effectivePerfTasks, rubrics, rubricScores,
     tytExams: (denemeExams||[]).filter(e=>e.exam_type==='tyt'),
     aytExams: (denemeExams||[]).filter(e=>e.exam_type==='ayt'),
     denemeScoresByExam,
@@ -1889,19 +1946,27 @@ async function addPerfTask(label){
   if(data && data[0]) state.cls.perfTasks.push(data[0]);
   state.rubricLevel = label;
 
-  // Aynı seviyedeki diğer sınıflara (9, 10, 11) da bu ödevi otomatik ekle
-  const sameGrade = getSameGradeClasses(state.cls);
-  if(sameGrade.length){
-    for(const c of sameGrade){
-      const { data: existing } = await sb.from('performance_tasks').select('id').eq('class_id', c.id).eq('label', label);
-      if(!existing || !existing.length){
-        const { data: allT } = await sb.from('performance_tasks').select('slot_no').eq('class_id', c.id);
-        const nextSlot = (allT && allT.length) ? Math.max(0, ...allT.map(x=>x.slot_no||0)) + 1 : 1;
-        await sb.from('performance_tasks').insert({class_id: c.id, slot_no: nextSlot, label});
+  const g = getGradeLevel(state.cls.name);
+  if(g){
+    // 1. Önce RPC fonksiyonunu çağır (tüm kullanıcıların sınıflarına yansıtır)
+    try {
+      await sb.rpc('sync_grade_performance_tasks', { p_grade: g, p_label: label });
+    } catch(e){
+      console.warn('RPC sync_grade_performance_tasks hatası / aktif değil:', e);
+    }
+    // 2. Doğrudan erişilebilen tüm sınıflara da ekle
+    const sameGrade = await getAllSameGradeClasses(state.cls);
+    if(sameGrade.length){
+      for(const c of sameGrade){
+        const { data: existing } = await sb.from('performance_tasks').select('id').eq('class_id', c.id).eq('label', label);
+        if(!existing || !existing.length){
+          const { data: allT } = await sb.from('performance_tasks').select('slot_no').eq('class_id', c.id);
+          const nextSlot = (allT && allT.length) ? Math.max(0, ...allT.map(x=>x.slot_no||0)) + 1 : 1;
+          await sb.from('performance_tasks').insert({class_id: c.id, slot_no: nextSlot, label});
+        }
       }
     }
-    const g = getGradeLevel(state.cls.name);
-    showToast('Ödev eklendi ve tüm '+g+'. sınıflara aktarıldı');
+    showToast('Ödev eklendi ve tüm '+g+'. sınıflara (diğer kullanıcılar dahil) aktarıldı');
   } else {
     showToast('Performans ödevi eklendi');
   }
@@ -1926,23 +1991,28 @@ async function renamePerfTask(oldLabel, newLabel){
   const ids = state.cls.students.map(s=>s.id);
   if(ids.length) await sb.from('rubric_scores').update({level:newLabel}).eq('level', oldLabel).in('student_id', ids);
 
-  // Aynı seviyedeki diğer sınıflara da yansıt
-  const sameGrade = getSameGradeClasses(state.cls);
-  for(const c of sameGrade){
-    await sb.from('performance_tasks').update({label:newLabel}).eq('class_id', c.id).eq('label', oldLabel);
-    await sb.from('rubrics').update({level:newLabel}).eq('class_id', c.id).eq('level', oldLabel);
+  const g = getGradeLevel(state.cls.name);
+  if(g){
+    try {
+      await sb.rpc('rename_grade_performance_task', { p_grade: g, p_old_label: oldLabel, p_new_label: newLabel });
+    } catch(e){}
+    const sameGrade = await getAllSameGradeClasses(state.cls);
+    for(const c of sameGrade){
+      await sb.from('performance_tasks').update({label:newLabel}).eq('class_id', c.id).eq('label', oldLabel);
+      await sb.from('rubrics').update({level:newLabel}).eq('class_id', c.id).eq('level', oldLabel);
+    }
   }
 
   logActivity('"'+oldLabel+'" performans ödevini "'+newLabel+'" olarak yeniden adlandırdı');
-  showToast('İsim güncellendi');
+  showToast('İsim güncellendi (tüm kullanıcılara yansıtıldı)');
 }
 async function deletePerfTask(label){
   if(state.isAdmin){ showToast('Yönetici modunda performans ödevi silinemez (Salt Okunur).'); return; }
   const grade = getGradeLevel(state.cls.name);
-  const sameGrade = getSameGradeClasses(state.cls);
+  const sameGrade = await getAllSameGradeClasses(state.cls);
   let deleteFromAll = false;
   if(sameGrade.length){
-    deleteFromAll = confirm('"'+label+'" ödevini diğer tüm '+grade+'. sınıflardan ('+sameGrade.map(c=>c.name).join(', ')+') da silmek ister misiniz?\n\n[Tamam]: Tüm '+grade+'. sınıflardan sil\n[İptal]: Yalnızca bu sınıftan ('+state.cls.name+') sil');
+    deleteFromAll = confirm('"'+label+'" ödevini diğer tüm '+grade+'. sınıflardan (diğer kullanıcıların sınıfları dahil) da silmek ister misiniz?\n\n[Tamam]: Tüm '+grade+'. sınıflardan sil\n[İptal]: Yalnızca bu sınıftan ('+state.cls.name+') sil');
   }
 
   state.cls.perfTasks = state.cls.perfTasks.filter(t=>t.label!==label);
@@ -1956,7 +2026,10 @@ async function deletePerfTask(label){
   const ids = state.cls.students.map(s=>s.id);
   if(ids.length) await sb.from('rubric_scores').delete().eq('level', label).in('student_id', ids);
 
-  if(deleteFromAll && sameGrade.length){
+  if(deleteFromAll && grade){
+    try {
+      await sb.rpc('delete_grade_performance_task', { p_grade: grade, p_label: label });
+    } catch(e){}
     for(const c of sameGrade){
       await sb.from('performance_tasks').delete().eq('class_id', c.id).eq('label', label);
       await sb.from('rubrics').delete().eq('class_id', c.id).eq('level', label);
@@ -1972,30 +2045,38 @@ async function saveRubric(level){
   await sb.from('rubrics').upsert({class_id: state.cls.id, level, criteria}, {onConflict:'class_id,level'});
   logActivity('"'+level+'" performans rubriğini güncelledi');
 
-  // Aynı seviyedeki diğer sınıflara (9, 10, 11) aynı rubriği otomatik olarak geçir
-  const sameGrade = getSameGradeClasses(state.cls);
-  if(sameGrade.length){
-    for(const c of sameGrade){
-      const { data: existing } = await sb.from('performance_tasks').select('id').eq('class_id', c.id).eq('label', level);
-      if(!existing || !existing.length){
-        const { data: allT } = await sb.from('performance_tasks').select('slot_no').eq('class_id', c.id);
-        const nextSlot = (allT && allT.length) ? Math.max(0, ...allT.map(x=>x.slot_no||0)) + 1 : 1;
-        await sb.from('performance_tasks').insert({class_id: c.id, slot_no: nextSlot, label: level});
+  const g = getGradeLevel(state.cls.name);
+  if(g){
+    // 1. RPC ile tüm kullanıcıların sınıflarına rubriği uygula
+    try {
+      await sb.rpc('sync_grade_performance_tasks', { p_grade: g, p_label: level, p_criteria: criteria });
+    } catch(e){}
+    // 2. Doğrudan erişilebilen tüm sınıflara da uygula
+    const sameGrade = await getAllSameGradeClasses(state.cls);
+    if(sameGrade.length){
+      for(const c of sameGrade){
+        const { data: existing } = await sb.from('performance_tasks').select('id').eq('class_id', c.id).eq('label', level);
+        if(!existing || !existing.length){
+          const { data: allT } = await sb.from('performance_tasks').select('slot_no').eq('class_id', c.id);
+          const nextSlot = (allT && allT.length) ? Math.max(0, ...allT.map(x=>x.slot_no||0)) + 1 : 1;
+          await sb.from('performance_tasks').insert({class_id: c.id, slot_no: nextSlot, label: level});
+        }
+        await sb.from('rubrics').upsert({class_id: c.id, level, criteria}, {onConflict:'class_id,level'});
       }
-      await sb.from('rubrics').upsert({class_id: c.id, level, criteria}, {onConflict:'class_id,level'});
     }
   }
 }
 async function syncRubricToSameGrade(level){
   if(state.isAdmin) return;
   const g = getGradeLevel(state.cls.name);
-  const sameGrade = getSameGradeClasses(state.cls);
-  if(!sameGrade.length){
-    showToast('Aynı seviyede ('+g+'. sınıf) başka sınıf bulunamadı.');
-    return;
-  }
+  if(!g){ showToast('Sınıf seviyesi belirlenemedi.'); return; }
   const criteria = state.cls.rubrics[level] || [];
-  const classNames = sameGrade.map(c=>c.name).join(', ');
+
+  try {
+    await sb.rpc('sync_grade_performance_tasks', { p_grade: g, p_label: level, p_criteria: criteria });
+  } catch(e){}
+
+  const sameGrade = await getAllSameGradeClasses(state.cls);
   for(const c of sameGrade){
     const { data: existing } = await sb.from('performance_tasks').select('id').eq('class_id', c.id).eq('label', level);
     if(!existing || !existing.length){
@@ -2005,24 +2086,24 @@ async function syncRubricToSameGrade(level){
     }
     await sb.from('rubrics').upsert({class_id: c.id, level, criteria}, {onConflict:'class_id,level'});
   }
-  showToast('"'+level+'" rubriği tüm '+g+'. sınıflara aktarıldı ('+classNames+')');
+  showToast('"'+level+'" rubriği tüm '+g+'. sınıflara (diğer kullanıcılar dahil) aktarıldı');
 }
 async function syncAllPerfTasksToSameGrade(){
   if(state.isAdmin) return;
   const g = getGradeLevel(state.cls.name);
-  const sameGrade = getSameGradeClasses(state.cls);
-  if(!sameGrade.length){
-    showToast('Aynı seviyede ('+g+'. sınıf) başka sınıf bulunamadı.');
-    return;
-  }
+  if(!g){ showToast('Sınıf seviyesi belirlenemedi.'); return; }
   const tasks = state.cls.perfTasks || [];
   if(!tasks.length){
     showToast('Bu sınıfta henüz performans ödevi yok.');
     return;
   }
-  const classNames = sameGrade.map(c=>c.name).join(', ');
-  if(!confirm('Bu sınıftaki tüm performans ödevleri ve rubrik ölçütleri diğer '+g+'. sınıflara ('+classNames+') aktarılsın mı?\n\n(Not: Öğrencilerin notları silinmez, yalnızca ödev tanımları ve rubrik ölçütleri kopyalanır)')) return;
+  if(!confirm('Bu sınıftaki tüm performans ödevleri ve rubrik ölçütleri diğer tüm '+g+'. sınıflara (diğer kullanıcılar dahil) aktarılsın mı?\n\n(Not: Öğrencilerin notları silinmez, yalnızca ödev tanımları ve rubrik ölçütleri kopyalanır)')) return;
 
+  try {
+    await sb.rpc('sync_all_grade_performance_from_class', { p_source_class_id: state.cls.id });
+  } catch(e){}
+
+  const sameGrade = await getAllSameGradeClasses(state.cls);
   for(const c of sameGrade){
     for(const t of tasks){
       const { data: existing } = await sb.from('performance_tasks').select('id').eq('class_id', c.id).eq('label', t.label);
@@ -2037,7 +2118,7 @@ async function syncAllPerfTasksToSameGrade(){
       }
     }
   }
-  showToast('Tüm performans ödevleri ve rubrikler '+classNames+' sınıflarına aktarıldı.');
+  showToast('Tüm performans ödevleri ve rubrikler tüm '+g+'. sınıflara (diğer kullanıcılar dahil) aktarıldı.');
 }
 function addCriterion(level){
   if(state.isAdmin) return;
@@ -3101,10 +3182,10 @@ function renderQuickHw(app){
 function renderPerfTasksList(app){
   const grade = getGradeLevel(state.cls.name);
   const sameGrade = getSameGradeClasses(state.cls);
-  const sameGradeNotice = sameGrade.length ?
+  const sameGradeNotice =
     '<div style="font-size:12px;color:var(--primary);background:var(--primary-soft);padding:8px 12px;border-radius:8px;margin-bottom:12px;display:flex;align-items:center;gap:6px;">' +
-      '<span>ℹ️ Bu sınıfta ekleyeceğiniz veya düzenleyeceğiniz ödevler ve rubrikler tüm <b>'+grade+'. sınıflara</b> ('+sameGrade.map(c=>escapeHtml(c.name)).join(', ')+') otomatik olarak aktarılır.</span>' +
-    '</div>' : '';
+      '<span>ℹ️ Bu sınıfta ekleyeceğiniz veya düzenleyeceğiniz ödevler ve rubrikler tüm <b>'+grade+'. sınıflara</b> (diğer öğretmenlerin sınıfları dahil) otomatik olarak aktarılır.</span>' +
+    '</div>';
 
   const rows = state.cls.perfTasks.map(t=>{
     const avg = perfTaskAvg(t.label);
@@ -3122,7 +3203,7 @@ function renderPerfTasksList(app){
     sameGradeNotice +
     '<div class="card">'+(rows||'<div class="empty">Henüz performans ödevi yok.</div>')+'</div>' +
     (!state.isAdmin ? '<button class="btn btn-primary full" id="addPerfBtn">'+ic('plus')+'Yeni Performans Ödevi Ekle</button>' : '') +
-    (!state.isAdmin && sameGrade.length && state.cls.perfTasks.length ? '<button class="btn btn-outline full" id="syncAllPerfBtn" style="margin-top:10px;">'+ic('upload')+'Bu Sınıfın Ödevlerini ve Rubriklerini Tüm '+grade+'. Sınıflara Eşitle</button>' : '');
+    (!state.isAdmin ? '<button class="btn btn-outline full" id="syncAllPerfBtn" style="margin-top:10px;">'+ic('upload')+'Bu Sınıfın Ödevlerini ve Rubriklerini Tüm '+grade+'. Sınıflara Eşitle (Tüm Kullanıcılar)</button>' : '');
   document.getElementById('back4').onclick = backToRoster;
   const addPBtn = document.getElementById('addPerfBtn');
   if(addPBtn) addPBtn.onclick = ()=>{
@@ -3160,16 +3241,16 @@ function renderRubric(app){
     '<div class="levelpicker">' +
       state.cls.perfTasks.map(t=>'<button class="'+(t.label===level?'active':'')+'" data-lvl="'+escapeHtml(t.label)+'">'+escapeHtml(t.label)+'</button>').join('') +
       (!state.isAdmin ? '<button class="btn btn-outline btn-sm" id="editToggle">'+(state.rubricEdit?'Bitti':'Ölçütleri Düzenle')+'</button>' : '') +
-      (!state.isAdmin && sameGrade.length ? '<button class="btn btn-soft btn-sm" id="syncRubricBtn" title="Bu rubriği tüm '+grade+'. sınıflara aktar">'+ic('upload')+'Tüm '+grade+' lara Eşitle</button>' : '') +
+      (!state.isAdmin ? '<button class="btn btn-soft btn-sm" id="syncRubricBtn" title="Bu rubriği diğer kullanıcılar dahil tüm '+grade+'. sınıflara aktar">'+ic('upload')+'Tüm '+grade+' lara Eşitle (Tüm Kullanıcılar)</button>' : '') +
       (!state.isAdmin ? '<button class="btn btn-outline btn-sm" id="manageTasksBtn">'+ic('book')+'Ödevleri Yönet</button>' : '') +
     '</div>';
 
   let body = '';
   if(state.rubricEdit){
-    const editNotice = sameGrade.length ?
+    const editNotice =
       '<div style="font-size:12px;color:var(--primary);background:var(--primary-soft);padding:8px 12px;border-radius:8px;margin-bottom:12px;">' +
-        'ℹ️ Düzenlediğiniz rubrik ölçütleri otomatik olarak diğer <b>'+grade+'. sınıflara</b> ('+sameGrade.map(c=>escapeHtml(c.name)).join(', ')+') da yansıtılır.' +
-      '</div>' : '';
+        'ℹ️ Düzenlediğiniz rubrik ölçütleri otomatik olarak diğer tüm <b>'+grade+'. sınıflara</b> (diğer öğretmenlerin sınıfları dahil) yansıtılır.' +
+      '</div>';
     body = editNotice + crit.map((c,ci)=>{
       const levels = (c.levels||[]).map((lv,li)=>
         '<div class="levelcard" style="cursor:default;">' +
