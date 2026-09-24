@@ -1,0 +1,2246 @@
+{
+  "teacher_username": "feritcem",
+  "teacher_email": "feritcem@takip.local",
+  "teacher_id": "8cec1a66-5554-437a-8c5a-dd74a402da34",
+  "generated_at": "2026-09-24T08:29:14.492Z",
+  "classes": [
+    {
+      "id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "name": "9A",
+      "sort_order": 0,
+      "owner_id": "8cec1a66-5554-437a-8c5a-dd74a402da34"
+    },
+    {
+      "id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "name": "9FL",
+      "sort_order": 2,
+      "owner_id": "8cec1a66-5554-437a-8c5a-dd74a402da34"
+    },
+    {
+      "id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "name": "11C",
+      "sort_order": 3,
+      "owner_id": "8cec1a66-5554-437a-8c5a-dd74a402da34"
+    },
+    {
+      "id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "name": "12D",
+      "sort_order": 4,
+      "owner_id": "8cec1a66-5554-437a-8c5a-dd74a402da34"
+    }
+  ],
+  "students": [
+    {
+      "id": "73e06178-5f1d-467e-a2a8-801690739dff",
+      "class_name": null,
+      "no": "175",
+      "name": "ARAS TOPRAK KARACA",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 1,
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "196eea94-ea92-4e22-be0a-73992671e0dc",
+      "class_name": null,
+      "no": "174",
+      "name": "CEMRE BAHAR AKA",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 2,
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "a586d955-8df9-4604-a995-b25fec75fbc0",
+      "class_name": null,
+      "no": "182",
+      "name": "ÇINAR GÜCENMEZ",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 3,
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "38ad661d-80a8-49c2-8748-f5c4ac57f9de",
+      "class_name": null,
+      "no": "183",
+      "name": "DAMLA UÇAR",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 4,
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "fd2f3078-aa55-47db-909b-c8780e31da3c",
+      "class_name": null,
+      "no": "189",
+      "name": "DAMLA ÖYKÜ ÖZDEMİR",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 5,
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "09b1ce35-1f10-4192-a967-7c6ca49c79d0",
+      "class_name": null,
+      "no": "187",
+      "name": "DENİZ KÜÇÜKFALAY",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 6,
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "2ce8027e-ac3f-4c18-a958-230c6c4bd307",
+      "class_name": null,
+      "no": "188",
+      "name": "DORUK TÜRE",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 7,
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "473b55f4-7d4d-43f2-abd9-8746a4b8d5c2",
+      "class_name": null,
+      "no": "176",
+      "name": "DORUK ÖZKILINÇ",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 8,
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "e5af085a-01f2-4848-8ae7-0c584fda2729",
+      "class_name": null,
+      "no": "184",
+      "name": "ELİF NAZ ÜNLÜ",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 9,
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "a8788893-b571-4620-8e65-5a950b57d5b3",
+      "class_name": null,
+      "no": "179",
+      "name": "ELİF SU PEHLİVANOĞLU",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 10,
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "acc99597-b9e7-42e5-b6f7-864e7c79a345",
+      "class_name": null,
+      "no": "191",
+      "name": "HAZEL TANEM İNCE",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 11,
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "632d6950-caae-4769-b86a-a4390eab8abf",
+      "class_name": null,
+      "no": "178",
+      "name": "KAĞAN DEMİR DEMİRAY",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 12,
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "cd8bb9d5-9a86-4644-8786-610cadc0b129",
+      "class_name": null,
+      "no": "177",
+      "name": "KEREM MANSUROĞLU",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 13,
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "881f95b7-0e15-4996-b92f-bf49158f74a3",
+      "class_name": null,
+      "no": "181",
+      "name": "MEHMET BATU EKEN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 14,
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "a4ed8a44-a259-4119-b54b-75e9ca99a960",
+      "class_name": null,
+      "no": "190",
+      "name": "MİR MEHMET ÇINAR KAYA",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 15,
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "8f8dc449-68dc-4663-a1d4-9f8cb7845cae",
+      "class_name": null,
+      "no": "185",
+      "name": "ÖYKÜ SAĞLAM",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 16,
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "ed6dae5f-ef42-45df-a6eb-f05b0f4399ea",
+      "class_name": null,
+      "no": "180",
+      "name": "SİRAÇ TUNÇ",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 17,
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "e3d45248-1838-4147-ad0a-ef5abcc4c05b",
+      "class_name": null,
+      "no": "186",
+      "name": "ÜMİT TOPRAK KÜÇÜKMERT",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 18,
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "3c07f28b-f6ba-437b-bc5c-a507db3e8a4d",
+      "class_name": null,
+      "no": "857",
+      "name": "ADA SALKIM",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 1,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "abc897ec-ffda-4539-abd8-57559c82de58",
+      "class_name": null,
+      "no": "690",
+      "name": "ALYA DENİZ EĞİNÇ",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 2,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "af178e11-ac07-4417-ad5a-fccd434bd87f",
+      "class_name": null,
+      "no": "909",
+      "name": "ATA YAR GÜRSOY",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 3,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "2d04481d-2912-4830-bf36-ae72a1ff8015",
+      "class_name": null,
+      "no": "730",
+      "name": "ATEŞ ZİNDEOL",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 4,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "b80affb5-fad0-4e32-8511-c7fdbdf46c30",
+      "class_name": null,
+      "no": "738",
+      "name": "BEHA EFE ÖZYURT",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 5,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "d5b299b0-1757-4687-be2f-3f854ad95251",
+      "class_name": null,
+      "no": "688",
+      "name": "CAN ÇINGIRLAR",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 6,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "d234010b-92a5-4550-9e5f-782b71ce8ca4",
+      "class_name": null,
+      "no": "588",
+      "name": "DORUK BEÇENE",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 7,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "e99173ae-4e98-4792-afdc-0eb9e839882a",
+      "class_name": null,
+      "no": "919",
+      "name": "DURU KARADEDE",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 8,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "c2253b92-820f-4815-8dc0-85a9851c3e67",
+      "class_name": null,
+      "no": "716",
+      "name": "EFE ALAKUŞ",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 9,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "42e45618-6068-4cc3-8f1c-a47cfd392065",
+      "class_name": null,
+      "no": "804",
+      "name": "EFE ARABACI",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 10,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "a0c9aa52-351d-4722-a5d1-351728d493fc",
+      "class_name": null,
+      "no": "650",
+      "name": "EGE SARIGÜLSEV",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 11,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "b93f8679-0a2d-44a8-b9e7-fe6638231ce3",
+      "class_name": null,
+      "no": "621",
+      "name": "EMİR RÜZGAR ÇOLAK",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 12,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "571f5b08-2eff-45e8-8688-e8ca0b388bbc",
+      "class_name": null,
+      "no": "644",
+      "name": "EREN İSA DEMİR",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 13,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "517f37ae-d0f9-491b-8578-02ec80d6171d",
+      "class_name": null,
+      "no": "764",
+      "name": "EYŞAN ZEHRA ÇELİKLİ",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 14,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "cc560032-9177-4536-a51f-0a08efe7d8c3",
+      "class_name": null,
+      "no": "834",
+      "name": "FATMA TALYA KURTULMUŞ",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 15,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "89042932-e23b-4b35-b3ba-0aaa0f2d5c3e",
+      "class_name": null,
+      "no": "597",
+      "name": "KUZEY BORA",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 16,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "c01cdfec-deb7-400c-bda8-320ab473b4e4",
+      "class_name": null,
+      "no": "903",
+      "name": "MERT TUNÇEL",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 17,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "3d71d5a3-b615-401b-b896-65c5e0031b2f",
+      "class_name": null,
+      "no": "955",
+      "name": "MİRAY BERKEL",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 18,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "61d10920-1168-41bf-807d-e107af4eb433",
+      "class_name": null,
+      "no": "742",
+      "name": "RÜYA DURMAZ",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 19,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "16a6088e-31f2-44a7-b4fa-fc0b9d9c6fb6",
+      "class_name": null,
+      "no": "612",
+      "name": "TAYLAN YÜKSEL",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 20,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "d8ecb9f0-f387-40d9-afe4-de41ba7b36d6",
+      "class_name": null,
+      "no": "973",
+      "name": "UZAY KAYA",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 21,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "ff471185-61b8-497d-9ce0-1eba53a980d3",
+      "class_name": null,
+      "no": "542",
+      "name": "YAĞIZHAN AVŞAR ÇORMAN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 22,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "291d14d5-2d1c-4596-88dc-246faba4bd4c",
+      "class_name": null,
+      "no": "401",
+      "name": "YANSI GÜRKAN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 23,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "e02a1851-1b8c-4263-bcce-36ccbb1077b2",
+      "class_name": null,
+      "no": "795",
+      "name": "YİĞİT MERT ŞENOL",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 24,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "fea2b2e5-2e25-4f0a-a7ba-b0a743aece87",
+      "class_name": null,
+      "no": "815",
+      "name": "ZEYNEP OGAN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 25,
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "eeee7494-cf0d-4bb6-a5fa-2cfa97361cba",
+      "class_name": null,
+      "no": "964",
+      "name": "DEMİR ÇİÇEK",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 23,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": "",
+      "ozel_ders": null
+    },
+    {
+      "id": "e92cab44-e084-4979-86ba-7639db72b2a4",
+      "class_name": null,
+      "no": "907",
+      "name": "ARYA İLKHAN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 1,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "ff06a476-866f-4fe6-9e0f-202947b6db51",
+      "class_name": null,
+      "no": "869",
+      "name": "ATEŞ ATAMAN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 2,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "144f45fe-8494-4617-97ac-07393b938c25",
+      "class_name": null,
+      "no": "404",
+      "name": "AYDIN ARDA AVCI",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 3,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "dbf93036-d1b0-419f-9479-44f51f57a962",
+      "class_name": null,
+      "no": "387",
+      "name": "BADE ÖZERGİN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 4,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "4db29803-04af-4bab-b889-2fc488bb8eaf",
+      "class_name": null,
+      "no": "445",
+      "name": "CAN ALİ GÜRGÜÇ",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 5,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "1922e70d-c302-4121-8f9c-e898f6d2e73c",
+      "class_name": null,
+      "no": "433",
+      "name": "CEM POYRAZ ÖZTEKİN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 6,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "962d7355-fd7f-45c2-a12c-cca055585614",
+      "class_name": null,
+      "no": "534",
+      "name": "DAMLA IŞIK",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 7,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "d9b176c8-e09e-4391-a63b-b1dc12a51009",
+      "class_name": null,
+      "no": "736",
+      "name": "DİDEM ARSLAN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 8,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "4a4b72e2-62bb-4d50-a369-f9114dc6929d",
+      "class_name": null,
+      "no": "419",
+      "name": "DORUK KÖKTEN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 9,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "4c2e1516-911c-4f72-bc66-e5a74531038a",
+      "class_name": null,
+      "no": "413",
+      "name": "ELİF ÇAĞLA ERTUĞRUL",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 10,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "08c3e6d5-10c4-4c3e-8131-16e6b9b9b425",
+      "class_name": null,
+      "no": "910",
+      "name": "ELİF DERİN SAYIN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 11,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "c0f643d9-e1f9-463b-b388-1f23d4786c95",
+      "class_name": null,
+      "no": "365",
+      "name": "GÜNEŞ COŞKUN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 12,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "1e5664f5-6b15-4f2d-8907-3eac05923762",
+      "class_name": null,
+      "no": "361",
+      "name": "TİBET MAHİR SAVTAK",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 2,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "17540ba2-dbe5-41cd-bc95-7bd81ff83628",
+      "class_name": null,
+      "no": "370",
+      "name": "ORKUN YILDIRIM",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 3,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "4d192294-23d5-4efa-9ff8-90b3233d1459",
+      "class_name": null,
+      "no": "373",
+      "name": "MEHMET EFE KABAKÇI",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 4,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "87c7695b-4e6a-4667-a5db-d9713fd04f38",
+      "class_name": null,
+      "no": "469",
+      "name": "ERİM ELBAY",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 5,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "07a2b050-2f39-4598-8c86-94d3955da191",
+      "class_name": null,
+      "no": "549",
+      "name": "ARDA KURT",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 6,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "36bbc92d-a315-4b05-a922-c9f2a076cdce",
+      "class_name": null,
+      "no": "591",
+      "name": "NAZENİN KARAKOÇ",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 7,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "28fa67a8-6504-482d-bc7e-56ae81ec0d40",
+      "class_name": null,
+      "no": "592",
+      "name": "DEMİR ÇORABATIR",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 8,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "30582ad7-fc82-4ecf-b54c-378354853adc",
+      "class_name": null,
+      "no": "637",
+      "name": "BERFİN SÖĞÜT",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 9,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "9361c666-4bfb-4fa5-9d15-8914f5a4ff07",
+      "class_name": null,
+      "no": "654",
+      "name": "LİNDA HAVLİOĞLU",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 10,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "e74d8f8f-11ea-44f5-b870-28ebe07e98b2",
+      "class_name": null,
+      "no": "658",
+      "name": "KARHAN ESMEZ",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 11,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "22bc9858-7cad-4189-9dcc-34c418a68805",
+      "class_name": null,
+      "no": "765",
+      "name": "ARDA ÖZDAMAR",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 12,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "4135d406-88d1-44a5-bdb5-763118932d2c",
+      "class_name": null,
+      "no": "796",
+      "name": "LEVENT ARSLAN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 13,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "010b47de-7e58-4318-afeb-c1ef63331c72",
+      "class_name": null,
+      "no": "803",
+      "name": "DERİN KIRANLI",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 14,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "5c6329a2-cc5d-4446-8694-ce25c1552207",
+      "class_name": null,
+      "no": "849",
+      "name": "NEHİR MAYRA YAMAN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 15,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "bf9082cd-bcec-42d4-ab40-2a00edc5a4f5",
+      "class_name": null,
+      "no": "854",
+      "name": "AYLİN AKDOĞAN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 16,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "8d1ff8d7-2f65-49b8-9e39-7b82896b2006",
+      "class_name": null,
+      "no": "870",
+      "name": "DEFNE DOĞAN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 17,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "08ad8cfd-c189-4e84-a496-f53e66c944e0",
+      "class_name": null,
+      "no": "871",
+      "name": "EMRE ONUR HINÇ",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 18,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "f9fc3473-e35a-463d-b711-4a6eaf7c677e",
+      "class_name": null,
+      "no": "882",
+      "name": "DOĞU ÖZGÜLER",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 19,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "6a172ebf-d58a-47d8-8ec2-10b34339940f",
+      "class_name": null,
+      "no": "883",
+      "name": "ALİ MAHİR ERTUNÇ",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 20,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "45ea5f23-06f4-4ba1-929d-d7f8d3405e90",
+      "class_name": null,
+      "no": "930",
+      "name": "KAYRA ÖZTÜRK",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 21,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "2817ca36-d84c-4eb9-903b-0bc2607fd4d9",
+      "class_name": null,
+      "no": "951",
+      "name": "TİMUR HATİPOĞLU",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 22,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "8656c4a7-b8a5-49b2-8a7a-fbde75c40fd5",
+      "class_name": null,
+      "no": "784",
+      "name": "İDİL ERSİN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 13,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "18a121b1-354d-4d52-bf07-7b66f54a2e5f",
+      "class_name": null,
+      "no": "560",
+      "name": "KUMSAL AREN AKER",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 14,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "633b2b1a-4840-44f1-a6a6-5b36ca7a9c13",
+      "class_name": null,
+      "no": "766",
+      "name": "KUZEY MENGÜÇ",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 15,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "59d5289c-2e2a-4422-a4a2-e063519d260a",
+      "class_name": null,
+      "no": "443",
+      "name": "MEĞRİ YAVUZ",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 16,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "a598a90c-bcae-4604-8981-f7ea3e0bdc02",
+      "class_name": null,
+      "no": "905",
+      "name": "NİL ÇOBAN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 17,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "018c4191-d509-4f22-8b01-deb9cdc6b4be",
+      "class_name": null,
+      "no": "434",
+      "name": "PELİN COŞKUNERLER",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 18,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "a1d60ab6-83ea-49db-a746-ddb68c096a57",
+      "class_name": null,
+      "no": "446",
+      "name": "POYRAZ ENGİN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 19,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "1c439202-bd8f-4b64-834e-96552251ac74",
+      "class_name": null,
+      "no": "755",
+      "name": "RAUF AKINCI",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 20,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "60b4f5fb-1bdb-443b-bce1-9bda0de9a95e",
+      "class_name": null,
+      "no": "772",
+      "name": "ŞAHİN EFE ARTOK",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 21,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "eb9eb9d4-12a0-4ca2-a937-f6bda803f2d7",
+      "class_name": null,
+      "no": "809",
+      "name": "TUNA HAPA",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 22,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "0e86aedf-59a0-4eee-a318-5b5f4c3c8963",
+      "class_name": null,
+      "no": "790",
+      "name": "YAREN ŞENTÜRK",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 23,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "eb4177d2-d6ce-44ad-9d80-15c445b65672",
+      "class_name": null,
+      "no": "961",
+      "name": "YİĞİT KUZEY BÜYÜKKARA",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 24,
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "98a3c956-6099-4e9f-b919-53df5b99ded8",
+      "class_name": null,
+      "no": "777",
+      "name": "EFE SAVAŞIR ÖZCAN",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 24,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": null,
+      "ozel_ders": null
+    },
+    {
+      "id": "5a594db9-8117-4885-abf8-188ca1a2483c",
+      "class_name": null,
+      "no": "353",
+      "name": "CİHAN DENİZ MUTLU",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 1,
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "dershane": "GHCG",
+      "ozel_ders": ""
+    },
+    {
+      "id": "3396ef25-87ae-4ceb-a305-1966e1f0f871",
+      "class_name": null,
+      "no": "100",
+      "name": "DENİZ KARABOZ",
+      "q1": null,
+      "q2": null,
+      "somestr": null,
+      "teacher_note": null,
+      "sort_order": 19,
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "dershane": null,
+      "ozel_ders": null
+    }
+  ],
+  "homeworks": [
+    {
+      "id": "5b794026-e8c2-42db-a700-85e0aecce1fa",
+      "class_name": null,
+      "slot_no": 1,
+      "topic": "Üslü Sayılar-1 BS 12-13",
+      "hw_date": "2026-09-11",
+      "check_date": "2026-09-18",
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "note": null
+    },
+    {
+      "id": "3e8c6646-62af-48d6-9bac-3aa00d4dd043",
+      "class_name": null,
+      "slot_no": 2,
+      "topic": "Üslü Sayılar 2 BS 18-21",
+      "hw_date": "2026-09-15",
+      "check_date": "2026-09-18",
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "note": null
+    },
+    {
+      "id": "f412c377-765a-4b94-8ee2-64de9b7f598f",
+      "class_name": null,
+      "slot_no": 3,
+      "topic": "Üslü Sayılar 3 KK 1-27",
+      "hw_date": "2026-09-18",
+      "check_date": "2026-09-25",
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "note": null
+    },
+    {
+      "id": "0af0bf54-a65f-452a-8a46-5475a3c6b140",
+      "class_name": null,
+      "slot_no": 1,
+      "topic": "Üslü Sayılar-1 BS 12-13",
+      "hw_date": "2026-09-11",
+      "check_date": "2026-09-18",
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "note": "Mengüç pazartesi kontrol edilecek"
+    },
+    {
+      "id": "8424b258-82ea-462f-8507-eac5706b8efb",
+      "class_name": null,
+      "slot_no": 2,
+      "topic": "Üslü Sayılar-2 BS 18-21",
+      "hw_date": "2026-09-14",
+      "check_date": "2026-09-18",
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "note": "Kuzey menguç pazartesi kontrol edilecek"
+    },
+    {
+      "id": "9aeea605-704a-4ddf-9878-a28fbea1715f",
+      "class_name": null,
+      "slot_no": 3,
+      "topic": "Üslü Sayılar-3 BS 26-27",
+      "hw_date": "2026-09-21",
+      "check_date": "2026-09-25",
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "note": null
+    },
+    {
+      "id": "fca56111-82c0-4a8d-a07f-84224c45ff29",
+      "class_name": null,
+      "slot_no": 4,
+      "topic": "Üslü Sayılar 4 BS 26-27",
+      "hw_date": "2026-09-21",
+      "check_date": "2026-09-25",
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db",
+      "note": null
+    },
+    {
+      "id": "83b0df99-847c-4e9b-a93c-5db22e675ede",
+      "class_name": null,
+      "slot_no": 1,
+      "topic": "BS istatistik 8-20",
+      "hw_date": "2026-09-22",
+      "check_date": "2026-09-25",
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c",
+      "note": null
+    },
+    {
+      "id": "13d0899b-eff1-45a1-bd87-600d84bc4922",
+      "class_name": null,
+      "slot_no": 4,
+      "topic": "Köklü Sayılar-1 BS 32-33",
+      "hw_date": "2026-09-24",
+      "check_date": "2026-10-01",
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72",
+      "note": null
+    }
+  ],
+  "homework_status": [
+    {
+      "student_id": "196eea94-ea92-4e22-be0a-73992671e0dc",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "73e06178-5f1d-467e-a2a8-801690739dff",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "473b55f4-7d4d-43f2-abd9-8746a4b8d5c2",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "632d6950-caae-4769-b86a-a4390eab8abf",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "cd8bb9d5-9a86-4644-8786-610cadc0b129",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "a8788893-b571-4620-8e65-5a950b57d5b3",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "ed6dae5f-ef42-45df-a6eb-f05b0f4399ea",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "881f95b7-0e15-4996-b92f-bf49158f74a3",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "a586d955-8df9-4604-a995-b25fec75fbc0",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "38ad661d-80a8-49c2-8748-f5c4ac57f9de",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "e5af085a-01f2-4848-8ae7-0c584fda2729",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "8f8dc449-68dc-4663-a1d4-9f8cb7845cae",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "e3d45248-1838-4147-ad0a-ef5abcc4c05b",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "09b1ce35-1f10-4192-a967-7c6ca49c79d0",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "2ce8027e-ac3f-4c18-a958-230c6c4bd307",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "fd2f3078-aa55-47db-909b-c8780e31da3c",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "a4ed8a44-a259-4119-b54b-75e9ca99a960",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "acc99597-b9e7-42e5-b6f7-864e7c79a345",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "acc99597-b9e7-42e5-b6f7-864e7c79a345",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "a4ed8a44-a259-4119-b54b-75e9ca99a960",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "fd2f3078-aa55-47db-909b-c8780e31da3c",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "2ce8027e-ac3f-4c18-a958-230c6c4bd307",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "09b1ce35-1f10-4192-a967-7c6ca49c79d0",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "e3d45248-1838-4147-ad0a-ef5abcc4c05b",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "8f8dc449-68dc-4663-a1d4-9f8cb7845cae",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "e5af085a-01f2-4848-8ae7-0c584fda2729",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "38ad661d-80a8-49c2-8748-f5c4ac57f9de",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "a586d955-8df9-4604-a995-b25fec75fbc0",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "881f95b7-0e15-4996-b92f-bf49158f74a3",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "ed6dae5f-ef42-45df-a6eb-f05b0f4399ea",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "a8788893-b571-4620-8e65-5a950b57d5b3",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "632d6950-caae-4769-b86a-a4390eab8abf",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "cd8bb9d5-9a86-4644-8786-610cadc0b129",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "473b55f4-7d4d-43f2-abd9-8746a4b8d5c2",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "73e06178-5f1d-467e-a2a8-801690739dff",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "196eea94-ea92-4e22-be0a-73992671e0dc",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "c0f643d9-e1f9-463b-b388-1f23d4786c95",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "dbf93036-d1b0-419f-9479-44f51f57a962",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "144f45fe-8494-4617-97ac-07393b938c25",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "4c2e1516-911c-4f72-bc66-e5a74531038a",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "1922e70d-c302-4121-8f9c-e898f6d2e73c",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "018c4191-d509-4f22-8b01-deb9cdc6b4be",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "4a4b72e2-62bb-4d50-a369-f9114dc6929d",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "59d5289c-2e2a-4422-a4a2-e063519d260a",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "4db29803-04af-4bab-b889-2fc488bb8eaf",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "a1d60ab6-83ea-49db-a746-ddb68c096a57",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "962d7355-fd7f-45c2-a12c-cca055585614",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "18a121b1-354d-4d52-bf07-7b66f54a2e5f",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "d9b176c8-e09e-4391-a63b-b1dc12a51009",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "1c439202-bd8f-4b64-834e-96552251ac74",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "60b4f5fb-1bdb-443b-bce1-9bda0de9a95e",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "8656c4a7-b8a5-49b2-8a7a-fbde75c40fd5",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "0e86aedf-59a0-4eee-a318-5b5f4c3c8963",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "eb9eb9d4-12a0-4ca2-a937-f6bda803f2d7",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "ff06a476-866f-4fe6-9e0f-202947b6db51",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "a598a90c-bcae-4604-8981-f7ea3e0bdc02",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "e92cab44-e084-4979-86ba-7639db72b2a4",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "08c3e6d5-10c4-4c3e-8131-16e6b9b9b425",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "eb4177d2-d6ce-44ad-9d80-15c445b65672",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "c0f643d9-e1f9-463b-b388-1f23d4786c95",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "dbf93036-d1b0-419f-9479-44f51f57a962",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "144f45fe-8494-4617-97ac-07393b938c25",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "4c2e1516-911c-4f72-bc66-e5a74531038a",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "4a4b72e2-62bb-4d50-a369-f9114dc6929d",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "1922e70d-c302-4121-8f9c-e898f6d2e73c",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "018c4191-d509-4f22-8b01-deb9cdc6b4be",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "59d5289c-2e2a-4422-a4a2-e063519d260a",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "4db29803-04af-4bab-b889-2fc488bb8eaf",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "a1d60ab6-83ea-49db-a746-ddb68c096a57",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "962d7355-fd7f-45c2-a12c-cca055585614",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "18a121b1-354d-4d52-bf07-7b66f54a2e5f",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "d9b176c8-e09e-4391-a63b-b1dc12a51009",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "1c439202-bd8f-4b64-834e-96552251ac74",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "60b4f5fb-1bdb-443b-bce1-9bda0de9a95e",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "8656c4a7-b8a5-49b2-8a7a-fbde75c40fd5",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "0e86aedf-59a0-4eee-a318-5b5f4c3c8963",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "eb9eb9d4-12a0-4ca2-a937-f6bda803f2d7",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "ff06a476-866f-4fe6-9e0f-202947b6db51",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "a598a90c-bcae-4604-8981-f7ea3e0bdc02",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "e92cab44-e084-4979-86ba-7639db72b2a4",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "08c3e6d5-10c4-4c3e-8131-16e6b9b9b425",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "eb4177d2-d6ce-44ad-9d80-15c445b65672",
+      "slot_no": 2,
+      "done": true
+    },
+    {
+      "student_id": "633b2b1a-4840-44f1-a6a6-5b36ca7a9c13",
+      "slot_no": 1,
+      "done": true
+    },
+    {
+      "student_id": "633b2b1a-4840-44f1-a6a6-5b36ca7a9c13",
+      "slot_no": 2,
+      "done": true
+    }
+  ],
+  "quizzes": [],
+  "quiz_scores": [],
+  "performance_tasks": [
+    {
+      "id": "e5dbbe73-5e0c-4e06-ab7a-1ce564c76bdf",
+      "class_name": null,
+      "slot_no": 1,
+      "label": "PERFORMANS ÖDEVİ-1",
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72"
+    },
+    {
+      "id": "b8d21925-ae3a-4489-819d-1e0e2be7c503",
+      "class_name": null,
+      "slot_no": 1,
+      "label": "PERFORMANS ÖDEVİ-1",
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db"
+    },
+    {
+      "id": "1c29830f-a87f-455c-823c-1a47b6990ed1",
+      "class_name": null,
+      "slot_no": 1,
+      "label": "PERFORMANS GÖREVİ 1: İki nicel değişken arasındaki ilişkililiğe odaklanan istatistiksel araştırma süreçleri",
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c"
+    }
+  ],
+  "rubrics": [
+    {
+      "id": "24925c58-c190-47d9-8564-c16c13d36ea8",
+      "class_name": null,
+      "level": "PERFORMANS GÖREVİ 1: İki nicel değişken arasındaki ilişkililiğe odaklanan istatistiksel araştırma süreçleri",
+      "criteria": [
+        {
+          "max": 4,
+          "name": "İki nicel değişkenli veriye dayalı bir araştırma sorusu oluşturma",
+          "levels": [
+            {
+              "desc": "",
+              "label": "Mükemmel",
+              "score": 4
+            },
+            {
+              "desc": "",
+              "label": "İyi",
+              "score": 3
+            },
+            {
+              "desc": "",
+              "label": "Orta",
+              "score": 2
+            },
+            {
+              "desc": "",
+              "label": "Geliştirilmesi Gerekir",
+              "score": 1
+            }
+          ]
+        },
+        {
+          "max": 4,
+          "name": "Araştırma sorusunda bulunması gereken koşulları sağlama",
+          "levels": [
+            {
+              "desc": "",
+              "label": "Mükemmel",
+              "score": 4
+            },
+            {
+              "desc": "",
+              "label": "İyi",
+              "score": 3
+            },
+            {
+              "desc": "",
+              "label": "Orta",
+              "score": 2
+            },
+            {
+              "desc": "",
+              "label": "Geliştirilmesi Gerekir",
+              "score": 1
+            }
+          ]
+        },
+        {
+          "max": 4,
+          "name": "",
+          "levels": [
+            {
+              "desc": "",
+              "label": "Mükemmel",
+              "score": 4
+            },
+            {
+              "desc": "",
+              "label": "İyi",
+              "score": 3
+            },
+            {
+              "desc": "",
+              "label": "Orta",
+              "score": 2
+            },
+            {
+              "desc": "",
+              "label": "Geliştirilmesi Gerekir",
+              "score": 1
+            }
+          ]
+        }
+      ],
+      "class_id": "188a6cc0-e93f-47d6-a725-8342e9a75e5c"
+    },
+    {
+      "id": "c3f1187f-43e4-48dc-a0b5-e7c3193abad1",
+      "class_name": null,
+      "level": "PERFORMANS ÖDEVİ-1",
+      "criteria": [
+        {
+          "max": 4,
+          "name": "Tabloyu Doldurma",
+          "levels": [
+            {
+              "desc": "Tablo Tam ve doğru olarak doldurulmuş",
+              "label": "Mükemmel",
+              "score": 4
+            },
+            {
+              "desc": "Tablodaki verilerden biri yanlış",
+              "label": "İyi",
+              "score": 3
+            },
+            {
+              "desc": "Tablodaki verilerden ikisi yanlış",
+              "label": "Orta",
+              "score": 2
+            },
+            {
+              "desc": "Tablodaki verilerden en az üç tanesi yanlış",
+              "label": "Geliştirilmesi Gerekir",
+              "score": 1
+            }
+          ]
+        },
+        {
+          "max": 4,
+          "name": "Farklı Gösterim Kullanma",
+          "levels": [
+            {
+              "desc": "Gösterim hatasızdır",
+              "label": "Mükemmel",
+              "score": 4
+            },
+            {
+              "desc": "Cebirsel gösterim, sayı doğrusu ve küme gösterimlerinden ikisi hatasızdır.",
+              "label": "İyi",
+              "score": 3
+            },
+            {
+              "desc": "Cebirsel gösterim, sayı doğrusu ve küme gösterimlerinden biri hatasızdır.",
+              "label": "Orta",
+              "score": 2
+            },
+            {
+              "desc": "Tüm gösterimler hatalıdır.\n",
+              "label": "Geliştirilmesi Gerekir",
+              "score": 1
+            }
+          ]
+        },
+        {
+          "max": 4,
+          "name": "Poster Hazırlama",
+          "levels": [
+            {
+              "desc": "Hazırlanan poster, görsel seçimi uygun dikkat çekici sunulan bilgiler doğru ve yeterince açıklayıcı",
+              "label": "Mükemmel",
+              "score": 4
+            },
+            {
+              "desc": "Hazırlanan poster, görsel seçimi uygun, sunulan bilgiler doğru ve kısmen açıklayıcı",
+              "label": "İyi",
+              "score": 3
+            },
+            {
+              "desc": "Hazırlanan poster, görsel seçimi kısmen  uygun, sunulan bilgiler yeterli değil",
+              "label": "Orta",
+              "score": 2
+            },
+            {
+              "desc": "Hazırlanan poster, görsel seçimi  uygun değil, sunulan bilgiler eksik",
+              "label": "Geliştirilmesi Gerekir",
+              "score": 1
+            }
+          ]
+        },
+        {
+          "max": 4,
+          "name": "Sunum",
+          "levels": [
+            {
+              "desc": "yapılan sunum anlaşılır, dikkat çekici , çalışmanın içeriğini yansıtıyor.",
+              "label": "Mükemmel",
+              "score": 4
+            },
+            {
+              "desc": "yapılan sunum anlaşılır, çalışmanın içeriğini kısmen doğru yansıtıyor.",
+              "label": "İyi",
+              "score": 3
+            },
+            {
+              "desc": "yapılan sunum kısmen anlaşılır, çalışmanın içeriğini kısmen doğru yansıtıyor.",
+              "label": "Orta",
+              "score": 2
+            },
+            {
+              "desc": "yapılan sunum anlaşılır değil, çalışmanın içeriğini eksik yansıtıyor.",
+              "label": "Geliştirilmesi Gerekir",
+              "score": 1
+            }
+          ]
+        }
+      ],
+      "class_id": "88b6b02e-2d9f-4c61-bd01-042b3443c3db"
+    },
+    {
+      "id": "d250a7c1-34fb-4bd9-9795-f06e885d7bbe",
+      "class_name": null,
+      "level": "PERFORMANS ÖDEVİ-1",
+      "criteria": [
+        {
+          "max": 4,
+          "name": "Tabloyu Doldurma",
+          "levels": [
+            {
+              "desc": "Tablo Tam ve doğru olarak doldurulmuş",
+              "label": "Mükemmel",
+              "score": 4
+            },
+            {
+              "desc": "Tablodaki verilerden biri yanlış",
+              "label": "İyi",
+              "score": 3
+            },
+            {
+              "desc": "Tablodaki verilerden ikisi yanlış",
+              "label": "Orta",
+              "score": 2
+            },
+            {
+              "desc": "Tablodaki verilerden en az üç tanesi yanlış",
+              "label": "Geliştirilmesi Gerekir",
+              "score": 1
+            }
+          ]
+        },
+        {
+          "max": 4,
+          "name": "Farklı Gösterim Kullanma",
+          "levels": [
+            {
+              "desc": "Gösterim hatasızdır",
+              "label": "Mükemmel",
+              "score": 4
+            },
+            {
+              "desc": "Cebirsel gösterim, sayı doğrusu ve küme gösterimlerinden ikisi hatasızdır.",
+              "label": "İyi",
+              "score": 3
+            },
+            {
+              "desc": "Cebirsel gösterim, sayı doğrusu ve küme gösterimlerinden biri hatasızdır.",
+              "label": "Orta",
+              "score": 2
+            },
+            {
+              "desc": "Tüm gösterimler hatalıdır.\n",
+              "label": "Geliştirilmesi Gerekir",
+              "score": 1
+            }
+          ]
+        },
+        {
+          "max": 4,
+          "name": "Poster Hazırlama",
+          "levels": [
+            {
+              "desc": "Hazırlanan poster, görsel seçimi uygun dikkat çekici sunulan bilgiler doğru ve yeterince açıklayıcı",
+              "label": "Mükemmel",
+              "score": 4
+            },
+            {
+              "desc": "Hazırlanan poster, görsel seçimi uygun, sunulan bilgiler doğru ve kısmen açıklayıcı",
+              "label": "İyi",
+              "score": 3
+            },
+            {
+              "desc": "Hazırlanan poster, görsel seçimi kısmen  uygun, sunulan bilgiler yeterli değil",
+              "label": "Orta",
+              "score": 2
+            },
+            {
+              "desc": "Hazırlanan poster, görsel seçimi  uygun değil, sunulan bilgiler eksik",
+              "label": "Geliştirilmesi Gerekir",
+              "score": 1
+            }
+          ]
+        },
+        {
+          "max": 4,
+          "name": "Sunum",
+          "levels": [
+            {
+              "desc": "yapılan sunum anlaşılır, dikkat çekici , çalışmanın içeriğini yansıtıyor.",
+              "label": "Mükemmel",
+              "score": 4
+            },
+            {
+              "desc": "yapılan sunum anlaşılır, çalışmanın içeriğini kısmen doğru yansıtıyor.",
+              "label": "İyi",
+              "score": 3
+            },
+            {
+              "desc": "yapılan sunum kısmen anlaşılır, çalışmanın içeriğini kısmen doğru yansıtıyor.",
+              "label": "Orta",
+              "score": 2
+            },
+            {
+              "desc": "yapılan sunum anlaşılır değil, çalışmanın içeriğini eksik yansıtıyor.",
+              "label": "Geliştirilmesi Gerekir",
+              "score": 1
+            }
+          ]
+        }
+      ],
+      "class_id": "64408203-6631-4021-8abe-e891baaf0d72"
+    }
+  ],
+  "rubric_scores": [
+    {
+      "student_id": "e92cab44-e084-4979-86ba-7639db72b2a4",
+      "level": "PERFORMANS ÖDEVİ-1",
+      "criteria_index": 2,
+      "score": 4
+    },
+    {
+      "student_id": "e92cab44-e084-4979-86ba-7639db72b2a4",
+      "level": "PERFORMANS ÖDEVİ-1",
+      "criteria_index": 1,
+      "score": 4
+    },
+    {
+      "student_id": "e92cab44-e084-4979-86ba-7639db72b2a4",
+      "level": "PERFORMANS ÖDEVİ-1",
+      "criteria_index": 0,
+      "score": 4
+    }
+  ],
+  "deneme_exams": [],
+  "deneme_scores": [],
+  "counseling_notes": [],
+  "university_goals": [],
+  "abroad_consulting": [],
+  "class_evaluations": [
+    {
+      "id": "c3ab767d-2523-4e5a-a97a-d3931a6ea673",
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "period": "(Eylül-Kasım Arası Değerlendirme)",
+      "criteria": [
+        "Derslerde çok aktif olan öğrenciler",
+        "Derslerde pasif olan öğrenciler",
+        "Derslerin akışını bozan öğrenciler",
+        "Konsantrasyon yetersizliği olan öğrenciler",
+        "Aşırı Sınav Kaygısı yaşayan öğrenciler",
+        "Derslere düzenli çalışan öğrenciler",
+        "Rehberlik görüşmesi gereken öğr."
+      ],
+      "created_at": "2026-09-18T19:36:33.421423+00:00"
+    },
+    {
+      "id": "b895a12e-54a9-4bd3-889e-11969fe5ad03",
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "period": "(I.Dönem Sonu Arası Değerlendirme)",
+      "criteria": [
+        "Derslerde çok aktif olan öğrenciler",
+        "Derslerde pasif olan öğrenciler",
+        "Derslerin akışını bozan öğrenciler",
+        "Konsantrasyon yetersizliği olan öğrenciler",
+        "Aşırı Sınav Kaygısı yaşayan öğrenciler",
+        "Derslere düzenli çalışan öğrenciler",
+        "Rehberlik görüşmesi gereken öğr."
+      ],
+      "created_at": "2026-09-18T19:36:33.601788+00:00"
+    },
+    {
+      "id": "82fc28ab-dcc3-4cca-a729-874e21c3df22",
+      "class_id": "12cdcbc7-ea8c-4b8b-bef6-841a3eb5bfa8",
+      "period": "(II. Dönem Başı-Nisan Arası Değerlendirme)",
+      "criteria": [
+        "Derslerde çok aktif olan öğrenciler",
+        "Derslerde pasif olan öğrenciler",
+        "Derslerin akışını bozan öğrenciler",
+        "Konsantrasyon yetersizliği olan öğrenciler",
+        "Aşırı Sınav Kaygısı yaşayan öğrenciler",
+        "Derslere düzenli çalışan öğrenciler",
+        "Rehberlik görüşmesi gereken öğr."
+      ],
+      "created_at": "2026-09-18T19:36:33.793678+00:00"
+    }
+  ],
+  "class_evaluation_marks": []
+}
