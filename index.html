@@ -1287,8 +1287,16 @@ function exportClassBackup(){
     sorted.forEach(s=>{
       cls.perfTasks.forEach(t=>{
         const total = rubricTotal(s.id, t.label);
-        rows.push({ 'No': s.no||'', 'Ad Soyad': s.name, 'Performans Ödevi': t.label,
-          'Puan': total.sum, 'Tam Puan': total.max, 'Not': total.grade??'' });
+        rows.push({
+          'No': s.no||'',
+          'Ad Soyad': s.name,
+          'Performans Ödevi': t.label,
+          'Verilme Tarihi': t.given_date ? fmtDate(t.given_date) : '',
+          'Kontrol Tarihi': t.due_date ? fmtDate(t.due_date) : '',
+          'Puan': total.sum,
+          'Tam Puan': total.max,
+          'Not': total.grade??''
+        });
       });
     });
     addSheet(wb, rows, 'Performans');
@@ -1421,7 +1429,14 @@ function exportParentReport(sid){
   if(!g12 && cls.perfTasks.length){
     const rows = cls.perfTasks.map(t=>{
       const total = rubricTotal(s.id, t.label);
-      return { 'Performans Ödevi': t.label, 'Puan': total.sum, 'Tam Puan': total.max, 'Not': total.grade??'' };
+      return {
+        'Performans Ödevi': t.label,
+        'Verilme Tarihi': t.given_date ? fmtDate(t.given_date) : '',
+        'Kontrol Tarihi': t.due_date ? fmtDate(t.due_date) : '',
+        'Puan': total.sum,
+        'Tam Puan': total.max,
+        'Not': total.grade??''
+      };
     });
     addSheet(wb, rows, 'Performans');
   }
@@ -1549,7 +1564,21 @@ async function loadClassDetail(classId){
           const uniqueLabels = [...new Set(existingTasks.map(t=>t.label))];
           for(let i=0; i<uniqueLabels.length; i++){
             const lbl = uniqueLabels[i];
-            const { data: ins } = await sb.from('performance_tasks').insert({ class_id: classId, slot_no: i + 1, label: lbl }).select();
+            const refT = existingTasks.find(x=>x.label===lbl);
+            let ins = null;
+            try {
+              const res = await sb.from('performance_tasks').insert({
+                class_id: classId,
+                slot_no: i + 1,
+                label: lbl,
+                given_date: (refT && refT.given_date) || null,
+                due_date: (refT && refT.due_date) || null
+              }).select();
+              ins = res.data;
+            } catch(e){
+              const res = await sb.from('performance_tasks').insert({ class_id: classId, slot_no: i + 1, label: lbl }).select();
+              ins = res.data;
+            }
             if(ins && ins[0]) effectivePerfTasks.push(ins[0]);
 
             const { data: refR } = await sb.from('rubrics').select('criteria').eq('level', lbl).in('class_id', targetIds).limit(1);
@@ -2168,22 +2197,58 @@ async function importKdsRaporuFromExcel(file){
   }catch(err){ showToast('Dosya okunamadı: '+err.message); }
 }
 
-async function addPerfTask(label){
+async function addPerfTask(label, givenDate = null, dueDate = null){
   if(state.isAdmin){ showToast('Yönetici modunda performans ödevi eklenemez (Salt Okunur).'); return; }
   const maxSlot = Math.max(0, ...state.cls.perfTasks.map(t=>t.slot_no||0));
-  const { data } = await sb.from('performance_tasks').insert({class_id:state.cls.id, slot_no:maxSlot+1, label}).select();
-  if(data && data[0]) state.cls.perfTasks.push(data[0]);
+  
+  let inserted = null;
+  const insertPayload = {
+    class_id: state.cls.id,
+    slot_no: maxSlot + 1,
+    label: label,
+    given_date: givenDate || null,
+    due_date: dueDate || null
+  };
+  
+  const { data, error } = await sb.from('performance_tasks').insert(insertPayload).select();
+  if(error){
+    if(error.message && (error.message.includes('given_date') || error.message.includes('due_date'))){
+      const { data: d2, error: e2 } = await sb.from('performance_tasks').insert({
+        class_id: state.cls.id,
+        slot_no: maxSlot + 1,
+        label: label
+      }).select();
+      if(e2){ showToast('Hata: ' + e2.message); return; }
+      if(d2 && d2[0]){
+        d2[0].given_date = givenDate || null;
+        d2[0].due_date = dueDate || null;
+        inserted = d2[0];
+      }
+    } else {
+      showToast('Hata: ' + error.message);
+      return;
+    }
+  } else {
+    inserted = data && data[0];
+  }
+
+  if(inserted) state.cls.perfTasks.push(inserted);
   state.rubricLevel = label;
 
   const g = getGradeLevel(state.cls.name);
   if(g){
     // 1. Önce RPC fonksiyonunu çağır (tüm kullanıcıların sınıflarına yansıtır)
     try {
-      await sb.rpc('sync_grade_performance_tasks', { p_grade: g, p_label: label });
+      await sb.rpc('sync_grade_performance_tasks', {
+        p_grade: g,
+        p_label: label,
+        p_given_date: givenDate || null,
+        p_due_date: dueDate || null
+      });
     } catch(e){
       console.warn('RPC sync_grade_performance_tasks hatası / aktif değil:', e);
     }
-    // 2. Doğrudan erişilebilen tüm sınıflara da ekle
+    // 2. Doğrudan erişilebilen tüm sınıflara da ekle / güncelle
     const sameGrade = await getAllSameGradeClasses(state.cls);
     if(sameGrade.length){
       for(const c of sameGrade){
@@ -2191,7 +2256,24 @@ async function addPerfTask(label){
         if(!existing || !existing.length){
           const { data: allT } = await sb.from('performance_tasks').select('slot_no').eq('class_id', c.id);
           const nextSlot = (allT && allT.length) ? Math.max(0, ...allT.map(x=>x.slot_no||0)) + 1 : 1;
-          await sb.from('performance_tasks').insert({class_id: c.id, slot_no: nextSlot, label});
+          try {
+            await sb.from('performance_tasks').insert({
+              class_id: c.id,
+              slot_no: nextSlot,
+              label,
+              given_date: givenDate || null,
+              due_date: dueDate || null
+            });
+          } catch(err){
+            await sb.from('performance_tasks').insert({class_id: c.id, slot_no: nextSlot, label});
+          }
+        } else {
+          try {
+            await sb.from('performance_tasks').update({
+              given_date: givenDate || null,
+              due_date: dueDate || null
+            }).eq('class_id', c.id).eq('label', label);
+          } catch(err){}
         }
       }
     }
@@ -2202,6 +2284,74 @@ async function addPerfTask(label){
 
   render();
   logActivity('"'+label+'" performans ödevini ekledi');
+}
+
+async function updatePerfTaskDate(label, field, value){
+  if(state.isAdmin) return;
+  const t = state.cls.perfTasks.find(x=>x.label===label);
+  if(!t) return;
+  t[field] = value || null;
+
+  try {
+    const { error } = await sb.from('performance_tasks').update({ [field]: value || null }).eq('class_id', state.cls.id).eq('label', label);
+    if(error) console.warn('updatePerfTaskDate error:', error);
+  } catch(e){
+    console.warn('updatePerfTaskDate catch:', e);
+  }
+
+  const g = getGradeLevel(state.cls.name);
+  if(g){
+    const sameGrade = await getAllSameGradeClasses(state.cls);
+    for(const c of sameGrade){
+      try {
+        await sb.from('performance_tasks').update({ [field]: value || null }).eq('class_id', c.id).eq('label', label);
+      } catch(e){}
+    }
+  }
+  showToast('Tarih güncellendi');
+}
+
+function openAddPerfTaskModal(){
+  if(state.isAdmin) return;
+  const grade = getGradeLevel(state.cls.name);
+  openModalHtml(
+    '<h3>Yeni Performans Ödevi Ekle</h3>' +
+    (grade ? '<p style="font-size:12px;color:var(--primary);background:var(--primary-soft);padding:8px 12px;border-radius:8px;margin-bottom:12px;">ℹ️ Bu ödev otomatik olarak tüm <b>'+grade+'. sınıflara</b> (diğer öğretmenler dahil) eklenecektir.</p>' : '') +
+    '<label>Ödev Adı / Konusu</label>' +
+    '<input type="text" id="mPerfLabel" placeholder="Örn: 1. Performans Görevi">' +
+    '<div style="display:flex;gap:10px;margin-top:10px;">' +
+      '<div style="flex:1;">' +
+        '<label>Verilme Tarihi</label>' +
+        '<input type="date" id="mPerfGivenDate" value="'+todayStr()+'">' +
+      '</div>' +
+      '<div style="flex:1;">' +
+        '<label>Kontrol / Teslim Tarihi</label>' +
+        '<input type="date" id="mPerfDueDate">' +
+      '</div>' +
+    '</div>' +
+    '<div class="err" id="mPerfErr" style="color:var(--red);font-size:12px;margin-top:6px;min-height:16px;"></div>' +
+    '<div class="modalactions" style="margin-top:14px;">' +
+      '<button class="btn btn-outline" id="mCancelPerf">Vazgeç</button>' +
+      '<button class="btn btn-primary" id="mSavePerf">Ödevi Kaydet</button>' +
+    '</div>'
+  );
+  document.getElementById('mCancelPerf').onclick = closeModal;
+  document.getElementById('mSavePerf').onclick = async ()=>{
+    const lbl = document.getElementById('mPerfLabel').value.trim();
+    const gDate = document.getElementById('mPerfGivenDate').value || null;
+    const dDate = document.getElementById('mPerfDueDate').value || null;
+    const err = document.getElementById('mPerfErr');
+    if(!lbl){
+      err.textContent = 'Lütfen bir ödev adı girin.';
+      return;
+    }
+    if(state.cls.perfTasks.some(t=>t.label.toLowerCase()===lbl.toLowerCase())){
+      err.textContent = 'Bu isimde bir performans ödevi zaten mevcut.';
+      return;
+    }
+    closeModal();
+    await addPerfTask(lbl, gDate, dDate);
+  };
 }
 async function renamePerfTask(oldLabel, newLabel){
   if(state.isAdmin) return;
@@ -2339,7 +2489,24 @@ async function syncAllPerfTasksToSameGrade(){
       if(!existing || !existing.length){
         const { data: allT } = await sb.from('performance_tasks').select('slot_no').eq('class_id', c.id);
         const nextSlot = (allT && allT.length) ? Math.max(0, ...allT.map(x=>x.slot_no||0)) + 1 : 1;
-        await sb.from('performance_tasks').insert({class_id: c.id, slot_no: nextSlot, label: t.label});
+        try {
+          await sb.from('performance_tasks').insert({
+            class_id: c.id,
+            slot_no: nextSlot,
+            label: t.label,
+            given_date: t.given_date || null,
+            due_date: t.due_date || null
+          });
+        } catch(err){
+          await sb.from('performance_tasks').insert({class_id: c.id, slot_no: nextSlot, label: t.label});
+        }
+      } else {
+        try {
+          await sb.from('performance_tasks').update({
+            given_date: t.given_date || null,
+            due_date: t.due_date || null
+          }).eq('class_id', c.id).eq('label', t.label);
+        } catch(err){}
       }
       const criteria = state.cls.rubrics[t.label] || [];
       if(criteria.length){
@@ -2934,7 +3101,8 @@ function renderStudentDetail(app){
     }).join('');
     perfHtml = cls.perfTasks.map(t=>{
       const total = rubricTotal(s.id, t.label);
-      return '<div class="field"><label>'+escapeHtml(t.label)+'</label><div class="num" style="font-size:16px;font-weight:800;color:var(--primary-deep);">'+(total.grade??'-')+'</div></div>';
+      const dateSub = t.due_date ? '<span style="font-size:10.5px;color:var(--ink-faint);display:block;font-weight:normal;">Kontrol: '+fmtDate(t.due_date)+'</span>' : (t.given_date ? '<span style="font-size:10.5px;color:var(--ink-faint);display:block;font-weight:normal;">Verildi: '+fmtDate(t.given_date)+'</span>' : '');
+      return '<div class="field"><label>'+escapeHtml(t.label)+dateSub+'</label><div class="num" style="font-size:16px;font-weight:800;color:var(--primary-deep);">'+(total.grade??'-')+'</div></div>';
     }).join('');
   }
   if(showTytAyt){
@@ -3419,10 +3587,12 @@ function renderPerfTasksList(app){
   const rows = state.cls.perfTasks.map(t=>{
     const avg = perfTaskAvg(t.label);
     return '<div class="listedit-row">' +
-      '<input type="text" value="'+escapeHtml(t.label)+'" data-old="'+escapeHtml(t.label)+'" '+(state.isAdmin?'disabled readonly style="background:var(--surface-2);cursor:not-allowed;"':'')+'>' +
-      '<div style="font-size:11.5px;color:var(--ink-soft);font-weight:700;padding-top:9px;white-space:nowrap;">Ort: '+(avg!=null?avg:'-')+'</div>' +
-      '<button class="btn btn-soft btn-sm" data-enter="'+escapeHtml(t.label)+'">'+(state.isAdmin?'Puanları İncele':'Not Gir')+'</button>' +
-      (!state.isAdmin ? '<button class="iconbtn" data-del="'+escapeHtml(t.label)+'">'+ic('trash')+'</button>' : '') +
+      '<input type="text" placeholder="Performans Ödevi Adı" value="'+escapeHtml(t.label)+'" data-old="'+escapeHtml(t.label)+'" '+(state.isAdmin?'disabled readonly style="background:var(--surface-2);cursor:not-allowed;"':'')+'>' +
+      '<div class="datewrap"><label>Verildi</label><input type="date" value="'+(t.given_date||'')+'" data-task="'+escapeHtml(t.label)+'" data-f="given_date" '+(state.isAdmin?'disabled readonly style="background:var(--surface-2);cursor:not-allowed;"':'')+'></div>' +
+      '<div class="datewrap"><label>Kontrol</label><input type="date" value="'+(t.due_date||'')+'" data-task="'+escapeHtml(t.label)+'" data-f="due_date" '+(state.isAdmin?'disabled readonly style="background:var(--surface-2);cursor:not-allowed;"':'')+'></div>' +
+      '<div style="font-size:11.5px;color:var(--ink-soft);font-weight:700;padding-top:19px;white-space:nowrap;">Ort: '+(avg!=null?avg:'-')+'</div>' +
+      '<button class="btn btn-soft btn-sm" style="margin-top:13px;" data-enter="'+escapeHtml(t.label)+'">'+(state.isAdmin?'Puanları İncele':'Not Gir')+'</button>' +
+      (!state.isAdmin ? '<button class="iconbtn" style="margin-top:13px;" data-del="'+escapeHtml(t.label)+'">'+ic('trash')+'</button>' : '') +
     '</div>';
   }).join('');
   app.innerHTML =
@@ -3435,15 +3605,15 @@ function renderPerfTasksList(app){
     (!state.isAdmin ? '<button class="btn btn-outline full" id="syncAllPerfBtn" style="margin-top:10px;">'+ic('upload')+'Bu Sınıfın Ödevlerini ve Rubriklerini Tüm '+grade+'. Sınıflara Eşitle (Tüm Kullanıcılar)</button>' : '');
   document.getElementById('back4').onclick = backToRoster;
   const addPBtn = document.getElementById('addPerfBtn');
-  if(addPBtn) addPBtn.onclick = ()=>{
-    const label = prompt('Yeni performans ödevinin adı:');
-    if(label && label.trim()) addPerfTask(label.trim());
-  };
+  if(addPBtn) addPBtn.onclick = openAddPerfTaskModal;
   const syncAllBtn = document.getElementById('syncAllPerfBtn');
   if(syncAllBtn) syncAllBtn.onclick = syncAllPerfTasksToSameGrade;
   if(!state.isAdmin){
     app.querySelectorAll('input[data-old]').forEach(inp=>{
       inp.onblur = ()=>{ if(inp.value.trim() && inp.value.trim()!==inp.dataset.old) renamePerfTask(inp.dataset.old, inp.value.trim()); };
+    });
+    app.querySelectorAll('input[data-task][data-f]').forEach(inp=>{
+      inp.onchange = ()=> updatePerfTaskDate(inp.dataset.task, inp.dataset.f, inp.value || null);
     });
     app.querySelectorAll('[data-del]').forEach(btn=>{
       btn.onclick = ()=>{ if(confirm('"'+btn.dataset.del+'" silinsin mi? Tüm ölçüt ve puanlar da silinir.')) deletePerfTask(btn.dataset.del); };
@@ -3473,6 +3643,13 @@ function renderRubric(app){
       (!state.isAdmin ? '<button class="btn btn-soft btn-sm" id="syncRubricBtn" title="Bu rubriği diğer kullanıcılar dahil tüm '+grade+'. sınıflara aktar">'+ic('upload')+'Tüm '+grade+' lara Eşitle (Tüm Kullanıcılar)</button>' : '') +
       (!state.isAdmin ? '<button class="btn btn-outline btn-sm" id="manageTasksBtn">'+ic('book')+'Ödevleri Yönet</button>' : '') +
     '</div>';
+
+  const currentTask = state.cls.perfTasks.find(t=>t.label===level);
+  const taskDatesHtml = currentTask && (currentTask.given_date || currentTask.due_date) ?
+    '<div style="font-size:12.5px;color:var(--ink-soft);margin:0 0 16px;display:flex;gap:16px;flex-wrap:wrap;background:var(--surface);padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--line);">' +
+      '<span>📅 <b>Verilme Tarihi:</b> '+(currentTask.given_date ? fmtDate(currentTask.given_date) : 'Belirtilmedi')+'</span>' +
+      '<span>⏰ <b>Kontrol / Teslim Tarihi:</b> '+(currentTask.due_date ? fmtDate(currentTask.due_date) : 'Belirtilmedi')+'</span>' +
+    '</div>' : '';
 
   let body = '';
   if(state.rubricEdit){
@@ -3537,7 +3714,7 @@ function renderRubric(app){
         : ''));
   }
 
-  app.innerHTML = topControls + body;
+  app.innerHTML = topControls + taskDatesHtml + body;
 
   document.getElementById('back5').onclick = backToRoster;
   const editToggleBtn = document.getElementById('editToggle');
