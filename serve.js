@@ -24,8 +24,23 @@ const server = http.createServer((req, res) => {
   if (reqPath === '/' || reqPath === '') reqPath = '/index.html';
   const filePath = path.join(__dirname, reqPath);
 
-  // Security checks: block hidden files, parent traversals, and sensitive files
-  if (reqPath.startsWith('/.') || reqPath.includes('/..') || reqPath.includes('\\..') || reqPath.endsWith('.env') || reqPath.endsWith('.sql')) {
+  // Security checks: block hidden files, parent traversals, and sensitive folders/files
+  const lowerPath = reqPath.toLowerCase();
+  if (
+    reqPath.startsWith('/.') ||
+    reqPath.includes('/..') ||
+    reqPath.includes('\\..') ||
+    lowerPath.startsWith('/scripts') ||
+    lowerPath.startsWith('/backups') ||
+    lowerPath.startsWith('/sql') ||
+    lowerPath.startsWith('/node_modules') ||
+    lowerPath.endsWith('.env') ||
+    lowerPath.endsWith('.sql') ||
+    lowerPath.endsWith('.xlsx') ||
+    lowerPath.endsWith('.xls') ||
+    lowerPath.endsWith('.mjs') ||
+    lowerPath.endsWith('.json')
+  ) {
     res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Forbidden');
     return;
