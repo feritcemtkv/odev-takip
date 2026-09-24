@@ -417,7 +417,7 @@ async function startApp(){
   state.userId = user ? user.id : null;
   state.userEmail = user ? user.email : null;
   state.username = user && user.email ? user.email.split('@')[0] : '';
-  state.isAdmin = (state.username.toLowerCase() === 'admin') || (state.userEmail === 'admin@takip.local') || (user && user.user_metadata && user.user_metadata.role === 'admin');
+  state.isAdmin = (state.username.toLowerCase() === 'admin') || (state.userEmail === 'admin@takip.local') || (user && ((user.app_metadata && user.app_metadata.role === 'admin') || (user.user_metadata && user.user_metadata.role === 'admin')));
   document.getElementById('teacherBtn').style.display = 'flex';
   const $branch = document.querySelector('#teacherBtn .branch');
   if($branch){
@@ -504,6 +504,9 @@ function openUserProfileModal(){
     '<div style="display:flex;flex-direction:column;gap:9px;">' +
       '<button class="btn btn-primary full" id="mChangePassBtn" style="justify-content:center;">'+ic('key')+'Şifre Değiştir</button>' +
       (state.isAdmin ? '<button class="btn btn-outline full" id="mNewUserBtn" style="justify-content:center;">'+ic('plus')+'Yeni Kullanıcı Ekle</button>' : '') +
+      '<button class="btn btn-soft full" id="mDownloadBackupBtn" style="justify-content:center;">'+ic('book')+'Tam Sistem Yedeği İndir (.json)</button>' +
+      '<button class="btn btn-outline full" id="mRestoreBackupBtn" style="justify-content:center;">'+ic('upload')+'Yedekten Geri Yükle (.json)</button>' +
+      '<input type="file" id="mBackupFileInput" accept=".json" style="display:none;" />' +
       '<button class="btn btn-danger full" id="mLogoutBtn" style="justify-content:center;margin-top:4px;">Çıkış Yap</button>' +
     '</div>' +
     '<div class="modalactions" style="margin-top:14px;"><button class="btn btn-outline full" id="mCloseProfile">Kapat</button></div>'
@@ -511,11 +514,237 @@ function openUserProfileModal(){
   document.getElementById('mChangePassBtn').onclick = ()=>{ closeModal(); openChangePasswordModal(); };
   const $nuBtn = document.getElementById('mNewUserBtn');
   if($nuBtn) $nuBtn.onclick = ()=>{ closeModal(); openCreateUserModal(); };
+
+  const $dlBtn = document.getElementById('mDownloadBackupBtn');
+  if($dlBtn) $dlBtn.onclick = ()=>{ closeModal(); downloadFullBackupJson(); };
+
+  const $restoreBtn = document.getElementById('mRestoreBackupBtn');
+  const $fileInp = document.getElementById('mBackupFileInput');
+  if($restoreBtn && $fileInp){
+    $restoreBtn.onclick = ()=> $fileInp.click();
+    $fileInp.onchange = (e)=>{
+      const f = e.target.files && e.target.files[0];
+      if(f) restoreBackupFromFile(f);
+    };
+  }
+
   document.getElementById('mLogoutBtn').onclick = ()=>{
     closeModal();
     if(confirm('Çıkış yapmak istediğinize emin misiniz?')) doLogout();
   };
   document.getElementById('mCloseProfile').onclick = closeModal;
+}
+
+async function downloadFullBackupJson(){
+  if(!state.userId) return;
+  try {
+    showToast('Yedek hazırlanıyor...');
+    const classIds = (state.classes || []).map(c=>c.id);
+    const dump = {
+      teacher_id: state.userId,
+      teacher_username: state.username,
+      teacher_email: state.userEmail,
+      generated_at: new Date().toISOString(),
+      classes: state.classes || []
+    };
+
+    if(classIds.length > 0){
+      const byClassIds = async (table) => {
+        const { data, error } = await sb.from(table).select('*').in('class_id', classIds);
+        if(error) console.warn(table, error);
+        return data || [];
+      };
+      const byStudentIds = async (table, studentIds) => {
+        if(!studentIds.length) return [];
+        const { data, error } = await sb.from(table).select('*').in('student_id', studentIds);
+        if(error) console.warn(table, error);
+        return data || [];
+      };
+
+      dump.students = await byClassIds('students');
+      const studentIds = dump.students.map(s => s.id);
+
+      dump.homeworks = await byClassIds('homeworks');
+      dump.homework_status = await byStudentIds('homework_status', studentIds);
+
+      dump.quizzes = await byClassIds('quizzes');
+      dump.quiz_scores = await byStudentIds('quiz_scores', studentIds);
+
+      dump.performance_tasks = await byClassIds('performance_tasks');
+      dump.rubrics = await byClassIds('rubrics');
+      dump.rubric_scores = await byStudentIds('rubric_scores', studentIds);
+
+      dump.deneme_exams = await byClassIds('deneme_exams');
+      const examIds = dump.deneme_exams.map(e => e.id);
+      if(examIds.length){
+        const { data: dScores } = await sb.from('deneme_scores').select('*').in('exam_id', examIds);
+        dump.deneme_scores = dScores || [];
+      } else {
+        dump.deneme_scores = [];
+      }
+
+      dump.counseling_notes = await byStudentIds('counseling_notes', studentIds);
+      dump.university_goals = await byStudentIds('university_goals', studentIds);
+      dump.abroad_consulting = await byStudentIds('abroad_consulting', studentIds);
+      dump.class_evaluations = await byClassIds('class_evaluations');
+      dump.class_evaluation_marks = await byStudentIds('class_evaluation_marks', studentIds);
+    } else {
+      dump.students = [];
+      dump.homeworks = [];
+      dump.homework_status = [];
+      dump.quizzes = [];
+      dump.quiz_scores = [];
+      dump.performance_tasks = [];
+      dump.rubrics = [];
+      dump.rubric_scores = [];
+      dump.deneme_exams = [];
+      dump.deneme_scores = [];
+      dump.counseling_notes = [];
+      dump.university_goals = [];
+      dump.abroad_consulting = [];
+      dump.class_evaluations = [];
+      dump.class_evaluation_marks = [];
+    }
+
+    const jsonStr = JSON.stringify(dump, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const dateStr = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + '_' + pad(d.getHours()) + '-' + pad(d.getMinutes());
+    a.href = url;
+    a.download = `${(state.username || 'ogretmen').replace(/[^a-zA-Z0-9_\u00C0-\u017F]/g, '_')}_yedek_${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Tam sistem yedeği indirildi');
+  } catch(err) {
+    console.error('Yedek indirme hatası:', err);
+    alert('Yedek indirilemedi: ' + (err.message || err));
+  }
+}
+
+async function restoreBackupFromFile(file){
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if(!data || (!Array.isArray(data.classes) && !Array.isArray(data.students))){
+      alert('Seçilen dosya geçerli bir sistem yedek dosyası (.json) değil.');
+      return;
+    }
+    const clsCount = (data.classes || []).length;
+    const stuCount = (data.students || []).length;
+    const hwCount = (data.homeworks || []).length;
+    const perfCount = (data.performance_tasks || []).length;
+    const quizCount = (data.quizzes || []).length;
+
+    const teacherInfo = data.teacher_username || data.teacher_email || 'Öğretmen';
+    const dateInfo = data.generated_at ? new Date(data.generated_at).toLocaleString('tr-TR') : 'Bilinmeyen Tarih';
+
+    const confirmMsg = '📦 YEDEK GERİ YÜKLEME ONAYI\n\n' +
+      'Yedek Sahibi: ' + teacherInfo + '\n' +
+      'Yedek Tarihi: ' + dateInfo + '\n' +
+      'İçerik:\n' +
+      '• ' + clsCount + ' Sınıf\n' +
+      '• ' + stuCount + ' Öğrenci\n' +
+      '• ' + hwCount + ' Ödev Tanımı\n' +
+      '• ' + perfCount + ' Performans Görevi\n' +
+      '• ' + quizCount + ' KDS Sınavı\n\n' +
+      '⚠️ DİKKAT: Bu işlem yedekteki verileri veritabanınıza geri yükleyecektir.\n' +
+      'Devam etmek istiyor musunuz?';
+
+    if(!confirm(confirmMsg)) return;
+
+    showToast('Yedek geri yükleniyor, lütfen bekleyin...');
+
+    // 1. Sınıflar
+    if(data.classes && data.classes.length > 0){
+      const classesToUpsert = data.classes.map(c => ({
+        ...c,
+        owner_id: state.isAdmin ? (c.owner_id || state.userId) : state.userId
+      }));
+      const { error } = await sb.from('classes').upsert(classesToUpsert, { onConflict: 'id' });
+      if(error) throw new Error('Sınıflar yüklenemedi: ' + error.message);
+    }
+
+    // 2. Öğrenciler
+    if(data.students && data.students.length > 0){
+      const { error } = await sb.from('students').upsert(data.students, { onConflict: 'id' });
+      if(error) throw new Error('Öğrenciler yüklenemedi: ' + error.message);
+    }
+
+    // 3. Ödevler ve Durumlar
+    if(data.homeworks && data.homeworks.length > 0){
+      const { error } = await sb.from('homeworks').upsert(data.homeworks, { onConflict: 'class_id,slot_no' });
+      if(error) console.warn('homeworks restore:', error);
+    }
+    if(data.homework_status && data.homework_status.length > 0){
+      const { error } = await sb.from('homework_status').upsert(data.homework_status, { onConflict: 'student_id,slot_no' });
+      if(error) console.warn('homework_status restore:', error);
+    }
+
+    // 4. KDS Sınavları ve Notları
+    if(data.quizzes && data.quizzes.length > 0){
+      const { error } = await sb.from('quizzes').upsert(data.quizzes, { onConflict: 'class_id,slot_no' });
+      if(error) console.warn('quizzes restore:', error);
+    }
+    if(data.quiz_scores && data.quiz_scores.length > 0){
+      const { error } = await sb.from('quiz_scores').upsert(data.quiz_scores, { onConflict: 'student_id,slot_no' });
+      if(error) console.warn('quiz_scores restore:', error);
+    }
+
+    // 5. Performans Görevleri, Rubrikler ve Notları
+    if(data.performance_tasks && data.performance_tasks.length > 0){
+      const { error } = await sb.from('performance_tasks').upsert(data.performance_tasks, { onConflict: 'class_id,slot_no' });
+      if(error) console.warn('performance_tasks restore:', error);
+    }
+    if(data.rubrics && data.rubrics.length > 0){
+      const { error } = await sb.from('rubrics').upsert(data.rubrics, { onConflict: 'class_id,level' });
+      if(error) console.warn('rubrics restore:', error);
+    }
+    if(data.rubric_scores && data.rubric_scores.length > 0){
+      const { error } = await sb.from('rubric_scores').upsert(data.rubric_scores, { onConflict: 'student_id,level,criteria_index' });
+      if(error) console.warn('rubric_scores restore:', error);
+    }
+
+    // 6. Deneme Sınavları
+    if(data.deneme_exams && data.deneme_exams.length > 0){
+      const { error } = await sb.from('deneme_exams').upsert(data.deneme_exams, { onConflict: 'id' });
+      if(error) console.warn('deneme_exams restore:', error);
+    }
+    if(data.deneme_scores && data.deneme_scores.length > 0){
+      const { error } = await sb.from('deneme_scores').upsert(data.deneme_scores, { onConflict: 'exam_id,student_id,subject' });
+      if(error) console.warn('deneme_scores restore:', error);
+    }
+
+    // 7. Rehberlik ve Danışmanlık Kayıtları
+    if(data.counseling_notes && data.counseling_notes.length > 0){
+      await sb.from('counseling_notes').upsert(data.counseling_notes, { onConflict: 'id' });
+    }
+    if(data.university_goals && data.university_goals.length > 0){
+      await sb.from('university_goals').upsert(data.university_goals, { onConflict: 'id' });
+    }
+    if(data.abroad_consulting && data.abroad_consulting.length > 0){
+      await sb.from('abroad_consulting').upsert(data.abroad_consulting, { onConflict: 'student_id' });
+    }
+    if(data.class_evaluations && data.class_evaluations.length > 0){
+      await sb.from('class_evaluations').upsert(data.class_evaluations, { onConflict: 'id' });
+    }
+    if(data.class_evaluation_marks && data.class_evaluation_marks.length > 0){
+      await sb.from('class_evaluation_marks').upsert(data.class_evaluation_marks, { onConflict: 'evaluation_id,student_id' });
+    }
+
+    closeModal();
+    logActivity('Yedekten verilerini geri yükledi: ' + clsCount + ' sınıf, ' + stuCount + ' öğrenci');
+    alert('✅ Yedek başarıyla geri yüklendi! Sayfanız yenileniyor.');
+    await loadClasses();
+    render();
+  } catch(err) {
+    console.error('Geri yükleme hatası:', err);
+    alert('❌ Geri yükleme sırasında bir hata oluştu:\n' + (err.message || err));
+  }
 }
 
 function openChangePasswordModal(){
