@@ -298,7 +298,56 @@ function sanitizeCell(val){
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 function fmtDate(d){ if(!d) return null; const dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
 function escapeHtml(str){ return String(str==null?'':str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-function normName(str){ return String(str==null?'':str).trim().replace(/\s+/g,' ').toLocaleUpperCase('tr').replace(/İ/g,'I'); }
+function cleanTr(str){
+  return String(str || '')
+    .trim()
+    .replace(/İ/g, 'I').replace(/ı/g, 'i')
+    .replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
+    .replace(/Ü/g, 'U').replace(/ü/g, 'u')
+    .replace(/Ş/g, 'S').replace(/ş/g, 's')
+    .replace(/Ö/g, 'O').replace(/ö/g, 'o')
+    .replace(/Ç/g, 'C').replace(/ç/g, 'c')
+    .toUpperCase()
+    .replace(/[^A-Z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+function matchStudent(rawName, studentList){
+  if(!rawName || !studentList || !studentList.length) return null;
+  const cleanTarget = cleanTr(rawName);
+  if(!cleanTarget) return null;
+  const targetTokens = cleanTarget.split(' ').filter(Boolean);
+  const targetTokenSet = new Set(targetTokens);
+
+  // 1. Exact clean match
+  for(const s of studentList){
+    if(cleanTr(s.name) === cleanTarget) return s;
+  }
+
+  // 2. Exact word set match (handles Soyadı Adı vs Adı Soyadı reversal)
+  for(const s of studentList){
+    const sTokens = cleanTr(s.name).split(' ').filter(Boolean);
+    if(sTokens.length === targetTokens.length && sTokens.every(t => targetTokenSet.has(t))){
+      return s;
+    }
+  }
+
+  // 3. Subset / middle name match (e.g. 'Tibet Savtak' -> 'Tibet Mahir Savtak')
+  let candidates = [];
+  for(const s of studentList){
+    const sTokens = cleanTr(s.name).split(' ').filter(Boolean);
+    const sTokenSet = new Set(sTokens);
+    const targetInS = targetTokens.length >= 2 && targetTokens.every(t => sTokenSet.has(t));
+    const sInTarget = sTokens.length >= 2 && sTokens.every(t => targetTokenSet.has(t));
+    if(targetInS || sInTarget){
+      candidates.push(s);
+    }
+  }
+  if(candidates.length === 1) return candidates[0];
+
+  return null;
+}
+function normName(str){ return cleanTr(str); }
 function studentById(id){ return state.cls.students.find(s=>s.id===id); }
 function sortedStudents(){
   return [...state.cls.students].sort((a,b)=>{
@@ -2172,7 +2221,7 @@ async function importKdsRaporuFromExcel(file){
         if(!row || row.every(c=>String(c).trim()==='')) continue;
         const name = String(row[nameCol]||'').trim();
         if(!name) continue;
-        const student = byName[normName(name)];
+        const student = matchStudent(name, state.cls.students);
         if(!student){ unmatchedNames.add(name); continue; }
         const ssVal = String(row[block.ssCol]||'').trim().toLocaleLowerCase('tr');
         if(ssVal.indexOf('girmedi')>=0) continue; // sınava girmedi, boş bırak
@@ -2591,70 +2640,253 @@ async function extractPdfRows(file){
   }
   return allRows;
 }
+function extractSubjectTokens(rawStr){
+  let s = String(rawStr || '')
+    .replace(/T\.\s*MAT/gi, 'T.MAT')
+    .replace(/TEMEL\s+MATEMAT[İI]K/gi, 'T.MAT')
+    .replace(/T[ÜU]RK\s+D[İI]L[İI]\s+VE\s+EDEB[İI]YATI/gi, 'EDEBİYAT')
+    .replace(/T\.\s*D[İI]L[İI]/gi, 'EDEBİYAT')
+    .replace(/D[İI]N\s+K[ÜU]LT[ÜU]R[ÜU]/gi, 'DİN')
+    .replace(/FEN\s+B[İI]L[İI]MLER[İI]/gi, 'FEN')
+    .replace(/SOSYAL\s+B[İI]L[İI]MLER/gi, 'SOSYAL');
+
+  const excl = new Set(['SAY','EA','SÖZ','DİL','ŞB','KRM','İLÇE','İL','GENEL','SIRA','TYT','AYT','YKS','LGS','PUANI','PUAN','DRC','DRC.','ADI','SOYADI','NO','TOPLAM','NET','D.','Y.','N.']);
+  const toks = s.trim().split(/\s+/).filter(Boolean);
+  return toks.filter(t => !excl.has(t.toLocaleUpperCase('tr')));
+}
+
 function detectDenemeSubjects(rows){
-  let dynIdx=-1, dynCount=0;
-  for(let i=0;i<rows.length;i++){
+  let dynIdx = -1, dynCount = 0;
+  for(let i = 0; i < rows.length; i++){
     const toks = rows[i].trim().split(/\s+/);
-    const c = toks.filter(t=>t==='D.').length;
-    if(c>=3){ dynIdx=i; dynCount=c; break; }
+    const c = toks.filter(t => t === 'D.' || t === 'D').length;
+    if(c >= 3){ dynIdx = i; dynCount = c; break; }
   }
-  if(dynIdx<0) return null;
-  let subjNames=null;
-  for(let j=dynIdx-1; j>=0 && j>=dynIdx-5; j--){
-    const toks = rows[j].trim().split(/\s+/);
-    if(toks.some(t=>t.toLocaleUpperCase('tr').indexOf('TÜRKÇE')>=0)){
-      const excl = new Set(['SAY','EA','SÖZ','DİL','ŞB','KRM','İLÇE','İL','GENEL','SIRA','TYT']);
-      subjNames = toks.filter(t=>!excl.has(t.toLocaleUpperCase('tr')));
+  if(dynIdx < 0) return null;
+
+  let subjRow = null;
+  for(let j = dynIdx - 1; j >= 0 && j >= dynIdx - 5; j--){
+    const rUpper = rows[j].toLocaleUpperCase('tr');
+    if(rUpper.includes('TÜRKÇE') || rUpper.includes('TURKCE') || rUpper.includes('MATEMATİK') || rUpper.includes('T. MAT') || rUpper.includes('EDEBİYAT')){
+      subjRow = rows[j];
       break;
     }
   }
-  if(!subjNames || subjNames.length!==dynCount){
-    subjNames = Array.from({length:dynCount}, (_,i)=>'Ders '+(i+1));
-  }
-  return {subjectCount:dynCount, subjNames};
+  if(!subjRow) return null;
+
+  const subjNames = extractSubjectTokens(subjRow);
+  const hasToplamInDyn = rows[dynIdx].includes('TOPLAM') || subjRow.includes('TOPLAM');
+  const subjectCount = subjNames.length;
+  const dataTripletCount = (hasToplamInDyn && dynCount > subjectCount) ? (subjectCount + 1) : Math.max(dynCount, subjectCount);
+
+  return { subjectCount, subjNames, dataTripletCount, hasToplam: hasToplamInDyn };
 }
-function detectSoruSayisi(rows, subjNames){
-  const allText = rows.join(' ');
-  const matches = [...allText.matchAll(/Soru\s*Sayısı\s*\((\d+)/gi)].map(m=>parseInt(m[1]));
-  const totals = {};
-  if(matches.length === subjNames.length){ subjNames.forEach((n,i)=> totals[n]=matches[i]); }
-  return totals;
-}
+
 function detectExamLabel(rows){
   let title = null;
-  for(const r of rows){ if(/DENEME[-\s]?\d+/i.test(r)){ title = r.trim(); break; } }
+  for(let i = 0; i < Math.min(10, rows.length); i++){
+    const r = rows[i].trim();
+    if(/^Sayfa/i.test(r) || /^Sınav Tarihi/i.test(r) || /^\d{2}\.\d{2}\.\d{4}$/.test(r)) continue;
+    if(/SIRALI.*L[İI]STES[İI]/i.test(r)) continue;
+    if(/OKULLAR/i.test(r)) continue;
+    if(/(TÜRKİYE GENELİ|DENEME|PROVA|KDS|TARAMA|YKS|TYT|AYT|LGS|SINAVI)/i.test(r)){
+      title = r;
+      break;
+    }
+  }
   let date = null;
   for(const r of rows){
-    if(/Tarihi/i.test(r)){ const m = r.match(/(\d{1,2}\.\d{1,2}\.\d{4})/); if(m){ date = m[1]; break; } }
+    if(/Tarihi/i.test(r)){
+      const m = r.match(/(\d{1,2}\.\d{1,2}\.\d{4})/);
+      if(m){ date = m[1]; break; }
+    }
   }
-  if(!date){ for(const r of rows){ const m = r.match(/(\d{1,2}\.\d{1,2}\.\d{4})/); if(m){ date=m[1]; break; } } }
-  if(!title) title = 'Deneme Sonuçları';
-  return date ? (title+' ('+date+')') : title;
+  if(!date){
+    for(const r of rows){
+      const m = r.match(/(\d{1,2}\.\d{1,2}\.\d{4})/);
+      if(m){ date = m[1]; break; }
+    }
+  }
+  if(!title) title = 'Deneme Sınavı';
+  return date ? (title + ' (' + date + ')') : title;
 }
-function parseDenemeDataRows(rows, subjectCount){
+
+function detectSoruSayisi(rows, subjNames){
+  const totals = {};
+  const STANDARD_TYT = {
+    'TÜRKÇE': 40, 'TURKCE': 40,
+    'TAR-1': 5, 'TARİH-1': 5, 'TARIH-1': 5, 'TARİH': 5, 'TARIH': 5,
+    'COĞ-1': 5, 'COĞRAFYA-1': 5, 'COGRAFYA-1': 5, 'COĞRAFYA': 5, 'COGRAFYA': 5,
+    'FEL-1': 5, 'FELSEFE-1': 5, 'FELSEFE': 5,
+    'DİN-1': 5, 'DİN': 5, 'DIN': 5, 'DİN KÜLTÜRÜ': 5,
+    'SOSYAL': 20, 'SOSYAL BİLİMLER': 20,
+    'T.MAT': 30, 'TEMEL MATEMATİK': 30, 'MATEMATİK': 40, 'MAT': 40,
+    'GEO-1': 10, 'GEOMETRİ-1': 10, 'GEOMETRİ': 10,
+    'FİZ-1': 7, 'FİZİK-1': 7, 'FİZİK': 7, 'FIZIK': 7,
+    'KİM-1': 7, 'KİMYA-1': 7, 'KİMYA': 7, 'KIMYA': 7,
+    'BİY-1': 6, 'BİYOLOJİ-1': 6, 'BİYOLOJİ': 6, 'BIYOLOJI': 6,
+    'FEN': 20, 'FEN BİLİMLERİ': 20
+  };
+  const STANDARD_AYT = {
+    'EDEBİYAT': 24, 'T. DİLİ VE EDEBİYATI': 24,
+    'TAR-1': 10, 'COĞ-1': 6,
+    'TAR-2': 11, 'COĞ-2': 11, 'FEL': 12, 'DİN': 6,
+    'MAT': 40, 'MAT-2': 40, 'MATEMATİK': 40,
+    'FİZ-2': 14, 'FİZİK': 14, 'KİM-2': 13, 'KİMYA': 13, 'BİY-2': 13, 'BİYOLOJİ': 13
+  };
+
+  subjNames.forEach(s => {
+    const k = cleanTr(s);
+    for(const [stk, cnt] of Object.entries(STANDARD_TYT)){
+      if(cleanTr(stk) === k){
+        totals[s] = cnt;
+        break;
+      }
+    }
+    if(totals[s] == null){
+      for(const [stk, cnt] of Object.entries(STANDARD_AYT)){
+        if(cleanTr(stk) === k){
+          totals[s] = cnt;
+          break;
+        }
+      }
+    }
+  });
+  return totals;
+}
+
+function parseDenemeDataRows(rows, requiredTripletCount){
   const NUM_RE = /^-?\d+([.,]\d+)?$/;
   const out = [];
   for(const rowStr of rows){
     const texts = rowStr.trim().split(/\s+/).filter(Boolean);
     if(!texts.length || !/^\d+$/.test(texts[0])) continue;
-    let idx=1;
-    if(idx<texts.length && /^[A-ZÇĞİÖŞÜ]{1,3}$/.test(texts[idx])) idx++;
-    const nameTokens=[];
-    while(idx<texts.length && !NUM_RE.test(texts[idx])){ nameTokens.push(texts[idx]); idx++; }
+    let idx = 1;
+    if(idx < texts.length && /^[A-ZÇĞİÖŞÜ0-9]{1,3}$/.test(texts[idx]) && !NUM_RE.test(texts[idx])) idx++;
+    const nameTokens = [];
+    while(idx < texts.length && !NUM_RE.test(texts[idx])){
+      nameTokens.push(texts[idx]);
+      idx++;
+    }
     const name = nameTokens.join(' ').trim();
     if(!name) continue;
     const tail = texts.slice(idx);
-    if(tail.length < subjectCount*3) continue;
-    out.push({name, nums:tail});
+    if(tail.length < requiredTripletCount * 3) continue;
+    out.push({ name, nums: tail });
   }
   return out;
 }
+
 function toIntOrNull(s){
-  if(s==null) return null;
+  if(s == null) return null;
   const v = parseFloat(String(s).replace(',', '.'));
   if(isNaN(v)) return null;
   return Math.round(v);
 }
+
+function openDenemeImportPreviewModal({
+  defaultLabel,
+  examType,
+  chosenSubjects,
+  totals,
+  matchedList,
+  missingInReport,
+  unmatchedPdfRows,
+  onConfirm
+}){
+  const subjPills = chosenSubjects.map((s, idx) => {
+    const tot = totals[s];
+    return '<span style="display:inline-flex;align-items:center;gap:5px;background:var(--primary-soft);color:var(--primary-deep);padding:5px 10px;border-radius:20px;font-size:12px;font-weight:700;">' +
+      '<span style="background:var(--primary);color:#fff;width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;">'+(idx+1)+'</span>' +
+      escapeHtml(s) + (tot ? ' <span style="opacity:0.75;font-weight:500;">('+tot+' Soru)</span>' : '') +
+    '</span>';
+  }).join('');
+
+  const previewRows = matchedList.slice(0, 3).map(m => {
+    const cells = chosenSubjects.map(subj => {
+      const sc = m.scores.find(x => x.subject === subj) || {};
+      return '<td style="padding:4px 6px;text-align:center;font-size:11px;border-bottom:1px solid var(--line);white-space:nowrap;">' +
+        '<span style="color:var(--emerald);font-weight:700;">'+(sc.dogru!=null?sc.dogru:'-')+'D</span> ' +
+        '<span style="color:var(--rose);font-weight:700;">'+(sc.yanlis!=null?sc.yanlis:'-')+'Y</span> ' +
+        '<span style="color:var(--ink-soft);">'+(sc.bos!=null?sc.bos:'-')+'B</span>' +
+      '</td>';
+    }).join('');
+    return '<tr>' +
+      '<td style="padding:5px 8px;font-weight:700;font-size:12px;border-bottom:1px solid var(--line);white-space:nowrap;">'+escapeHtml(m.student.name)+'</td>' +
+      cells +
+    '</tr>';
+  }).join('');
+
+  const previewHeaders = chosenSubjects.map(s => '<th style="padding:6px;font-size:11px;text-align:center;border-bottom:2px solid var(--line);white-space:nowrap;background:var(--surface-2);">'+escapeHtml(s)+'</th>').join('');
+
+  const missingHtml = missingInReport.length ?
+    '<div style="background:var(--amber-soft);border:1px solid var(--amber);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#8a4d05;">' +
+      '<strong>Raporda adı yer almayan / girmeyen ('+missingInReport.length+' öğrenci):</strong> ' +
+      escapeHtml(missingInReport.map(s=>s.name).join(', ')) +
+    '</div>' : '';
+
+  const unnamedHtml = unmatchedPdfRows.length ?
+    '<div style="background:var(--surface-2);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--ink-soft);">' +
+      'ℹ️ PDF raporunda adı boş olan '+unmatchedPdfRows.length+' satır atlandı.' +
+    '</div>' : '';
+
+  const modalHtml =
+    '<div style="max-height:85vh;overflow-y:auto;padding-right:2px;">' +
+      '<h3 style="margin-bottom:14px;display:flex;align-items:center;gap:8px;font-size:16px;">' +
+        ic('upload') + ' Deneme Sınavı Raporu Önizleme (' + (examType==='tyt'?'TYT':'AYT') + ')' +
+      '</h3>' +
+      '<div style="margin-bottom:14px;">' +
+        '<label style="display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;">Sınav Adı (Dilerseniz Değiştirebilirsiniz):</label>' +
+        '<input type="text" id="mExamLabelInp" value="'+escapeHtml(defaultLabel)+'" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13.5px;font-weight:700;">' +
+      '</div>' +
+      '<div style="margin-bottom:14px;">' +
+        '<div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;">Algılanan Sütunlar ve Soldan Sağa Sıralaması ('+chosenSubjects.length+' Ders):</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;">' + subjPills + '</div>' +
+        '<div style="font-size:11px;color:var(--ink-faint);margin-top:4px;">* Bu rapordaki sol-sağ sütun sırasına göre otomatik eşleştirilmiştir.</div>' +
+      '</div>' +
+      '<div style="margin-bottom:14px;">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+          '<span style="background:var(--emerald-soft);color:var(--emerald);font-weight:800;font-size:12px;padding:3px 10px;border-radius:6px;">✓ '+matchedList.length+' Öğrenci Eşleşti</span>' +
+        '</div>' +
+        missingHtml +
+        unnamedHtml +
+      '</div>' +
+      (previewRows ? (
+        '<div style="margin-bottom:16px;">' +
+          '<div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;">Örnek Not Önizlemesi (İlk Öğrenciler):</div>' +
+          '<div style="overflow-x:auto;border:1px solid var(--line);border-radius:8px;">' +
+            '<table style="width:100%;border-collapse:collapse;">' +
+              '<thead><tr><th style="padding:6px 8px;font-size:11px;text-align:left;border-bottom:2px solid var(--line);background:var(--surface-2);">Öğrenci</th>'+previewHeaders+'</tr></thead>' +
+              '<tbody>'+previewRows+'</tbody>' +
+            '</table>' +
+          '</div>' +
+        '</div>'
+      ) : '') +
+      '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;">' +
+        '<button class="btn btn-outline" id="mCancelImportBtn">Vazgeç</button>' +
+        '<button class="btn btn-primary" id="mConfirmImportBtn">'+ic('clipboard')+'Onayla ve Notları Kaydet</button>' +
+      '</div>' +
+    '</div>';
+
+  openModalHtml(modalHtml);
+
+  document.getElementById('mCancelImportBtn').onclick = closeModal;
+  document.getElementById('mConfirmImportBtn').onclick = async ()=>{
+    const finalLabel = (document.getElementById('mExamLabelInp').value||'').trim() || defaultLabel;
+    const btn = document.getElementById('mConfirmImportBtn');
+    btn.disabled = true;
+    btn.textContent = 'Kaydediliyor...';
+    try {
+      await onConfirm(finalLabel);
+      closeModal();
+    } catch(err){
+      btn.disabled = false;
+      btn.textContent = 'Onayla ve Notları Kaydet';
+      showToast('Hata: '+err.message);
+    }
+  };
+}
+
 async function importDenemeFromPdf(file, examType){
   if(state.isAdmin){ showToast('Yönetici modunda deneme raporu yüklenemez (Salt Okunur).'); return; }
   if(!file || !checkFileSize(file)) return;
@@ -2666,61 +2898,142 @@ async function importDenemeFromPdf(file, examType){
     if(!subjInfo || !subjInfo.subjectCount){ showToast('Rapor formatı tanınamadı'); return; }
     const subjectCount = subjInfo.subjectCount, subjNames = subjInfo.subjNames;
     const totals = detectSoruSayisi(rows, subjNames);
-    const dataRows = parseDenemeDataRows(rows, subjectCount);
+    const dataRows = parseDenemeDataRows(rows, subjInfo.dataTripletCount);
     if(!dataRows.length){ showToast('Öğrenci satırı bulunamadı'); return; }
 
-    const tytCount = Math.min(4, subjectCount);
-    const startIdx = examType==='tyt' ? 0 : tytCount;
-    const endIdx = examType==='tyt' ? tytCount : subjectCount;
-    const chosenSubjects = subjNames.slice(startIdx, endIdx);
-    if(!chosenSubjects.length){ showToast('Bu raporda '+(examType==='tyt'?'TYT':'AYT')+' dersi bulunamadı'); return; }
+    const allPdfText = rows.slice(0, 15).join(' ').toLocaleUpperCase('tr');
+    const isPureTyt = allPdfText.includes('TYT') && !allPdfText.includes('AYT');
+    const isPureAyt = allPdfText.includes('AYT') && !allPdfText.includes('TYT');
 
-    const examLabel = detectExamLabel(rows);
-    const byName = {};
-    state.cls.students.forEach(s=>{ byName[normName(s.name)] = s; });
+    let chosenSubjects = [];
+    let startIdx = 0;
 
-    const list = examType==='tyt'?state.cls.tytExams:state.cls.aytExams;
-    let exam = list.find(e=>e.label===examLabel);
-    if(!exam){
-      const maxSlot = Math.max(0, ...list.map(e=>e.slot_no||0));
-      const { data, error } = await sb.from('deneme_exams').insert({class_id:state.cls.id, exam_type:examType, slot_no:maxSlot+1, label:examLabel, subjects:chosenSubjects}).select();
-      if(error){ showToast('Hata: '+error.message); return; }
-      exam = data[0];
-      if(examType==='tyt') state.cls.tytExams.push(exam); else state.cls.aytExams.push(exam);
+    if(examType === 'tyt'){
+      if(isPureAyt){
+        showToast('Dikkat: Bu dosya bir AYT raporu gibi görünüyor. Lütfen AYT sekmesinden yükleyin.');
+        return;
+      }
+      if(isPureTyt){
+        chosenSubjects = subjNames;
+        startIdx = 0;
+      } else {
+        const aytIdx = subjNames.findIndex(s => /-2$/i.test(s) || /EDEB[İI]YAT/i.test(s));
+        chosenSubjects = aytIdx > 0 ? subjNames.slice(0, aytIdx) : subjNames;
+        startIdx = 0;
+      }
     } else {
-      exam.subjects = chosenSubjects;
-      await sb.from('deneme_exams').update({subjects:chosenSubjects}).eq('id', exam.id);
-    }
-
-    const scoreRows = [];
-    let matched=0, unmatched=0;
-    for(const row of dataRows){
-      const student = byName[normName(row.name)];
-      if(!student){ unmatched++; continue; }
-      matched++;
-      for(let i=0;i<chosenSubjects.length;i++){
-        const gi = startIdx+i;
-        const d = toIntOrNull(row.nums[gi*3]);
-        const y = toIntOrNull(row.nums[gi*3+1]);
-        const subjName = chosenSubjects[i];
-        const tot = totals[subjName];
-        const b = (tot!=null && d!=null && y!=null) ? (tot-d-y) : null;
-        scoreRows.push({ student_id: student.id, exam_id: exam.id, subject: subjName, dogru:d, yanlis:y, bos:b });
+      if(isPureTyt){
+        showToast('Dikkat: Bu dosya bir TYT raporu gibi görünüyor. Lütfen TYT sekmesinden yükleyin.');
+        return;
+      }
+      if(isPureAyt){
+        chosenSubjects = subjNames;
+        startIdx = 0;
+      } else {
+        const aytIdx = subjNames.findIndex(s => /-2$/i.test(s) || /EDEB[İI]YAT/i.test(s));
+        if(aytIdx >= 0){
+          chosenSubjects = subjNames.slice(aytIdx);
+          startIdx = aytIdx;
+        } else {
+          const tytCount = Math.min(4, subjNames.length);
+          chosenSubjects = subjNames.slice(tytCount);
+          startIdx = tytCount;
+        }
       }
     }
-    if(scoreRows.length){
-      const { error } = await sb.from('deneme_scores').upsert(scoreRows, {onConflict:'student_id,exam_id,subject'});
-      if(error){ showToast('Notlar kaydedilirken hata: '+error.message); return; }
-      state.cls.denemeScoresByExam[exam.id] = state.cls.denemeScoresByExam[exam.id]||{};
-      scoreRows.forEach(sr=>{
-        state.cls.denemeScoresByExam[exam.id][sr.student_id] = state.cls.denemeScoresByExam[exam.id][sr.student_id]||{};
-        state.cls.denemeScoresByExam[exam.id][sr.student_id][sr.subject] = { dogru:sr.dogru, yanlis:sr.yanlis, bos:sr.bos };
-      });
+
+    if(!chosenSubjects.length){ showToast('Bu raporda '+(examType==='tyt'?'TYT':'AYT')+' dersi bulunamadı'); return; }
+
+    const defaultLabel = detectExamLabel(rows);
+    const matchedList = [];
+    const unmatchedPdfRows = [];
+    const matchedStudentIds = new Set();
+
+    for(const row of dataRows){
+      const student = matchStudent(row.name, state.cls.students);
+      if(!student){
+        unmatchedPdfRows.push(row.name);
+        continue;
+      }
+      matchedStudentIds.add(student.id);
+      const studentScores = [];
+      for(let i = 0; i < chosenSubjects.length; i++){
+        const gi = startIdx + i;
+        const d = toIntOrNull(row.nums[gi * 3]);
+        const y = toIntOrNull(row.nums[gi * 3 + 1]);
+        const subjName = chosenSubjects[i];
+        const tot = totals[subjName];
+        const b = (tot != null && d != null && y != null) ? Math.max(0, tot - d - y) : null;
+        studentScores.push({ subject: subjName, dogru: d, yanlis: y, bos: b });
+      }
+      matchedList.push({ student, scores: studentScores });
     }
-    render();
-    logActivity('"'+examLabel+'" '+(examType==='tyt'?'TYT':'AYT')+' raporunu PDF\'den içe aktardı ('+matched+' öğrenci, '+chosenSubjects.length+' ders)');
-    showToast(matched+' öğrenci, '+chosenSubjects.length+' ders yüklendi'+(unmatched?(', '+unmatched+' satır eşleşmedi'):'')+(Object.keys(totals).length?'':' — Boş sayısı hesaplanamadı'));
-  }catch(err){ showToast('PDF okunamadı: '+err.message); }
+
+    const missingInReport = (state.cls.students || []).filter(s => !matchedStudentIds.has(s.id));
+
+    // Open confirmation preview modal
+    openDenemeImportPreviewModal({
+      defaultLabel,
+      examType,
+      chosenSubjects,
+      totals,
+      matchedList,
+      missingInReport,
+      unmatchedPdfRows,
+      onConfirm: async (finalLabel)=>{
+        const list = examType==='tyt' ? state.cls.tytExams : state.cls.aytExams;
+        let exam = list.find(e => e.label === finalLabel);
+        if(!exam){
+          const maxSlot = Math.max(0, ...list.map(e => e.slot_no || 0));
+          const { data, error } = await sb.from('deneme_exams').insert({
+            class_id: state.cls.id,
+            exam_type: examType,
+            slot_no: maxSlot + 1,
+            label: finalLabel,
+            subjects: chosenSubjects
+          }).select();
+          if(error){ throw new Error(error.message); }
+          exam = data[0];
+          if(examType === 'tyt') state.cls.tytExams.push(exam); else state.cls.aytExams.push(exam);
+        } else {
+          exam.subjects = chosenSubjects;
+          await sb.from('deneme_exams').update({ subjects: chosenSubjects }).eq('id', exam.id);
+        }
+
+        const scoreRows = [];
+        for(const m of matchedList){
+          for(const sc of m.scores){
+            scoreRows.push({
+              student_id: m.student.id,
+              exam_id: exam.id,
+              subject: sc.subject,
+              dogru: sc.dogru,
+              yanlis: sc.yanlis,
+              bos: sc.bos
+            });
+          }
+        }
+
+        if(scoreRows.length){
+          const { error } = await sb.from('deneme_scores').upsert(scoreRows, { onConflict: 'student_id,exam_id,subject' });
+          if(error){ throw new Error('Notlar kaydedilirken hata: ' + error.message); }
+          state.cls.denemeScoresByExam[exam.id] = state.cls.denemeScoresByExam[exam.id] || {};
+          scoreRows.forEach(sr => {
+            state.cls.denemeScoresByExam[exam.id][sr.student_id] = state.cls.denemeScoresByExam[exam.id][sr.student_id] || {};
+            state.cls.denemeScoresByExam[exam.id][sr.student_id][sr.subject] = { dogru: sr.dogru, yanlis: sr.yanlis, bos: sr.bos };
+          });
+        }
+
+        state.activeExamId = exam.id;
+        state.view = 'deneme_scores';
+        render();
+
+        logActivity('"' + finalLabel + '" ' + (examType === 'tyt' ? 'TYT' : 'AYT') + ' raporunu PDF\'den içe aktardı (' + matchedList.length + ' öğrenci, ' + chosenSubjects.length + ' ders)');
+        showToast(matchedList.length + ' öğrenci, ' + chosenSubjects.length + ' ders başarıyla kaydedildi.');
+      }
+    });
+
+  }catch(err){ showToast('PDF okunamadı: ' + err.message); }
 }
 
 async function importDenemeFromExcel(file, examType){
@@ -3958,12 +4271,23 @@ function renderDenemeScores(app){
   app.innerHTML =
     '<button class="backlink" id="backDS">'+ic('chevron')+' '+(examType==='tyt'?'TYT':'AYT')+' listesine dön</button>' +
     (state.isAdmin ? '<div class="admin-badge-banner" style="background:var(--amber-soft);border:1px solid var(--amber);color:var(--amber);padding:10px 14px;border-radius:10px;font-size:12.5px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;">Yönetici Modu (Salt Okunur) — Deneme notları sadece incelenebilir.</div>' : '') +
-    '<div class="pagehead"><h2>'+escapeHtml(exam.label)+'</h2></div>' +
+    '<div class="pagehead" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">' +
+      '<h2 style="margin:0;">'+escapeHtml(exam.label)+'</h2>' +
+      (!state.isAdmin ? '<button class="btn btn-danger btn-sm" id="delThisExamBtn">'+ic('trash')+'Bu Sınavı Sil</button>' : '') +
+    '</div>' +
     '<div class="card" style="overflow-x:auto;">' +
       '<table style="border-collapse:collapse;width:100%;"><thead><tr><th></th><th></th>'+headerCells+'</tr><tr><th></th><th></th>'+subHeaderCells+'</tr></thead><tbody>'+(rows||'')+'</tbody></table>' +
     '</div>';
   document.getElementById('backDS').onclick = ()=>{ state.view='deneme_list'; render(); };
   if(!state.isAdmin){
+    const delBtn = document.getElementById('delThisExamBtn');
+    if(delBtn){
+      delBtn.onclick = ()=>{
+        if(confirm('Bu "'+exam.label+'" sınavı ve kayıtlı tüm notları silinsin mi?')){
+          deleteDenemeExam(examId, examType);
+        }
+      };
+    }
     app.querySelectorAll('input[data-id]').forEach(inp=>{
       inp.onblur = ()=> updateDenemeScore(inp.dataset.id, examId, inp.dataset.subj, inp.dataset.f, inp.value);
     });
