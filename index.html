@@ -3117,6 +3117,7 @@ async function updateDenemeScore(sid, examId, subject, field, value){
   state.cls.denemeScoresByExam[examId][sid][subject] = state.cls.denemeScoresByExam[examId][sid][subject]||{};
   const numVal = value===''?null:(parseInt(value)||0);
   state.cls.denemeScoresByExam[examId][sid][subject][field] = numVal;
+  if(typeof updateDenemeAveragesDom === 'function') updateDenemeAveragesDom(examId);
   const rec = state.cls.denemeScoresByExam[examId][sid][subject];
   await sb.from('deneme_scores').upsert({student_id:sid, exam_id:examId, subject, dogru:rec.dogru, yanlis:rec.yanlis, bos:rec.bos}, {onConflict:'student_id,exam_id,subject'});
   showToast('Kaydedildi');
@@ -4249,6 +4250,74 @@ function renderDenemeList(app, examType){
     btn.onclick = ()=>{ state.activeExamId = btn.dataset.enter; state.view='deneme_scores'; render(); };
   });
 }
+function calcDenemeAverages(examId, subjects){
+  const students = sortedStudents();
+  const scores = state.cls.denemeScoresByExam[examId]||{};
+  const stats = (subjects||[]).map(subj=>{
+    let count=0, sumD=0, sumY=0, sumB=0;
+    students.forEach(s=>{
+      const rec = (scores[s.id]||{})[subj];
+      if(!rec) return;
+      const hasD = rec.dogru!=null && rec.dogru!=='';
+      const hasY = rec.yanlis!=null && rec.yanlis!=='';
+      const hasB = rec.bos!=null && rec.bos!=='';
+      if(hasD || hasY || hasB){
+        count++;
+        if(hasD) sumD += (Number(rec.dogru)||0);
+        if(hasY) sumY += (Number(rec.yanlis)||0);
+        if(hasB) sumB += (Number(rec.bos)||0);
+      }
+    });
+    if(count===0){
+      return { subj, count:0, d:'-', y:'-', b:'-', net:'-', netNum:0 };
+    }
+    const dAvg = sumD / count;
+    const yAvg = sumY / count;
+    const bAvg = sumB / count;
+    const netAvg = dAvg - (yAvg / 4);
+    return {
+      subj,
+      count,
+      d: (Math.round(dAvg*10)/10).toFixed(1),
+      y: (Math.round(yAvg*10)/10).toFixed(1),
+      b: (Math.round(bAvg*10)/10).toFixed(1),
+      net: (Math.round(netAvg*100)/100).toFixed(2),
+      netNum: netAvg
+    };
+  });
+  const activeStats = stats.filter(st=>st.count>0);
+  const totalNet = activeStats.length>0
+    ? (Math.round(activeStats.reduce((sum,st)=>sum+st.netNum,0)*100)/100).toFixed(2)
+    : null;
+  return { stats, totalNet };
+}
+
+function updateDenemeAveragesDom(examId){
+  if(state.view!=='deneme_scores' || state.activeExamId!==examId) return;
+  const exam = (state.examType==='tyt'?state.cls.tytExams:state.cls.aytExams).find(e=>e.id===examId);
+  if(!exam) return;
+  const subjects = exam.subjects||[];
+  const { stats, totalNet } = calcDenemeAverages(examId, subjects);
+  stats.forEach(st=>{
+    try {
+      const escapedSubj = CSS.escape(st.subj);
+      const elD = document.querySelector('[data-avg-d="'+escapedSubj+'"]');
+      if(elD) elD.textContent = st.d;
+      const elY = document.querySelector('[data-avg-y="'+escapedSubj+'"]');
+      if(elY) elY.textContent = st.y;
+      const elB = document.querySelector('[data-avg-b="'+escapedSubj+'"]');
+      if(elB) elB.textContent = st.b;
+      const elNet = document.querySelector('[data-avg-net="'+escapedSubj+'"] span');
+      if(elNet) elNet.textContent = st.net!=='-' ? (st.net+' Net') : '-';
+    } catch(e){}
+  });
+  const elTot = document.getElementById('denemeTotalNetBadge');
+  if(elTot){
+    elTot.textContent = totalNet ? ('(Top: ' + totalNet + ')') : '';
+    elTot.style.display = totalNet ? 'inline' : 'none';
+  }
+}
+
 function renderDenemeScores(app){
   const examId = state.activeExamId;
   const examType = state.examType;
@@ -4273,6 +4342,36 @@ function renderDenemeScores(app){
       cells +
     '</tr>';
   }).join('');
+
+  const { stats, totalNet } = calcDenemeAverages(examId, subjects);
+
+  const avgCells = stats.map(st=>{
+    return '<td data-avg-d="'+escapeHtml(st.subj)+'" style="padding:5px 2px;text-align:center;font-size:11.5px;font-weight:800;color:var(--teal);border-top:2px solid var(--line);border-bottom:1px solid var(--line);background:var(--surface-2);">'+st.d+'</td>' +
+      '<td data-avg-y="'+escapeHtml(st.subj)+'" style="padding:5px 2px;text-align:center;font-size:11.5px;font-weight:800;color:var(--red);border-top:2px solid var(--line);border-bottom:1px solid var(--line);background:var(--surface-2);">'+st.y+'</td>' +
+      '<td data-avg-b="'+escapeHtml(st.subj)+'" style="padding:5px 2px;text-align:center;font-size:11.5px;font-weight:800;color:var(--ink-soft);border-top:2px solid var(--line);border-bottom:1px solid var(--line);border-right:1px solid var(--line);background:var(--surface-2);">'+st.b+'</td>';
+  }).join('');
+
+  const netCells = stats.map(st=>{
+    const netTxt = st.net!=='-' ? (st.net+' Net') : '-';
+    return '<td colspan="3" data-avg-net="'+escapeHtml(st.subj)+'" style="padding:4px 3px;text-align:center;font-size:11.5px;font-weight:800;border-bottom:none;border-right:1px solid var(--line);background:var(--surface-2);">' +
+      '<span style="background:var(--primary-soft);color:var(--primary-deep);padding:2px 8px;border-radius:6px;display:inline-block;white-space:nowrap;">'+netTxt+'</span>' +
+    '</td>';
+  }).join('');
+
+  const tfootHtml =
+    '<tfoot style="position:sticky;bottom:0;z-index:20;background:var(--surface-2);box-shadow:0 -2px 6px rgba(0,0,0,0.06);">' +
+      '<tr style="background:var(--surface-2);">' +
+        '<td style="position:sticky;left:0;z-index:25;background:var(--surface-2);padding:6px 4px;font-size:11px;font-weight:800;text-align:center;border-top:2px solid var(--line);border-bottom:1px solid var(--line);border-right:1px solid var(--line);color:var(--primary-deep);width:45px;min-width:45px;">ORT</td>' +
+        '<td style="position:sticky;left:45px;z-index:25;background:var(--surface-2);padding:6px 10px;font-size:12px;font-weight:800;white-space:nowrap;min-width:160px;border-top:2px solid var(--line);border-bottom:1px solid var(--line);border-right:2px solid var(--line);box-shadow:3px 0 6px -2px rgba(0,0,0,0.08);color:var(--primary-deep);">Sınıf Ortalaması (D-Y-B)</td>' +
+        avgCells +
+      '</tr>' +
+      '<tr style="background:var(--surface-2);">' +
+        '<td style="position:sticky;left:0;z-index:25;background:var(--surface-2);padding:6px 4px;font-size:11px;font-weight:800;text-align:center;border-bottom:none;border-right:1px solid var(--line);color:var(--teal);width:45px;min-width:45px;">NET</td>' +
+        '<td style="position:sticky;left:45px;z-index:25;background:var(--surface-2);padding:6px 10px;font-size:12px;font-weight:800;white-space:nowrap;min-width:160px;border-bottom:none;border-right:2px solid var(--line);box-shadow:3px 0 6px -2px rgba(0,0,0,0.08);color:var(--ink);">Ortalama Net <span id="denemeTotalNetBadge" style="color:var(--teal);font-weight:800;margin-left:4px;font-size:11.5px;'+(totalNet?'':'display:none;')+'">'+(totalNet?('(Top: '+totalNet+')'):'')+'</span></td>' +
+        netCells +
+      '</tr>' +
+    '</tfoot>';
+
   app.innerHTML =
     '<button class="backlink" id="backDS">'+ic('chevron')+' '+(examType==='tyt'?'TYT':'AYT')+' listesine dön</button>' +
     (state.isAdmin ? '<div class="admin-badge-banner" style="background:var(--amber-soft);border:1px solid var(--amber);color:var(--amber);padding:10px 14px;border-radius:10px;font-size:12.5px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;">Yönetici Modu (Salt Okunur) — Deneme notları sadece incelenebilir.</div>' : '') +
@@ -4293,6 +4392,7 @@ function renderDenemeScores(app){
           '</tr>' +
         '</thead>' +
         '<tbody>'+(rows||'')+'</tbody>' +
+        tfootHtml +
       '</table>' +
     '</div>';
   document.getElementById('backDS').onclick = ()=>{ state.view='deneme_list'; render(); };
