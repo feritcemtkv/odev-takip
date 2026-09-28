@@ -4256,8 +4256,8 @@ function renderDenemeScores(app){
   if(!exam){ state.view='deneme_list'; return render(); }
   const subjects = exam.subjects||[];
   const scores = state.cls.denemeScoresByExam[examId]||{};
-  const headerCells = subjects.map(s=>'<th colspan="3" style="text-align:center;font-size:11.5px;padding:8px 4px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);white-space:nowrap;background:var(--surface-2);color:var(--primary-deep);font-weight:800;">'+escapeHtml(s)+'</th>').join('');
-  const subHeaderCells = subjects.map(()=> '<th style="font-size:9.5px;color:var(--ink-soft);padding:3px 2px;text-align:center;border-bottom:2px solid var(--line);background:var(--surface-2);">D</th><th style="font-size:9.5px;color:var(--ink-soft);padding:3px 2px;text-align:center;border-bottom:2px solid var(--line);background:var(--surface-2);">Y</th><th style="font-size:9.5px;color:var(--ink-soft);padding:3px 2px;text-align:center;border-bottom:2px solid var(--line);border-right:1px solid var(--line);background:var(--surface-2);">B</th>').join('');
+  const headerCells = subjects.map(s=>'<th colspan="3" style="position:sticky;top:0;z-index:15;height:36px;line-height:36px;padding:0 4px;text-align:center;font-size:11.5px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);white-space:nowrap;background:var(--surface-2);color:var(--primary-deep);font-weight:800;">'+escapeHtml(s)+'</th>').join('');
+  const subHeaderCells = subjects.map(()=> '<th style="position:sticky;top:36px;z-index:15;height:26px;line-height:26px;padding:0 2px;font-size:9.5px;color:var(--ink-soft);text-align:center;border-bottom:2px solid var(--line);background:var(--surface-2);">D</th><th style="position:sticky;top:36px;z-index:15;height:26px;line-height:26px;padding:0 2px;font-size:9.5px;color:var(--ink-soft);text-align:center;border-bottom:2px solid var(--line);background:var(--surface-2);">Y</th><th style="position:sticky;top:36px;z-index:15;height:26px;line-height:26px;padding:0 2px;font-size:9.5px;color:var(--ink-soft);text-align:center;border-bottom:2px solid var(--line);border-right:1px solid var(--line);background:var(--surface-2);">B</th>').join('');
   const rows = sortedStudents().map((s, idx)=>{
     const rec = scores[s.id]||{};
     const cells = subjects.map(subj=>{
@@ -4268,8 +4268,8 @@ function renderDenemeScores(app){
     }).join('');
     const rowBg = (idx % 2 === 1) ? 'var(--bg)' : 'var(--surface)';
     return '<tr style="background:'+rowBg+';">' +
-      '<td style="position:sticky;left:0;z-index:3;background:'+rowBg+';padding:6px 8px;font-size:11.5px;color:var(--ink-faint);width:45px;min-width:45px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);">'+escapeHtml(s.no||'')+'</td>' +
-      '<td style="position:sticky;left:45px;z-index:3;background:'+rowBg+';padding:6px 10px;font-size:13px;font-weight:700;white-space:nowrap;min-width:160px;border-bottom:1px solid var(--line);border-right:2px solid var(--line);box-shadow:3px 0 6px -2px rgba(0,0,0,0.08);">'+escapeHtml(s.name)+'</td>' +
+      '<td style="position:sticky;left:0;z-index:5;background:'+rowBg+';padding:6px 8px;font-size:11.5px;color:var(--ink-faint);width:45px;min-width:45px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);">'+escapeHtml(s.no||'')+'</td>' +
+      '<td style="position:sticky;left:45px;z-index:5;background:'+rowBg+';padding:6px 10px;font-size:13px;font-weight:700;white-space:nowrap;min-width:160px;border-bottom:1px solid var(--line);border-right:2px solid var(--line);box-shadow:3px 0 6px -2px rgba(0,0,0,0.08);">'+escapeHtml(s.name)+'</td>' +
       cells +
     '</tr>';
   }).join('');
@@ -4280,12 +4280,12 @@ function renderDenemeScores(app){
       '<h2 style="margin:0;">'+escapeHtml(exam.label)+'</h2>' +
       (!state.isAdmin ? '<button class="btn btn-danger btn-sm" id="delThisExamBtn">'+ic('trash')+'Bu Sınavı Sil</button>' : '') +
     '</div>' +
-    '<div class="card" style="overflow-x:auto;padding:0;border-radius:var(--radius);">' +
+    '<div class="card" style="max-height:calc(100vh - 190px);min-height:360px;overflow:auto;padding:0;border-radius:var(--radius);border:1px solid var(--line);box-shadow:var(--shadow);">' +
       '<table style="border-collapse:separate;border-spacing:0;width:100%;">' +
         '<thead>' +
           '<tr>' +
-            '<th rowspan="2" style="position:sticky;left:0;top:0;z-index:10;background:var(--surface-2);padding:6px 8px;font-size:11px;text-align:left;border-bottom:2px solid var(--line);border-right:1px solid var(--line);color:var(--ink-soft);width:45px;min-width:45px;">No</th>' +
-            '<th rowspan="2" style="position:sticky;left:45px;top:0;z-index:10;background:var(--surface-2);padding:6px 10px;font-size:12px;font-weight:800;text-align:left;border-bottom:2px solid var(--line);border-right:2px solid var(--line);color:var(--ink);white-space:nowrap;min-width:160px;box-shadow:3px 0 6px -2px rgba(0,0,0,0.08);">Öğrenci Adı Soyadı</th>' +
+            '<th rowspan="2" style="position:sticky;left:0;top:0;z-index:30;background:var(--surface-2);padding:0 8px;font-size:11px;text-align:left;border-bottom:2px solid var(--line);border-right:1px solid var(--line);color:var(--ink-soft);width:45px;min-width:45px;">No</th>' +
+            '<th rowspan="2" style="position:sticky;left:45px;top:0;z-index:30;background:var(--surface-2);padding:0 10px;font-size:12px;font-weight:800;text-align:left;border-bottom:2px solid var(--line);border-right:2px solid var(--line);color:var(--ink);white-space:nowrap;min-width:160px;box-shadow:3px 0 6px -2px rgba(0,0,0,0.08);">Öğrenci Adı Soyadı</th>' +
             headerCells +
           '</tr>' +
           '<tr>' +
