@@ -26,6 +26,8 @@ ALTER TABLE IF EXISTS public.homework_status ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.quizzes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.quiz_scores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.performance_tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.performance_tasks ADD COLUMN IF NOT EXISTS given_date date;
+ALTER TABLE IF EXISTS public.performance_tasks ADD COLUMN IF NOT EXISTS due_date date;
 ALTER TABLE IF EXISTS public.rubrics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.rubric_scores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.deneme_exams ENABLE ROW LEVEL SECURITY;
@@ -67,9 +69,21 @@ RETURNS boolean
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
+SET search_path = public, auth, pg_temp
 AS $$
-  SELECT (coalesce(auth.jwt() ->> 'email', '') = 'admin@takip.local')
-      OR (coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') = 'admin');
+  SELECT 
+    (lower(coalesce(auth.jwt() ->> 'email', '')) = 'admin@takip.local')
+    OR (coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') = 'admin')
+    OR (coalesce(auth.jwt() -> 'user_metadata' ->> 'role', '') = 'admin')
+    OR EXISTS (
+      SELECT 1 FROM auth.users
+      WHERE id = auth.uid()
+        AND (
+          lower(email) = 'admin@takip.local'
+          OR coalesce(raw_app_meta_data->>'role', '') = 'admin'
+          OR coalesce(raw_user_meta_data->>'role', '') = 'admin'
+        )
+    );
 $$;
 
 -- ------------------------------------------------------------------------------

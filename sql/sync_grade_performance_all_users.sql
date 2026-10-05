@@ -29,6 +29,8 @@ ALTER TABLE public.performance_tasks ADD COLUMN IF NOT EXISTS given_date date;
 ALTER TABLE public.performance_tasks ADD COLUMN IF NOT EXISTS due_date date;
 
 -- 2. Tüm Kullanıcıların Sınıflarına Performans Ödevi ve Rubrik Eşitleyen Fonksiyon
+DROP FUNCTION IF EXISTS public.sync_grade_performance_tasks(text, text, jsonb);
+
 CREATE OR REPLACE FUNCTION public.sync_grade_performance_tasks(
     p_grade text,
     p_label text,
@@ -180,12 +182,17 @@ BEGIN
     LOOP
         -- Kaynak sınıftaki tüm performans ödevlerini kopyala
         FOR task IN
-            SELECT label FROM public.performance_tasks WHERE class_id = p_source_class_id ORDER BY slot_no
+            SELECT label, given_date, due_date FROM public.performance_tasks WHERE class_id = p_source_class_id ORDER BY slot_no
         LOOP
             IF NOT EXISTS (SELECT 1 FROM public.performance_tasks WHERE class_id = target_class.id AND label = task.label) THEN
                 SELECT COALESCE(MAX(slot_no), 0) INTO max_slot FROM public.performance_tasks WHERE class_id = target_class.id;
-                INSERT INTO public.performance_tasks (class_id, slot_no, label)
-                VALUES (target_class.id, max_slot + 1, task.label);
+                INSERT INTO public.performance_tasks (class_id, slot_no, label, given_date, due_date)
+                VALUES (target_class.id, max_slot + 1, task.label, task.given_date, task.due_date);
+            ELSE
+                UPDATE public.performance_tasks
+                SET given_date = COALESCE(task.given_date, given_date),
+                    due_date = COALESCE(task.due_date, due_date)
+                WHERE class_id = target_class.id AND label = task.label;
             END IF;
 
             -- Rubriği kopyala

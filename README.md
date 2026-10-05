@@ -9,9 +9,9 @@
 Sistemin çok kiracılı (multi-tenant) güvenliğini ve her öğretmenin yalnızca kendi sınıf verilerine erişebilmesini sağlamak için:
 1. Supabase Dashboard'a gidin.
 2. Sol menüden **SQL Editor** bölümünü açın.
-3. [`sql/security_and_rls.sql`](sql/security_and_rls.sql) dosyasındaki komutları yapıştırıp **Run** butonuna basarak çalıştırın.
+3. [`sql/security_and_rls.sql`](sql/security_and_rls.sql) ve [`sql/fix_admin_and_performance_dates.sql`](sql/fix_admin_and_performance_dates.sql) dosyalarındaki komutları çalıştırın.
 
-Bu işlem tüm tablolarda Row Level Security (RLS) politikalarını ve indeksleri devreye alır.
+Bu işlem tüm tablolarda Row Level Security (RLS) politikalarını, yönetici yetkilerini ve performans ödevi tarih altyapısını devreye alır.
 
 ### 2. Otomatik Google Drive Yedekleme Kurulumu
 
