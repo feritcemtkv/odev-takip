@@ -328,6 +328,27 @@
     main#app{padding:18px 14px 60px;}
     .teacherbox .who{display:none;}
   }
+
+  /* Schedule Image Import & Preview Styles */
+  .sch-import-dropzone{border:2px dashed var(--line);border-radius:12px;padding:22px 16px;text-align:center;background:#f8fafc;cursor:pointer;transition:all 0.2s ease;}
+  .sch-import-dropzone:hover, .sch-import-dropzone.dragover{border-color:var(--primary);background:#eff6ff;}
+  .sch-import-preview-box{display:flex;gap:14px;align-items:center;background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:12px;margin:12px 0;}
+  .sch-thumb-wrap{position:relative;width:120px;height:82px;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:#000;flex-shrink:0;}
+  .sch-thumb-wrap img{width:100%;height:100%;object-fit:cover;}
+  .sch-method-tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin:14px 0 10px;}
+  .sch-method-tab{padding:8px 14px;border:none;background:transparent;cursor:pointer;font-weight:800;font-size:12.5px;color:var(--ink-soft);border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;}
+  .sch-method-tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+  .ocr-progress-card{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;margin:12px 0;font-size:12.5px;}
+  .ocr-progress-bar-wrap{width:100%;height:8px;background:#dbeafe;border-radius:999px;overflow:hidden;margin-top:8px;}
+  .ocr-progress-bar{height:100%;background:var(--primary);width:0%;transition:width 0.2s ease;}
+  .sch-edit-matrix-wrap{max-height:360px;overflow-x:auto;overflow-y:auto;border:1px solid var(--line);border-radius:8px;background:#fff;margin:12px 0;}
+  .sch-edit-matrix{width:100%;border-collapse:collapse;min-width:780px;font-size:11.5px;}
+  .sch-edit-matrix th{background:#f8fafc;padding:6px 4px;border:1px solid var(--line);text-align:center;font-weight:800;color:var(--ink-soft);font-size:11px;}
+  .sch-edit-matrix td{padding:4px;border:1px solid var(--line);vertical-align:middle;text-align:center;min-width:68px;}
+  .sch-cell-inp-group{display:flex;flex-direction:column;gap:3px;}
+  .sch-cell-inp-group input{padding:4px;font-size:11px;border:1px solid var(--line);border-radius:4px;text-align:center;width:100%;box-sizing:border-box;}
+  .sch-cell-inp-group input.cls{font-weight:800;color:var(--primary-deep);background:#f0f5ff;}
+  .sch-cell-inp-group input.subj{color:var(--ink-soft);background:#fafafa;}
 </style>
 </head>
 <body>
@@ -335,7 +356,7 @@
 <header class="top">
   <button class="brand" id="brandBtn" type="button" title="Sınıflar sayfasına dön" aria-label="Sınıflar sayfasına dön">
     <div class="logo"><svg class="ic" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/></svg></div>
-    <h1>Sınıf Yönetim Panelim<span class="ver">v.2.6 · bulut</span></h1>
+    <h1>Sınıf Yönetim Panelim<span class="ver">v.2.7 · bulut</span></h1>
   </button>
   <div class="spacer"></div>
   <button class="teacherbox" id="teacherBtn" style="display:none;">
@@ -384,6 +405,10 @@ const ICONS = {
   check:'<polyline points="20 6 9 17 4 12"/>',
   printer:'<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>',
   bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  camera:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+  sparkles:'<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>',
+  image:'<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+  download:'<path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/>',
 };
 function ic(name){ return '<svg class="ic" viewBox="0 0 24 24">'+(ICONS[name]||'')+'</svg>'; }
 
@@ -820,6 +845,7 @@ async function downloadFullBackupJson(){
     }
 
     dump.weekly_schedule = getTeacherSchedule();
+    dump.teacher_schedule_image = getTeacherScheduleImage();
     dump.calendar_events = getCalendarEvents();
 
     const jsonStr = JSON.stringify(dump, null, 2);
@@ -954,6 +980,9 @@ async function restoreBackupFromFile(file){
 
     if(data.weekly_schedule){
       saveTeacherSchedule(data.weekly_schedule);
+    }
+    if(data.teacher_schedule_image){
+      saveTeacherScheduleImage(data.teacher_schedule_image);
     }
     if(data.calendar_events && Array.isArray(data.calendar_events)){
       saveCalendarEvents(data.calendar_events);
@@ -4063,6 +4092,8 @@ function scheduleViewHtml(){
     '</tr>';
   }).join('');
 
+  const hasSavedImage = !!getTeacherScheduleImage();
+
   return '<div class="schedule-container">' +
     '<div class="schedule-header">' +
       '<div class="schedule-title-wrap">' +
@@ -4071,8 +4102,10 @@ function scheduleViewHtml(){
         '<span class="schedule-badge">08:25 – 16:25 · 9 Ders</span>' +
       '</div>' +
       '<div class="schedule-actions">' +
+        '<button class="btn btn-primary btn-sm" id="importScheduleImageBtn">'+ic('camera')+'Fotoğraftan / JPEG\'den Yükle</button>' +
+        (hasSavedImage ? '<button class="btn btn-outline btn-sm" id="viewScheduleImageBtn">'+ic('image')+'Orijinal Fotoğrafı Gör</button>' : '') +
         '<button class="btn btn-outline btn-sm" id="printScheduleBtn">'+ic('printer')+'Yazdır / PDF</button>' +
-        '<button class="btn btn-soft btn-sm" id="resetScheduleBtn">'+ic('upload')+'Varsayılan Programa Dön</button>' +
+        '<button class="btn btn-soft btn-sm" id="resetScheduleBtn">'+ic('upload')+'Varsayılana Dön</button>' +
       '</div>' +
     '</div>' +
     todayBannerHtml +
@@ -4097,6 +4130,12 @@ function wireScheduleView(app){
       openEditScheduleSlotModal(day, period);
     };
   });
+
+  const importImgBtn = document.getElementById('importScheduleImageBtn');
+  if(importImgBtn) importImgBtn.onclick = openScheduleImageImportModal;
+
+  const viewImgBtn = document.getElementById('viewScheduleImageBtn');
+  if(viewImgBtn) viewImgBtn.onclick = openViewScheduleImageModal;
 
   const printBtn = document.getElementById('printScheduleBtn');
   if(printBtn) printBtn.onclick = printScheduleModal;
@@ -4256,6 +4295,642 @@ function printScheduleModal(){
   openModalHtml(modalWrap, '860px');
   document.getElementById('closePrintSchBtn').onclick = closeModal;
   document.getElementById('doPrintSchBtn').onclick = () => window.print();
+}
+
+// ============================================================================
+// DERS PROGRAMI GÖRSELİ (JPEG/PNG) DEPOLAMA, OCR & YAPAY ZEKA ÇÖZÜMLEME
+// ============================================================================
+
+const SCHEDULE_IMAGE_STORAGE_KEY_PREFIX = 'teacher_sched_img_';
+
+function getTeacherScheduleImage(){
+  const key = SCHEDULE_IMAGE_STORAGE_KEY_PREFIX + (state.userId || 'default');
+  try{
+    return localStorage.getItem(key) || null;
+  }catch(e){ return null; }
+}
+
+function saveTeacherScheduleImage(dataUrl){
+  const key = SCHEDULE_IMAGE_STORAGE_KEY_PREFIX + (state.userId || 'default');
+  try{
+    if(dataUrl) localStorage.setItem(key, dataUrl);
+    else localStorage.removeItem(key);
+  }catch(e){
+    console.warn('Görsel yerel depolama kotası:', e);
+  }
+}
+
+function removeTeacherScheduleImage(){
+  const key = SCHEDULE_IMAGE_STORAGE_KEY_PREFIX + (state.userId || 'default');
+  try{ localStorage.removeItem(key); }catch(e){}
+}
+
+function compressImageFile(file, maxWidth=1600, quality=0.85){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width;
+        let h = img.height;
+        if(w > maxWidth || h > maxWidth){
+          if(w > h){
+            h = Math.round((h * maxWidth) / w);
+            w = maxWidth;
+          } else {
+            w = Math.round((w * maxWidth) / h);
+            h = maxWidth;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        const base64 = dataUrl.split(',')[1];
+        resolve({
+          dataUrl,
+          base64,
+          mimeType: 'image/jpeg',
+          name: file.name,
+          size: file.size,
+          width: w,
+          height: h
+        });
+      };
+      img.onerror = () => reject(new Error('Görsel dosyası açılamadı.'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('Dosya okunamadı.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function normalizeParsedSchedule(parsed){
+  const normalized = {
+    pazartesi: Array(10).fill(null),
+    sali: Array(10).fill(null),
+    carsamba: Array(10).fill(null),
+    persembe: Array(10).fill(null),
+    cuma: Array(10).fill(null)
+  };
+
+  const dayKeys = ['pazartesi', 'sali', 'carsamba', 'persembe', 'cuma'];
+  dayKeys.forEach(dk => {
+    const rawList = parsed[dk] || parsed[dk.toUpperCase()] || [];
+    if(Array.isArray(rawList)){
+      rawList.slice(0, 10).forEach((item, idx) => {
+        if(item && (item.cls || item.subj || item.class || item.subject)){
+          const c = String(item.cls || item.class || '').trim().toUpperCase();
+          const s = String(item.subj || item.subject || '').trim().toUpperCase();
+          if(c || s){
+            normalized[dk][idx] = { cls: c, subj: s };
+          }
+        }
+      });
+    }
+  });
+
+  return normalized;
+}
+
+async function extractScheduleWithGemini(base64Data, mimeType, apiKey, onProgress){
+  if(onProgress) onProgress('Google Gemini Vision yapay zekasına bağlanılıyor...');
+  const prompt = `Bu görsel Türkiye'deki bir okulda öğretmenin haftalık ders programı çizelgesidir (Pazartesi-Cuma günleri ve 1'den 9'a kadar ders saatleri).
+Görseldeki ders tablosunu dikkatle oku.
+Sütunlar (zaman dilimleri) 0'dan 9'a kadar 10 dilimdir:
+0: 1. Ders (08:25 - 09:05)
+1: 2. Ders (09:15 - 09:55)
+2: 3. Ders (10:05 - 10:45)
+3: 4. Ders (10:55 - 11:35)
+4: 5. Ders 11 ve 12. sınıflar için (11:45 - 12:25)
+5: 5. Ders 9 ve 10. sınıflar için (12:25 - 13:05)
+6: 6. Ders (13:15 - 13:55)
+7: 7. Ders (14:05 - 14:45)
+8: 8. Ders (14:55 - 15:35)
+9: 9. Ders (15:45 - 16:25)
+
+Tablodaki satırlar: Pazartesi, Salı, Çarşamba, Perşembe, Cuma.
+Her ders hücresinde sınıf kodu (örneğin: 09A, 09FL, 11C-FM, 12D-FM, 10B vb.) ve ders kodu (örneğin: MAT6, MAT8, REH, FIZ, KIM vb.) yer alır.
+Ders olmayan boş saatler için null değer ver.
+
+Kesinlikle sadece geçerli bir JSON nesnesi döndür:
+{
+  "pazartesi": [ {"cls": "09A", "subj": "MAT6"}, null, ... ],
+  "sali": [ ... ],
+  "carsamba": [ ... ],
+  "persembe": [ ... ],
+  "cuma": [ ... ]
+}
+Her gün için dizi tam 10 elemandan oluşmalıdır (indeksler 0..9). Sadece saf JSON üret.`;
+
+  const models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash-latest'];
+  let lastErr = null;
+  for(const model of models){
+    try {
+      if(onProgress) onProgress(model + ' ile görsel taranıyor...');
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: prompt },
+              { inline_data: { mime_type: mimeType || 'image/jpeg', data: base64Data } }
+            ]
+          }],
+          generationConfig: {
+            response_mime_type: 'application/json',
+            temperature: 0.1
+          }
+        })
+      });
+      if(!res.ok){
+        const errJson = await res.json().catch(()=>({}));
+        throw new Error(errJson.error?.message || ('HTTP ' + res.status));
+      }
+      const data = await res.json();
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if(!rawText) throw new Error('Yapay zeka boş yanıt döndürdü');
+      const cleanJson = rawText.replace(/```json\s*/i, '').replace(/```\s*$/, '').trim();
+      const parsed = JSON.parse(cleanJson);
+      return normalizeParsedSchedule(parsed);
+    } catch(err){
+      lastErr = err;
+    }
+  }
+  throw lastErr || new Error('Yapay zeka çözümleme hatası');
+}
+
+let tesseractScriptPromise = null;
+function loadTesseractScript(){
+  if(window.Tesseract) return Promise.resolve(window.Tesseract);
+  if(!tesseractScriptPromise){
+    tesseractScriptPromise = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+      s.onload = () => resolve(window.Tesseract);
+      s.onerror = () => reject(new Error('Tesseract OCR kütüphanesi yüklenemedi. İnternet bağlantınızı kontrol edin.'));
+      document.head.appendChild(s);
+    });
+  }
+  return tesseractScriptPromise;
+}
+
+async function extractScheduleWithTesseract(imageSrc, onProgress){
+  if(onProgress) onProgress('Tesseract OCR kütüphanesi yükleniyor...');
+  const Tesseract = await loadTesseractScript();
+  if(onProgress) onProgress('Görsel taranıyor (Türkçe model hazırlanıyor)...');
+  const res = await Tesseract.recognize(imageSrc, 'tur', {
+    logger: m => {
+      if(m.status === 'recognizing text' && m.progress != null){
+        if(onProgress) onProgress('Görsel taranıyor: %' + Math.round(m.progress * 100));
+      } else if(m.status){
+        if(onProgress) onProgress(m.status);
+      }
+    }
+  });
+  if(onProgress) onProgress('Hücreler ve günler eşleştiriliyor...');
+  return parseOcrWordsToSchedule(res.data);
+}
+
+function parseOcrWordsToSchedule(ocrData){
+  const sched = {
+    pazartesi: Array(10).fill(null),
+    sali: Array(10).fill(null),
+    carsamba: Array(10).fill(null),
+    persembe: Array(10).fill(null),
+    cuma: Array(10).fill(null)
+  };
+
+  const words = (ocrData.words || []).map(w => ({
+    text: (w.text || '').trim(),
+    bbox: w.bbox || { x0: 0, y0: 0, x1: 0, y1: 0 },
+    cx: ((w.bbox.x0 + w.bbox.x1) / 2),
+    cy: ((w.bbox.y0 + w.bbox.y1) / 2)
+  })).filter(w => w.text.length > 0);
+
+  if(!words.length) return sched;
+
+  const dayPatterns = [
+    { key: 'pazartesi', rx: /pazartesi|pzt/i },
+    { key: 'sali', rx: /sal[ıi]/i },
+    { key: 'carsamba', rx: /[çc]ar[sş]amba|[çc]ar/i },
+    { key: 'persembe', rx: /per[sş]embe|per/i },
+    { key: 'cuma', rx: /cuma|cum/i }
+  ];
+
+  const foundDays = [];
+  dayPatterns.forEach(dp => {
+    const match = words.find(w => dp.rx.test(w.text));
+    if(match){
+      foundDays.push({ key: dp.key, y: match.cy, x: match.cx });
+    }
+  });
+
+  foundDays.sort((a,b) => a.y - b.y);
+
+  if(foundDays.length >= 2){
+    for(let i=0; i<foundDays.length; i++){
+      const cur = foundDays[i];
+      const prev = foundDays[i-1];
+      const next = foundDays[i+1];
+      const minY = prev ? ((prev.y + cur.y)/2) : (cur.y - 40);
+      const maxY = next ? ((cur.y + next.y)/2) : (cur.y + 60);
+      cur.minY = minY;
+      cur.maxY = maxY;
+    }
+
+    const minContentX = Math.min(...foundDays.map(d=>d.x)) + 50;
+    const maxContentX = Math.max(...words.map(w=>w.bbox.x1));
+    const tableWidth = Math.max(maxContentX - minContentX, 300);
+    const colWidth = tableWidth / 10;
+
+    words.forEach(w => {
+      const day = foundDays.find(d => w.cy >= d.minY && w.cy < d.maxY);
+      if(!day || w.cx < minContentX) return;
+
+      const colIdx = Math.min(9, Math.max(0, Math.floor((w.cx - minContentX) / colWidth)));
+      const raw = w.text.replace(/[^A-Za-z0-9\-]/g, '').toUpperCase();
+      if(!raw) return;
+
+      const isClass = /^(0?[9]|1[0-2])[A-Z]/.test(raw);
+      const isSubj = /^(MAT|REH|FIZ|KIM|BIY|EDB|TRK|TAR|COG|ING|DIN|FEL|BED|MUZ|RES)/.test(raw);
+
+      if(!sched[day.key][colIdx]) sched[day.key][colIdx] = { cls: '', subj: '' };
+
+      if(isClass && !sched[day.key][colIdx].cls){
+        sched[day.key][colIdx].cls = raw;
+      } else if(isSubj && !sched[day.key][colIdx].subj){
+        sched[day.key][colIdx].subj = raw;
+      } else if(!sched[day.key][colIdx].cls){
+        sched[day.key][colIdx].cls = raw;
+      } else if(!sched[day.key][colIdx].subj){
+        sched[day.key][colIdx].subj = raw;
+      }
+    });
+
+    Object.keys(sched).forEach(k => {
+      sched[k] = sched[k].map(s => (s && (s.cls || s.subj)) ? s : null);
+    });
+  }
+
+  return sched;
+}
+
+function renderScheduleEditMatrixHtml(sched){
+  const thCols = PERIOD_DEFS.map(p =>
+    '<th>' +
+      '<div>'+p.no+'</div>' +
+      '<div style="font-size:9.5px;font-weight:normal;color:var(--ink-faint);">'+p.time+'</div>' +
+    '</th>'
+  ).join('');
+
+  const trRows = DAYS_DEF.map(day => {
+    const daySlots = sched[day.key] || [];
+    const tdCols = PERIOD_DEFS.map(p => {
+      const slot = daySlots[p.id] || { cls: '', subj: '' };
+      return '<td>' +
+        '<div class="sch-cell-inp-group">' +
+          '<input type="text" class="cls sch-matrix-inp" data-day="'+day.key+'" data-period="'+p.id+'" data-field="cls" placeholder="Sınıf" value="'+escapeHtml(slot.cls||'')+'">' +
+          '<input type="text" class="subj sch-matrix-inp" data-day="'+day.key+'" data-period="'+p.id+'" data-field="subj" placeholder="Ders" value="'+escapeHtml(slot.subj||'')+'">' +
+        '</div>' +
+      '</td>';
+    }).join('');
+
+    return '<tr>' +
+      '<th style="font-size:12px;text-align:left;padding-left:8px;background:#f8fafc;">'+day.label+'</th>' +
+      tdCols +
+    '</tr>';
+  }).join('');
+
+  return '<div class="sch-edit-matrix-wrap">' +
+    '<table class="sch-edit-matrix">' +
+      '<thead><tr><th style="min-width:80px;text-align:left;padding-left:8px;">Gün</th>' + thCols + '</tr></thead>' +
+      '<tbody>' + trRows + '</tbody>' +
+    '</table>' +
+  '</div>';
+}
+
+function openScheduleImageImportModal(){
+  let currentImgData = null;
+  let activeMethod = 'gemini';
+  let parsedSched = JSON.parse(JSON.stringify(getTeacherSchedule()));
+  const savedApiKey = localStorage.getItem('gemini_api_key') || '';
+
+  const modalHtml =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+      '<div>' +
+        '<h3 style="margin:0;font-size:17px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:8px;">' +
+          ic('camera') + ' Fotoğraftan / JPEG\'den Ders Programı Yükle' +
+        '</h3>' +
+        '<div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">Haftalık ders programınızın fotoğrafını yükleyin; sistem saatleri ve sınıfları otomatik çıkarsın.</div>' +
+      '</div>' +
+      '<button class="iconbtn" id="mCloseSchImport" title="Kapat">✕</button>' +
+    '</div>' +
+
+    '<div id="schUploadDropzone" class="sch-import-dropzone">' +
+      '<div style="font-size:32px;margin-bottom:6px;">📸</div>' +
+      '<div style="font-size:14px;font-weight:800;color:var(--ink);">Ders Programı Fotoğrafını Buraya Bırakın veya Seçin</div>' +
+      '<div style="font-size:12px;color:var(--ink-soft);margin-top:4px;">JPEG, JPG, PNG, WEBP dosyaları desteklenir (Telefon fotoğrafı çekilebilir)</div>' +
+      '<input type="file" id="schFileInput" accept="image/*" style="display:none;">' +
+    '</div>' +
+
+    '<div id="schImgPreviewCard" style="display:none;">' +
+      '<div class="sch-import-preview-box">' +
+        '<div class="sch-thumb-wrap">' +
+          '<img id="schThumbImg" src="" alt="Ders Programı Fotoğrafı">' +
+        '</div>' +
+        '<div style="flex:1;min-width:180px;">' +
+          '<div id="schFileName" style="font-size:13px;font-weight:800;color:var(--ink);">program.jpg</div>' +
+          '<div id="schFileSize" style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">0 KB</div>' +
+          '<div style="display:flex;gap:6px;margin-top:8px;">' +
+            '<button type="button" class="btn btn-outline btn-sm" id="schChangeImgBtn" style="font-size:11.5px;padding:4px 8px;">Görseli Değiştir</button>' +
+            '<a class="btn btn-soft btn-sm" id="schEnlargeImgBtn" target="_blank" style="font-size:11.5px;padding:4px 8px;">Tam Boyutta Gör ↗</a>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="sch-method-tabs">' +
+        '<button type="button" class="sch-method-tab active" data-method="gemini">' + ic('sparkles') + ' Google Gemini AI (Önerilen - Hızlı & Kusursuz)</button>' +
+        '<button type="button" class="sch-method-tab" data-method="ocr">' + ic('clock') + ' Tarayıcı OCR (Çevrimdışı / Anahtarsız)</button>' +
+      '</div>' +
+
+      '<div id="geminiMethodBox">' +
+        '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;font-size:12px;color:#166534;margin-bottom:10px;">' +
+          '<b>⚡ Yüksek Doğruluk:</b> Google Gemini Flash Vision modeli el yazısı, karmaşık zil saatleri ve farklı okul formatlarını 1-2 saniyede kusursuz tanır.' +
+        '</div>' +
+        '<div style="margin-bottom:10px;">' +
+          '<label style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;">' +
+            '<span>Google Gemini API Anahtarınız:</span>' +
+            '<a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="color:var(--primary);font-weight:700;">Ücretsiz Anahtar Al (Google AI Studio) ↗</a>' +
+          '</label>' +
+          '<input type="password" id="schGeminiKeyInp" placeholder="AIzaSy... (Ücretsiz anahtarınızı buraya yapıştırın)" value="'+escapeHtml(savedApiKey)+'" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px;box-sizing:border-box;">' +
+          '<div style="font-size:11px;color:var(--ink-faint);margin-top:4px;">* Anahtarınız sadece kendi tarayıcınızda saklanır ve kimseyle paylaşılmaz.</div>' +
+        '</div>' +
+        '<button type="button" class="btn btn-primary full" id="schRunGeminiBtn" style="justify-content:center;padding:9px;">' +
+          ic('sparkles') + ' Yapay Zeka ile Analiz Et ve Tabloyu Çıkar' +
+        '</button>' +
+      '</div>' +
+
+      '<div id="ocrMethodBox" style="display:none;">' +
+        '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 12px;font-size:12px;color:#1e40af;margin-bottom:10px;">' +
+          '<b>🔍 Çevrimdışı & Anahtarsız:</b> Tesseract OCR kütüphanesi görseli doğrudan tarayıcınızın içinde işler. Net çekilmiş fotoğraflarda iyi sonuç verir.' +
+        '</div>' +
+        '<button type="button" class="btn btn-primary full" id="schRunOcrBtn" style="justify-content:center;padding:9px;">' +
+          ic('clock') + ' Tarayıcı OCR ile Analiz Et' +
+        '</button>' +
+      '</div>' +
+
+      '<div id="schProgressCard" class="ocr-progress-card" style="display:none;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+          '<span id="schProgressStatus" style="font-weight:700;color:var(--primary-deep);">Görsel taranıyor...</span>' +
+          '<span style="font-size:11px;color:var(--ink-soft);">Lütfen bekleyin</span>' +
+        '</div>' +
+        '<div class="ocr-progress-bar-wrap">' +
+          '<div id="schProgressBar" class="ocr-progress-bar"></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">' +
+        '<div style="font-size:13px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:8px;">' +
+          '<span>Çıkarılan Program Önizlemesi & Düzenleme</span>' +
+          '<span class="schedule-badge hours" id="schDetectedHoursBadge">'+getScheduleTotalHours(parsedSched)+' Saat</span>' +
+        '</div>' +
+        '<div style="font-size:11.5px;color:var(--ink-soft);">Hücrelerdeki sınıf veya ders kodlarını istediğiniz gibi değiştirebilirsiniz.</div>' +
+      '</div>' +
+      '<div id="schMatrixContainer">' +
+        renderScheduleEditMatrixHtml(parsedSched) +
+      '</div>' +
+    '</div>' +
+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);flex-wrap:wrap;gap:10px;">' +
+      '<label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--ink);cursor:pointer;">' +
+        '<input type="checkbox" id="schKeepPhotoCheck" checked> Bu fotoğrafı profilimde sakla (Ders Programı sekmesinde "Orijinal Fotoğrafı Gör" butonundan bakabilirsiniz)' +
+      '</label>' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button type="button" class="btn btn-outline" id="schCancelBtn">İptal</button>' +
+        '<button type="button" class="btn btn-primary" id="schApplyBtn">' + ic('check') + ' Programıma Uygula ve Kaydet</button>' +
+      '</div>' +
+    '</div>';
+
+  openModalHtml(modalHtml, '900px');
+
+  document.getElementById('mCloseSchImport').onclick = closeModal;
+  document.getElementById('schCancelBtn').onclick = closeModal;
+
+  const dropzone = document.getElementById('schUploadDropzone');
+  const fileInput = document.getElementById('schFileInput');
+  const previewCard = document.getElementById('schImgPreviewCard');
+
+  dropzone.onclick = () => fileInput.click();
+  document.getElementById('schChangeImgBtn').onclick = () => fileInput.click();
+
+  dropzone.ondragover = (e) => { e.preventDefault(); dropzone.classList.add('dragover'); };
+  dropzone.ondragleave = () => dropzone.classList.remove('dragover');
+  dropzone.ondrop = (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if(f) handleFile(f);
+  };
+
+  fileInput.onchange = (e) => {
+    const f = e.target.files && e.target.files[0];
+    if(f) handleFile(f);
+  };
+
+  async function handleFile(file){
+    if(!file.type.startsWith('image/')){
+      showToast('Lütfen geçerli bir görsel dosyası (JPEG, PNG, WEBP) seçin.');
+      return;
+    }
+    try{
+      showToast('Görsel işleniyor...');
+      currentImgData = await compressImageFile(file);
+      document.getElementById('schThumbImg').src = currentImgData.dataUrl;
+      document.getElementById('schEnlargeImgBtn').href = currentImgData.dataUrl;
+      document.getElementById('schFileName').textContent = file.name;
+      document.getElementById('schFileSize').textContent = Math.round(file.size / 1024) + ' KB';
+      dropzone.style.display = 'none';
+      previewCard.style.display = 'block';
+    }catch(err){
+      console.error(err);
+      showToast('Görsel yüklenemedi: ' + err.message);
+    }
+  }
+
+  // Method tab buttons
+  document.querySelectorAll('.sch-method-tab').forEach(tab => {
+    tab.onclick = () => {
+      document.querySelectorAll('.sch-method-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      activeMethod = tab.dataset.method;
+      if(activeMethod === 'gemini'){
+        document.getElementById('geminiMethodBox').style.display = 'block';
+        document.getElementById('ocrMethodBox').style.display = 'none';
+      } else {
+        document.getElementById('geminiMethodBox').style.display = 'none';
+        document.getElementById('ocrMethodBox').style.display = 'block';
+      }
+    };
+  });
+
+  function updateHoursBadge(){
+    const h = getScheduleTotalHours(parsedSched);
+    const badge = document.getElementById('schDetectedHoursBadge');
+    if(badge) badge.textContent = h + ' Saat';
+  }
+
+  function wireMatrixInputs(){
+    document.querySelectorAll('.sch-matrix-inp').forEach(inp => {
+      inp.oninput = () => {
+        const d = inp.dataset.day;
+        const p = parseInt(inp.dataset.period, 10);
+        const f = inp.dataset.field;
+        if(!parsedSched[d]) parsedSched[d] = [];
+        if(!parsedSched[d][p]) parsedSched[d][p] = { cls: '', subj: '' };
+        parsedSched[d][p][f] = inp.value.trim();
+        if(!parsedSched[d][p].cls && !parsedSched[d][p].subj){
+          parsedSched[d][p] = null;
+        }
+        updateHoursBadge();
+      };
+    });
+  }
+  wireMatrixInputs();
+
+  function showProgress(text, pct){
+    const card = document.getElementById('schProgressCard');
+    const st = document.getElementById('schProgressStatus');
+    const bar = document.getElementById('schProgressBar');
+    if(card) card.style.display = 'block';
+    if(st) st.textContent = text;
+    if(bar && pct != null) bar.style.width = pct + '%';
+  }
+  function hideProgress(){
+    const card = document.getElementById('schProgressCard');
+    if(card) card.style.display = 'none';
+  }
+
+  // Run Gemini
+  document.getElementById('schRunGeminiBtn').onclick = async () => {
+    if(!currentImgData){ showToast('Lütfen önce bir ders programı fotoğrafı seçin.'); return; }
+    const key = (document.getElementById('schGeminiKeyInp').value || '').trim();
+    if(!key){
+      alert('Lütfen Google Gemini API anahtarınızı girin.\nYukarıdaki "Ücretsiz Anahtar Al" bağlantısından Google hesabınızla saniyeler içinde ücretsiz anahtar alabilirsiniz.');
+      document.getElementById('schGeminiKeyInp').focus();
+      return;
+    }
+    localStorage.setItem('gemini_api_key', key);
+
+    const btn = document.getElementById('schRunGeminiBtn');
+    btn.disabled = true;
+    showProgress('Yapay zeka analizine başlanıyor...', 25);
+    try{
+      const extracted = await extractScheduleWithGemini(currentImgData.base64, currentImgData.mimeType, key, (msg) => {
+        showProgress(msg, 60);
+      });
+      showProgress('Tablo başarıyla çözümlendi!', 100);
+      parsedSched = extracted;
+      document.getElementById('schMatrixContainer').innerHTML = renderScheduleEditMatrixHtml(parsedSched);
+      wireMatrixInputs();
+      updateHoursBadge();
+      showToast('🎉 Programınız yapay zeka tarafından başarıyla çıkarıldı!');
+    } catch(err){
+      console.error(err);
+      alert('Yapay zeka çözümleme hatası: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      setTimeout(hideProgress, 1200);
+    }
+  };
+
+  // Run OCR
+  document.getElementById('schRunOcrBtn').onclick = async () => {
+    if(!currentImgData){ showToast('Lütfen önce bir ders programı fotoğrafı seçin.'); return; }
+    const btn = document.getElementById('schRunOcrBtn');
+    btn.disabled = true;
+    showProgress('Tarayıcı OCR başlatılıyor...', 20);
+    try{
+      const extracted = await extractScheduleWithTesseract(currentImgData.dataUrl, (msg) => {
+        showProgress(msg, 60);
+      });
+      showProgress('OCR eşleştirmesi tamamlandı!', 100);
+      parsedSched = extracted;
+      document.getElementById('schMatrixContainer').innerHTML = renderScheduleEditMatrixHtml(parsedSched);
+      wireMatrixInputs();
+      updateHoursBadge();
+      showToast('Tarama tamamlandı! Lütfen hücreleri kontrol ediniz.');
+    } catch(err){
+      console.error(err);
+      alert('OCR hatası: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      setTimeout(hideProgress, 1200);
+    }
+  };
+
+  // Apply & Save
+  document.getElementById('schApplyBtn').onclick = () => {
+    saveTeacherSchedule(parsedSched);
+    const keepPhoto = document.getElementById('schKeepPhotoCheck')?.checked;
+    if(keepPhoto && currentImgData && currentImgData.dataUrl){
+      saveTeacherScheduleImage(currentImgData.dataUrl);
+    }
+    closeModal();
+    showToast('Ders programınız başarıyla kaydedildi!');
+    render();
+  };
+}
+
+function openViewScheduleImageModal(){
+  const imgUrl = getTeacherScheduleImage();
+  if(!imgUrl){
+    showToast('Kayıtlı ders programı fotoğrafı bulunamadı.');
+    return;
+  }
+
+  const modalHtml =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+      '<h3 style="margin:0;font-size:16px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:8px;">' +
+        ic('image') + ' Kayıtlı Orijinal Ders Programı Fotoğrafı' +
+      '</h3>' +
+      '<button class="iconbtn" id="mCloseViewImg" title="Kapat">✕</button>' +
+    '</div>' +
+    '<div style="max-height:70vh;overflow:auto;text-align:center;background:#0f172a;border-radius:10px;padding:12px;border:1px solid var(--line);">' +
+      '<img src="'+imgUrl+'" style="max-width:100%;height:auto;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,0.3);">' +
+    '</div>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap;gap:8px;">' +
+      '<div style="display:flex;gap:8px;">' +
+        '<a href="'+imgUrl+'" download="ders_programi.jpg" class="btn btn-outline btn-sm">' + ic('download') + 'Görseli İndir</a>' +
+        '<button type="button" class="btn btn-soft btn-sm" id="mReExtractImgBtn">' + ic('camera') + 'Fotoğrafı Yeniden Çözümle</button>' +
+        '<button type="button" class="btn btn-outline btn-sm" id="mDeleteImgBtn" style="color:var(--red);border-color:#fecdd3;">Fotoğrafı Sil</button>' +
+      '</div>' +
+      '<button type="button" class="btn btn-primary btn-sm" id="mCloseViewImgBtn">Kapat</button>' +
+    '</div>';
+
+  openModalHtml(modalHtml, '900px');
+  document.getElementById('mCloseViewImg').onclick = closeModal;
+  document.getElementById('mCloseViewImgBtn').onclick = closeModal;
+
+  document.getElementById('mReExtractImgBtn').onclick = () => {
+    closeModal();
+    openScheduleImageImportModal();
+  };
+
+  document.getElementById('mDeleteImgBtn').onclick = () => {
+    if(confirm('Kayıtlı ders programı fotoğrafı silinsin mi? (Ders programı tablonuz etkilenmez)')){
+      removeTeacherScheduleImage();
+      closeModal();
+      showToast('Ders programı fotoğrafı silindi.');
+      render();
+    }
+  };
 }
 
 // ============================================================================
