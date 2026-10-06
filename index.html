@@ -383,7 +383,6 @@
 <div id="modalRoot"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.48.1';
 import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.mjs';
@@ -4212,8 +4211,8 @@ function scheduleViewHtml(){
         '<span class="schedule-badge">08:25 – 16:25 · 9 Ders</span>' +
       '</div>' +
       '<div class="schedule-actions">' +
-        '<button class="btn btn-primary btn-sm" id="importScheduleImageBtn">'+ic('camera')+'Fotoğraftan / JPEG\'den Yükle</button>' +
-        '<button class="btn btn-outline btn-sm" id="presetScheduleBtn">📋 Şablon Seç</button>' +
+        '<button class="btn btn-primary btn-sm" id="presetScheduleBtn">📋 Şablon Seç</button>' +
+        '<button class="btn btn-outline btn-sm" id="editScheduleMatrixBtn">✏️ Tabloyu Düzenle</button>' +
         '<button class="btn btn-soft btn-sm" id="resetScheduleBtn">'+ic('upload')+'Varsayılana Dön</button>' +
       '</div>' +
     '</div>' +
@@ -4236,11 +4235,11 @@ function wireScheduleView(app){
     };
   });
 
-  const importImgBtn = document.getElementById('importScheduleImageBtn');
-  if(importImgBtn) importImgBtn.onclick = openScheduleImageImportModal;
-
   const presetBtn = document.getElementById('presetScheduleBtn');
   if(presetBtn) presetBtn.onclick = () => openPresetScheduleModal();
+
+  const editMatrixBtn = document.getElementById('editScheduleMatrixBtn');
+  if(editMatrixBtn) editMatrixBtn.onclick = () => openScheduleMatrixEditModal();
 
   const resetBtn = document.getElementById('resetScheduleBtn');
   if(resetBtn){
@@ -4865,6 +4864,144 @@ function openPresetScheduleModal(onSelectCallback){
       cuma: Array(10).fill(null)
     };
     selectSched(emptySched, 'Boş Çizelge');
+  };
+}
+
+function openScheduleMatrixEditModal(){
+  let parsedSched = JSON.parse(JSON.stringify(getTeacherSchedule()));
+  let lastFocusedInput = null;
+
+  const myClasses = (state.classes||[]).map(c=>c.name);
+  const quickClasses = [...new Set([...myClasses, '12A-FM', '11FL', '12FL', '11B-FM', '09A', '09FL', '11C-FM', '12D-FM'])];
+  const quickSubjs = ['MAT6', 'MAT7', 'MAT8', 'MATU3', 'REH', 'Nöbet'];
+
+  const quickChipsClsHtml = quickClasses.map(c =>
+    '<button type="button" class="btn btn-outline btn-sm sch-quick-chip" data-val="'+escapeHtml(c)+'" style="padding:2px 8px;font-size:11px;font-weight:800;">'+escapeHtml(c)+'</button>'
+  ).join('');
+
+  const quickChipsSubjHtml = quickSubjs.map(s =>
+    '<button type="button" class="btn btn-soft btn-sm sch-quick-chip" data-val="'+escapeHtml(s)+'" style="padding:2px 8px;font-size:11px;font-weight:700;">'+escapeHtml(s)+'</button>'
+  ).join('');
+
+  const modalHtml =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+      '<div>' +
+        '<h3 style="margin:0;font-size:17px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:8px;">' +
+          '✏️ Haftalık Ders Programını Düzenle' +
+        '</h3>' +
+        '<div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">Hazır şablon seçebilir veya hücreleri kutulara tıklayarak elle doldurabilirsiniz.</div>' +
+      '</div>' +
+      '<button class="iconbtn" id="mCloseSchMatrix" title="Kapat">✕</button>' +
+    '</div>' +
+
+    '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
+      '<div>' +
+        '<div style="font-size:12.5px;font-weight:800;color:#1e40af;">⚡ Hazır Şablonlar (Tek Tıkla Doldur):</div>' +
+        '<div style="font-size:11px;color:#3b82f6;">Resmi öğretmen programını doğrudan yüklemek için:</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+        '<button type="button" class="btn btn-primary btn-sm" id="schPickCemMatrixBtn" style="font-size:11.5px;padding:4px 10px;">👨‍🏫 Cem Gürakar (25 Saat)</button>' +
+        '<button type="button" class="btn btn-outline btn-sm" id="schPickFeritMatrixBtn" style="font-size:11.5px;padding:4px 10px;">👨‍🏫 Ferit Cem (27 Saat)</button>' +
+        '<button type="button" class="btn btn-soft btn-sm" id="schClearMatrixBtn" style="font-size:11.5px;padding:4px 10px;color:var(--red);">🗑️ Boşalt</button>' +
+      '</div>' +
+    '</div>' +
+
+    '<div style="background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+      '<span style="font-size:11px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;">Hızlı Seç:</span>' +
+      '<div style="display:flex;gap:4px;flex-wrap:wrap;">'+quickChipsClsHtml+'</div>' +
+      '<span style="color:var(--line);">|</span>' +
+      '<div style="display:flex;gap:4px;flex-wrap:wrap;">'+quickChipsSubjHtml+'</div>' +
+      '<span class="schedule-badge hours" id="schMatrixHoursBadge" style="margin-left:auto;">'+getScheduleTotalHours(parsedSched)+' Saat</span>' +
+    '</div>' +
+
+    '<div id="schMatrixContainer">' +
+      renderScheduleEditMatrixHtml(parsedSched) +
+    '</div>' +
+
+    '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);">' +
+      '<button type="button" class="btn btn-outline" id="schMatrixCancelBtn">İptal</button>' +
+      '<button type="button" class="btn btn-primary" id="schMatrixSaveBtn">' + ic('check') + ' Programımı Kaydet</button>' +
+    '</div>';
+
+  openModalHtml(modalHtml, '900px');
+
+  document.getElementById('mCloseSchMatrix').onclick = closeModal;
+  document.getElementById('schMatrixCancelBtn').onclick = closeModal;
+
+  function updateHoursBadge(){
+    const h = getScheduleTotalHours(parsedSched);
+    const badge = document.getElementById('schMatrixHoursBadge');
+    if(badge) badge.textContent = h + ' Saat';
+  }
+
+  function wireMatrixInputs(){
+    document.querySelectorAll('.sch-matrix-inp').forEach(inp => {
+      inp.onfocus = () => { lastFocusedInput = inp; };
+      inp.oninput = () => {
+        const d = inp.dataset.day;
+        const p = parseInt(inp.dataset.period, 10);
+        const f = inp.dataset.field;
+        if(!parsedSched[d]) parsedSched[d] = [];
+        if(!parsedSched[d][p]) parsedSched[d][p] = { cls: '', subj: '' };
+        parsedSched[d][p][f] = inp.value.trim();
+        if(!parsedSched[d][p].cls && !parsedSched[d][p].subj){
+          parsedSched[d][p] = null;
+        }
+        updateHoursBadge();
+      };
+    });
+  }
+  wireMatrixInputs();
+
+  // Quick Chips
+  document.querySelectorAll('.sch-quick-chip').forEach(btn => {
+    btn.onclick = () => {
+      const val = btn.dataset.val;
+      if(lastFocusedInput){
+        lastFocusedInput.value = val;
+        lastFocusedInput.dispatchEvent(new Event('input'));
+      } else {
+        showToast('Hızlı doldurmak için önce tablodan bir hücreye tıklayın.');
+      }
+    };
+  });
+
+  document.getElementById('schPickCemMatrixBtn').onclick = () => {
+    parsedSched = JSON.parse(JSON.stringify(SCHEDULE_CEM_GURAKAR));
+    document.getElementById('schMatrixContainer').innerHTML = renderScheduleEditMatrixHtml(parsedSched);
+    wireMatrixInputs();
+    updateHoursBadge();
+    showToast('Cem Gürakar (25 Saat) şablonu yüklendi!');
+  };
+
+  document.getElementById('schPickFeritMatrixBtn').onclick = () => {
+    parsedSched = JSON.parse(JSON.stringify(SCHEDULE_FERIT_CEM));
+    document.getElementById('schMatrixContainer').innerHTML = renderScheduleEditMatrixHtml(parsedSched);
+    wireMatrixInputs();
+    updateHoursBadge();
+    showToast('Ferit Cem (27 Saat) şablonu yüklendi!');
+  };
+
+  document.getElementById('schClearMatrixBtn').onclick = () => {
+    if(confirm('Tablodaki tüm dersler boşaltılsın mı?')){
+      parsedSched = {
+        pazartesi: Array(10).fill(null),
+        sali: Array(10).fill(null),
+        carsamba: Array(10).fill(null),
+        persembe: Array(10).fill(null),
+        cuma: Array(10).fill(null)
+      };
+      document.getElementById('schMatrixContainer').innerHTML = renderScheduleEditMatrixHtml(parsedSched);
+      wireMatrixInputs();
+      updateHoursBadge();
+    }
+  };
+
+  document.getElementById('schMatrixSaveBtn').onclick = () => {
+    saveTeacherSchedule(parsedSched);
+    closeModal();
+    showToast('Ders programınız başarıyla kaydedildi!');
+    render();
   };
 }
 
