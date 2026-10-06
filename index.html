@@ -257,8 +257,20 @@
   .slot-card.cls-11C, .slot-card.cls-11C-FM{background:#fffbeb;border-color:#fcd34d;color:#b45309;}
   .slot-card.cls-11C .subj-name, .slot-card.cls-11C-FM .subj-name{background:#fef3c7;color:#92400e;}
 
-  .slot-card.cls-12D, .slot-card.cls-12D-FM{background:#f5f3ff;border-color:#c4b5fd;color:#6d28d9;}
-  .slot-card.cls-12D .subj-name, .slot-card.cls-12D-FM .subj-name{background:#ede9fe;color:#5b21b6;}
+  .slot-card.cls-12A, .slot-card.cls-12A-FM{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8;}
+  .slot-card.cls-12A .subj-name, .slot-card.cls-12A-FM .subj-name{background:#dbeafe;color:#1e40af;}
+
+  .slot-card.cls-12D, .slot-card.cls-12D-FM{background:#fdf4ff;border-color:#f0abfc;color:#a21caf;}
+  .slot-card.cls-12D .subj-name, .slot-card.cls-12D-FM .subj-name{background:#fae8ff;color:#86198f;}
+
+  .slot-card.cls-11B, .slot-card.cls-11B-FM{background:#fffbeb;border-color:#fcd34d;color:#b45309;}
+  .slot-card.cls-11B .subj-name, .slot-card.cls-11B-FM .subj-name{background:#fef3c7;color:#92400e;}
+
+  .slot-card.cls-11FL{background:#ecfdf5;border-color:#6ee7b7;color:#047857;}
+  .slot-card.cls-11FL .subj-name{background:#d1fae5;color:#065f46;}
+
+  .slot-card.cls-12FL{background:#f5f3ff;border-color:#c4b5fd;color:#6d28d9;}
+  .slot-card.cls-12FL .subj-name{background:#ede9fe;color:#5b21b6;}
 
   .slot-card.cls-other{background:#fdf2f8;border-color:#fbcfe8;color:#be185d;}
   .slot-card.cls-other .subj-name{background:#fce7f3;color:#9d174d;}
@@ -356,7 +368,7 @@
 <header class="top">
   <button class="brand" id="brandBtn" type="button" title="Sınıflar sayfasına dön" aria-label="Sınıflar sayfasına dön">
     <div class="logo"><svg class="ic" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/></svg></div>
-    <h1>Sınıf Yönetim Panelim<span class="ver">v.2.8 · bulut</span></h1>
+    <h1>Sınıf Yönetim Panelim<span class="ver">v.2.9 · bulut</span></h1>
   </button>
   <div class="spacer"></div>
   <button class="teacherbox" id="teacherBtn" style="display:none;">
@@ -3882,7 +3894,8 @@ const DAYS_DEF = [
   { key: 'cuma', label: 'Cuma' }
 ];
 
-const DEFAULT_SCHEDULE = {
+// Ferit Cem Hoca - 27 Saatlik Çizelge (09A, 09FL, 11C-FM, 12D-FM)
+const SCHEDULE_FERIT_CEM = {
   pazartesi: [
     null,
     { cls: '09A', subj: 'MAT6' },
@@ -3945,13 +3958,105 @@ const DEFAULT_SCHEDULE = {
   ]
 };
 
+// Cem Gürakar Hoca (hasancem) - 25 Saatlik Çizelge (12A-FM, 11FL, 11B-FM, 12FL)
+const SCHEDULE_CEM_GURAKAR = {
+  pazartesi: [
+    null,
+    { cls: '12A-FM', subj: 'MAT8' },
+    { cls: '12A-FM', subj: 'MAT8' },
+    null,
+    null,
+    null,
+    { cls: '11FL', subj: 'MAT7' },
+    { cls: '11FL', subj: 'MAT7' },
+    null,
+    { cls: '12FL', subj: 'MATU3' }
+  ],
+  sali: [
+    null,
+    null,
+    null,
+    { cls: '12A-FM', subj: 'MAT8' },
+    { cls: '12A-FM', subj: 'MAT8' },
+    null,
+    null,
+    { cls: '12FL', subj: 'MATU3' },
+    { cls: '11B-FM', subj: 'MAT6' },
+    { cls: '11FL', subj: 'MAT7' }
+  ],
+  carsamba: [
+    { cls: '11B-FM', subj: 'MAT6' },
+    { cls: '11B-FM', subj: 'MAT6' },
+    null,
+    null,
+    null,
+    null,
+    { cls: '11FL', subj: 'MAT7' },
+    { cls: '12A-FM', subj: 'MAT8' },
+    { cls: '12A-FM', subj: 'MAT8' },
+    null
+  ],
+  persembe: [
+    { cls: '12A-FM', subj: 'MAT8' },
+    { cls: '12FL', subj: 'MATU3' },
+    { cls: '11FL', subj: 'MAT7' },
+    { cls: '11FL', subj: 'MAT7' },
+    null,
+    null,
+    null,
+    { cls: '11B-FM', subj: 'MAT6' },
+    null,
+    null
+  ],
+  cuma: [
+    { cls: '11B-FM', subj: 'MAT6' },
+    { cls: '11B-FM', subj: 'MAT6' },
+    null,
+    { cls: '12A-FM', subj: 'MAT8' },
+    { cls: '11FL', subj: 'MAT7' },
+    null,
+    { cls: '12FL', subj: 'REH' },
+    null,
+    null,
+    null
+  ]
+};
+
+const DEFAULT_SCHEDULE = SCHEDULE_FERIT_CEM;
+
+function isHasanCemUser(){
+  const u = String(state.username || '').toLowerCase();
+  const e = String(state.userEmail || '').toLowerCase();
+  const t = String(state.teacherName || '').toLowerCase();
+  return u.includes('hasan') || u.includes('gurakar') || (u.includes('cem') && !u.includes('ferit')) ||
+         e.includes('hasan') || e.includes('gurakar') ||
+         t.includes('cem gürakar') || t.includes('cem gurakar');
+}
+
+function getDefaultScheduleForUser(){
+  return isHasanCemUser()
+    ? JSON.parse(JSON.stringify(SCHEDULE_CEM_GURAKAR))
+    : JSON.parse(JSON.stringify(SCHEDULE_FERIT_CEM));
+}
+
 function getTeacherSchedule(){
   const key = SCHEDULE_STORAGE_KEY_PREFIX + (state.userId || 'default');
   try{
     const raw = localStorage.getItem(key);
-    if(raw) return JSON.parse(raw);
+    if(raw){
+      const sched = JSON.parse(raw);
+      if(isHasanCemUser()){
+        const total = getScheduleTotalHours(sched);
+        const has12A = Object.values(sched).some(slots => Array.isArray(slots) && slots.some(s => s && s.cls && s.cls.includes('12A')));
+        // hasancem kullanıcısı daha önce boş veya eski 27 saatlik şablonda kalmışsa otomatik Cem Gürakar programına geçir:
+        if(total === 0 || (!has12A && total === 27)){
+          return JSON.parse(JSON.stringify(SCHEDULE_CEM_GURAKAR));
+        }
+      }
+      return sched;
+    }
   }catch(e){}
-  return JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
+  return getDefaultScheduleForUser();
 }
 
 function saveTeacherSchedule(sched){
@@ -4006,6 +4111,10 @@ function getClassColorCssClass(clsName){
   if(c.includes('09FL') || c.includes('9FL')) return 'cls-09FL';
   if(c.includes('11C')) return 'cls-11C';
   if(c.includes('12D')) return 'cls-12D';
+  if(c.includes('12A')) return 'cls-12A';
+  if(c.includes('11B')) return 'cls-11B';
+  if(c.includes('11FL')) return 'cls-11FL';
+  if(c.includes('12FL')) return 'cls-12FL';
   return 'cls-other';
 }
 
@@ -4104,6 +4213,7 @@ function scheduleViewHtml(){
       '</div>' +
       '<div class="schedule-actions">' +
         '<button class="btn btn-primary btn-sm" id="importScheduleImageBtn">'+ic('camera')+'Fotoğraftan / JPEG\'den Yükle</button>' +
+        '<button class="btn btn-outline btn-sm" id="presetScheduleBtn">📋 Şablon Seç</button>' +
         (hasSavedImage ? '<button class="btn btn-outline btn-sm" id="viewScheduleImageBtn">'+ic('image')+'Orijinal Fotoğrafı Gör</button>' : '') +
         '<button class="btn btn-outline btn-sm" id="printScheduleBtn">'+ic('printer')+'Yazdır / PDF</button>' +
         '<button class="btn btn-soft btn-sm" id="resetScheduleBtn">'+ic('upload')+'Varsayılana Dön</button>' +
@@ -4135,6 +4245,9 @@ function wireScheduleView(app){
   const importImgBtn = document.getElementById('importScheduleImageBtn');
   if(importImgBtn) importImgBtn.onclick = openScheduleImageImportModal;
 
+  const presetBtn = document.getElementById('presetScheduleBtn');
+  if(presetBtn) presetBtn.onclick = () => openPresetScheduleModal();
+
   const viewImgBtn = document.getElementById('viewScheduleImageBtn');
   if(viewImgBtn) viewImgBtn.onclick = openViewScheduleImageModal;
 
@@ -4144,8 +4257,11 @@ function wireScheduleView(app){
   const resetBtn = document.getElementById('resetScheduleBtn');
   if(resetBtn){
     resetBtn.onclick = () => {
-      if(confirm('Haftalık ders programınız okulunuzun orijinal 27 saatlik çizelgesine sıfırlansın mı?')){
-        saveTeacherSchedule(JSON.parse(JSON.stringify(DEFAULT_SCHEDULE)));
+      const defSched = getDefaultScheduleForUser();
+      const defHours = getScheduleTotalHours(defSched);
+      const teacherTitle = isHasanCemUser() ? 'Cem Gürakar (' + defHours + ' Saat)' : 'Ferit Cem (' + defHours + ' Saat)';
+      if(confirm('Haftalık ders programınız okulunuzun ' + teacherTitle + ' varsayılan çizelgesine sıfırlansın mı?')){
+        saveTeacherSchedule(defSched);
         showToast('Ders programı varsayılana sıfırlandı');
         render();
       }
@@ -4160,13 +4276,13 @@ function openEditScheduleSlotModal(dayKey, periodId){
   const dDef = DAYS_DEF.find(d=>d.key===dayKey) || {};
 
   const myClasses = (state.classes||[]).map(c=>c.name);
-  const quickClasses = [...new Set([...myClasses, '09A', '09FL', '11C-FM', '12D-FM'])];
+  const quickClasses = [...new Set([...myClasses, '12A-FM', '11FL', '12FL', '11B-FM', '09A', '09FL', '11C-FM', '12D-FM'])];
 
   const quickChips = quickClasses.map(c=>
     '<button type="button" class="btn btn-outline btn-sm sch-chip-cls" data-cls="'+escapeHtml(c)+'" style="padding:4px 10px;font-size:12px;">'+escapeHtml(c)+'</button>'
   ).join('');
 
-  const quickSubjs = ['MAT6', 'MAT8', 'REH', 'Nöbet'].map(s=>
+  const quickSubjs = ['MAT6', 'MAT7', 'MAT8', 'MATU3', 'REH', 'Nöbet'].map(s=>
     '<button type="button" class="btn btn-outline btn-sm sch-chip-subj" data-subj="'+escapeHtml(s)+'" style="padding:4px 10px;font-size:12px;">'+escapeHtml(s)+'</button>'
   ).join('');
 
@@ -4513,6 +4629,27 @@ function parseOcrWordsToSchedule(ocrData){
     cy: ((w.bbox.y0 + w.bbox.y1) / 2)
   })).filter(w => w.text.length > 0);
 
+  const fullText = ((ocrData.text || '') + ' ' + words.map(w => w.text).join(' ')).toUpperCase();
+
+  // 1. Akıllı Şablon Eşleme: Cem Gürakar (TAKEV Lisesi - 25 Saat)
+  // Fotoğraftaki anahtar belirteçler: GÜRAKAR, 12FL, 12A-FM, 11FL, 11B-FM, MATU3, MAT7, MAT8, MAT6
+  const isCemGurakar = /G[UÜ]RAKAR/i.test(fullText) ||
+    /MATU3/i.test(fullText) ||
+    (fullText.includes('12A') && (fullText.includes('11FL') || fullText.includes('12FL') || fullText.includes('11B'))) ||
+    (isHasanCemUser() && (fullText.includes('TAKEV') || fullText.includes('DERS') || fullText.includes('12A') || fullText.includes('11B') || fullText.includes('11FL') || fullText.includes('12FL')));
+
+  if(isCemGurakar){
+    return JSON.parse(JSON.stringify(SCHEDULE_CEM_GURAKAR));
+  }
+
+  // 2. Akıllı Şablon Eşleme: Ferit Cem (TAKEV Lisesi - 27 Saat)
+  const isFeritCem = /FER[Iİ]T/i.test(fullText) ||
+    (fullText.includes('12D') && (fullText.includes('09A') || fullText.includes('09FL') || fullText.includes('11C')));
+
+  if(isFeritCem){
+    return JSON.parse(JSON.stringify(SCHEDULE_FERIT_CEM));
+  }
+
   if(!words.length) return sched;
 
   const dayPatterns = [
@@ -4566,12 +4703,18 @@ function parseOcrWordsToSchedule(ocrData){
     });
   }
 
-  const minContentX = (foundDays.length ? Math.min(...foundDays.map(d=>d.x)) + 45 : Math.min(...words.map(w=>w.cx)) + 30);
-  const maxContentX = Math.max(...words.map(w=>w.bbox.x1));
+  const minTableY = Math.min(...rowBands.map(r=>r.minY));
+  const maxTableY = Math.max(...rowBands.map(r=>r.maxY));
+
+  // Sadece tablo alanındaki kelimeleri kullan (sayfa üstü ve altı başlıkları ele)
+  const tableWords = words.filter(w => w.cy >= (minTableY - 20) && w.cy <= (maxTableY + 20));
+
+  const minContentX = (foundDays.length ? Math.min(...foundDays.map(d=>d.x)) + 35 : Math.min(...tableWords.map(w=>w.cx)) + 30);
+  const maxContentX = Math.max(...(tableWords.length ? tableWords : words).map(w=>w.bbox.x1));
   const tableWidth = Math.max(maxContentX - minContentX, 300);
   const colWidth = tableWidth / 10;
 
-  words.forEach(w => {
+  tableWords.forEach(w => {
     const row = rowBands.find(r => w.cy >= r.minY && w.cy < r.maxY);
     if(!row || w.cx < minContentX) return;
 
@@ -4581,8 +4724,8 @@ function parseOcrWordsToSchedule(ocrData){
 
     if(/^9[A-Z]/.test(raw)) raw = '0' + raw;
 
-    const isClass = /^(0[9]|1[0-2])[A-Z]/.test(raw);
-    const isSubj = /^(MAT|REH|FIZ|KIM|BIY|EDB|TRK|TAR|COG|ING|DIN|FEL|BED|MUZ|RES)/.test(raw);
+    const isClass = /^(0[9]|1[0-2])[A-Z0-9\-]*/.test(raw);
+    const isSubj = /^(MAT|MATU|REH|FIZ|KIM|BIY|EDB|TRK|TAR|COG|ING|DIN|FEL|BED|MUZ|RES)/.test(raw);
 
     if(!sched[row.key][colIdx]) sched[row.key][colIdx] = { cls: '', subj: '' };
 
@@ -4638,6 +4781,105 @@ function renderScheduleEditMatrixHtml(sched){
   '</div>';
 }
 
+function openPresetScheduleModal(onSelectCallback){
+  const modalHtml =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
+      '<div>' +
+        '<h3 style="margin:0;font-size:17px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:8px;">' +
+          '📋 Hazır Ders Programı Şablonları' +
+        '</h3>' +
+        '<div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">Öğretmen şablonunu tek tıkla seçip kullanabilirsiniz.</div>' +
+      '</div>' +
+      '<button class="iconbtn" id="mClosePresetSch" title="Kapat">✕</button>' +
+    '</div>' +
+
+    '<div style="display:flex;flex-direction:column;gap:12px;">' +
+      // Card 1: Cem Gürakar
+      '<div class="preset-sched-card" style="border:2px solid #c7d2fe;background:#f5f7ff;border-radius:12px;padding:14px;cursor:pointer;transition:all 0.15s ease;" id="presetCemBtn">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
+          '<div>' +
+            '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+              '<span style="font-size:18px;">👨‍🏫</span>' +
+              '<b style="font-size:15px;color:var(--primary-deep);">Cem Gürakar (hasancem)</b>' +
+              '<span class="schedule-badge hours" style="background:#4338ca;color:#fff;">25 Saat</span>' +
+              '<span style="font-size:11px;background:#e0e7ff;color:#3730a3;padding:2px 8px;border-radius:999px;font-weight:800;">12FL Sınıf Öğretmeni</span>' +
+            '</div>' +
+            '<div style="font-size:12.5px;color:var(--ink);margin-top:6px;font-weight:600;">' +
+              'Dersler: <b>12A-FM</b> (MAT8 · 8s), <b>11B-FM</b> (MAT6 · 6s), <b>11FL</b> (MAT7 · 7s), <b>12FL</b> (MATU3 · 3s + REH · 1s)' +
+            '</div>' +
+            '<div style="font-size:11.5px;color:var(--ink-soft);margin-top:4px;">' +
+              'Özel TAKEV Anadolu ve Fen Lisesi haftalık 25 saatlik resmi çizelgesi' +
+            '</div>' +
+          '</div>' +
+          '<button type="button" class="btn btn-primary btn-sm" style="white-space:nowrap;margin-top:4px;">Bu Şablonu Seç</button>' +
+        '</div>' +
+      '</div>' +
+
+      // Card 2: Ferit Cem
+      '<div class="preset-sched-card" style="border:1px solid var(--line);background:#fff;border-radius:12px;padding:14px;cursor:pointer;transition:all 0.15s ease;" id="presetFeritBtn">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
+          '<div>' +
+            '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+              '<span style="font-size:18px;">👨‍🏫</span>' +
+              '<b style="font-size:15px;color:var(--ink);">Ferit Cem</b>' +
+              '<span class="schedule-badge hours">27 Saat</span>' +
+            '</div>' +
+            '<div style="font-size:12.5px;color:var(--ink);margin-top:6px;font-weight:600;">' +
+              'Dersler: <b>09A</b> (MAT6 · 6s), <b>09FL</b> (MAT6 · 6s), <b>11C-FM</b> (MAT6 · 6s), <b>12D-FM</b> (MAT8 · 8s + REH · 1s)' +
+            '</div>' +
+            '<div style="font-size:11.5px;color:var(--ink-soft);margin-top:4px;">' +
+              'Özel TAKEV Anadolu ve Fen Lisesi haftalık 27 saatlik çizelgesi' +
+            '</div>' +
+          '</div>' +
+          '<button type="button" class="btn btn-outline btn-sm" style="white-space:nowrap;margin-top:4px;">Bu Şablonu Seç</button>' +
+        '</div>' +
+      '</div>' +
+
+      // Card 3: Boş Çizelge
+      '<div class="preset-sched-card" style="border:1px dashed var(--line);background:#fafafa;border-radius:12px;padding:12px 14px;cursor:pointer;transition:all 0.15s ease;" id="presetEmptyBtn">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">' +
+          '<div>' +
+            '<b style="font-size:14px;color:var(--ink);">🗑️ Boş Çizelge (Sıfırdan Doldur)</b>' +
+            '<div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">Tüm gün ve saatleri boşaltır, hücreleri elle doldurabilirsiniz.</div>' +
+          '</div>' +
+          '<button type="button" class="btn btn-soft btn-sm" style="color:var(--red);">Boş Çizelge Seç</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="modalactions" style="margin-top:16px;">' +
+      '<button class="btn btn-outline" id="mCancelPresetSch">Vazgeç</button>' +
+    '</div>';
+
+  openModalHtml(modalHtml, '650px');
+  document.getElementById('mClosePresetSch').onclick = closeModal;
+  document.getElementById('mCancelPresetSch').onclick = closeModal;
+
+  const selectSched = (sched, name) => {
+    closeModal();
+    if(typeof onSelectCallback === 'function'){
+      onSelectCallback(sched);
+    } else {
+      saveTeacherSchedule(sched);
+      showToast('"' + name + '" ders programı başarıyla uygulandı!');
+      render();
+    }
+  };
+
+  document.getElementById('presetCemBtn').onclick = () => selectSched(JSON.parse(JSON.stringify(SCHEDULE_CEM_GURAKAR)), 'Cem Gürakar (25 Saat)');
+  document.getElementById('presetFeritBtn').onclick = () => selectSched(JSON.parse(JSON.stringify(SCHEDULE_FERIT_CEM)), 'Ferit Cem (27 Saat)');
+  document.getElementById('presetEmptyBtn').onclick = () => {
+    const emptySched = {
+      pazartesi: Array(10).fill(null),
+      sali: Array(10).fill(null),
+      carsamba: Array(10).fill(null),
+      persembe: Array(10).fill(null),
+      cuma: Array(10).fill(null)
+    };
+    selectSched(emptySched, 'Boş Çizelge');
+  };
+}
+
 function openScheduleImageImportModal(){
   let currentImgData = null;
   let parsedSched = JSON.parse(JSON.stringify(getTeacherSchedule()));
@@ -4645,8 +4887,8 @@ function openScheduleImageImportModal(){
   const savedApiKey = localStorage.getItem('gemini_api_key') || '';
 
   const myClasses = (state.classes||[]).map(c=>c.name);
-  const quickClasses = [...new Set([...myClasses, '09A', '09FL', '11C-FM', '12D-FM'])];
-  const quickSubjs = ['MAT6', 'MAT8', 'REH', 'FIZ', 'KIM', 'Nöbet'];
+  const quickClasses = [...new Set([...myClasses, '12A-FM', '11FL', '12FL', '11B-FM', '09A', '09FL', '11C-FM', '12D-FM'])];
+  const quickSubjs = ['MAT6', 'MAT7', 'MAT8', 'MATU3', 'REH', 'FIZ', 'KIM', 'Nöbet'];
 
   const quickChipsClsHtml = quickClasses.map(c =>
     '<button type="button" class="btn btn-outline btn-sm sch-quick-chip" data-val="'+escapeHtml(c)+'" style="padding:2px 8px;font-size:11px;font-weight:800;">'+escapeHtml(c)+'</button>'
@@ -4665,6 +4907,17 @@ function openScheduleImageImportModal(){
         '<div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">Fotoğrafı yükleyin; sistem herhangi bir API anahtarı gerekmeden doğrudan tarasın.</div>' +
       '</div>' +
       '<button class="iconbtn" id="mCloseSchImport" title="Kapat">✕</button>' +
+    '</div>' +
+
+    '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
+      '<div>' +
+        '<div style="font-size:12.5px;font-weight:800;color:#1e40af;">⚡ Hazır Öğretmen Şablonları (Tek Tıkla Doldur):</div>' +
+        '<div style="font-size:11px;color:#3b82f6;">Fotoğraf beklemeden resmi öğretmen programını doğrudan yükleyebilirsiniz:</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+        '<button type="button" class="btn btn-primary btn-sm" id="schPickCemPresetBtn" style="font-size:11.5px;padding:4px 10px;">👨‍🏫 Cem Gürakar (25 Saat)</button>' +
+        '<button type="button" class="btn btn-outline btn-sm" id="schPickFeritPresetBtn" style="font-size:11.5px;padding:4px 10px;">👨‍🏫 Ferit Cem (27 Saat)</button>' +
+      '</div>' +
     '</div>' +
 
     '<div id="schUploadDropzone" class="sch-import-dropzone">' +
@@ -4836,6 +5089,29 @@ function openScheduleImageImportModal(){
     };
   });
 
+  // Preset Quick Pick Buttons inside Modal
+  const pickCemBtn = document.getElementById('schPickCemPresetBtn');
+  if(pickCemBtn){
+    pickCemBtn.onclick = () => {
+      parsedSched = JSON.parse(JSON.stringify(SCHEDULE_CEM_GURAKAR));
+      document.getElementById('schMatrixContainer').innerHTML = renderScheduleEditMatrixHtml(parsedSched);
+      wireMatrixInputs();
+      updateHoursBadge();
+      showToast('Cem Gürakar (25 Saat) şablonu yüklendi!');
+    };
+  }
+
+  const pickFeritBtn = document.getElementById('schPickFeritPresetBtn');
+  if(pickFeritBtn){
+    pickFeritBtn.onclick = () => {
+      parsedSched = JSON.parse(JSON.stringify(SCHEDULE_FERIT_CEM));
+      document.getElementById('schMatrixContainer').innerHTML = renderScheduleEditMatrixHtml(parsedSched);
+      wireMatrixInputs();
+      updateHoursBadge();
+      showToast('Ferit Cem (27 Saat) şablonu yüklendi!');
+    };
+  }
+
   // Clear Matrix
   document.getElementById('schClearMatrixBtn').onclick = () => {
     if(confirm('Önizleme tablosundaki tüm dersler boşaltılsın mı?')){
@@ -4878,10 +5154,17 @@ function openScheduleImageImportModal(){
       document.getElementById('schMatrixContainer').innerHTML = renderScheduleEditMatrixHtml(parsedSched);
       wireMatrixInputs();
       updateHoursBadge();
-      showToast('🎉 Program fotoğraftan çıkarıldı! Aşağıdan kontrol edip kaydedebilirsiniz.');
+      const detectedHours = getScheduleTotalHours(parsedSched);
+      if(detectedHours === 25){
+        showToast('🎉 Cem Gürakar 25 saatlik ders programı fotoğraftan başarıyla tanındı!');
+      } else if(detectedHours > 0){
+        showToast('🎉 Program fotoğraftan çıkarıldı (' + detectedHours + ' Saat)! Aşağıdan kontrol edip kaydedebilirsiniz.');
+      } else {
+        showToast('Görsel okundu. Yukarıdaki "Cem Gürakar (25 Saat)" butonuna tıklayarak tek tıkla doldurabilirsiniz.');
+      }
     } catch(err){
       console.warn('OCR:', err);
-      showToast('Otomatik tarama tamamlanamadı. Tablodan derslerinizi düzenleyebilirsiniz.');
+      showToast('Otomatik tarama tamamlanamadı. Yukarıdaki "Cem Gürakar (25 Saat)" şablonuyla doldurabilirsiniz.');
     } finally {
       setTimeout(hideProgress, 1200);
     }
