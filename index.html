@@ -4214,8 +4214,6 @@ function scheduleViewHtml(){
       '<div class="schedule-actions">' +
         '<button class="btn btn-primary btn-sm" id="importScheduleImageBtn">'+ic('camera')+'Fotoğraftan / JPEG\'den Yükle</button>' +
         '<button class="btn btn-outline btn-sm" id="presetScheduleBtn">📋 Şablon Seç</button>' +
-        (hasSavedImage ? '<button class="btn btn-outline btn-sm" id="viewScheduleImageBtn">'+ic('image')+'Orijinal Fotoğrafı Gör</button>' : '') +
-        '<button class="btn btn-outline btn-sm" id="printScheduleBtn">'+ic('printer')+'Yazdır / PDF</button>' +
         '<button class="btn btn-soft btn-sm" id="resetScheduleBtn">'+ic('upload')+'Varsayılana Dön</button>' +
       '</div>' +
     '</div>' +
@@ -4225,10 +4223,6 @@ function scheduleViewHtml(){
         '<thead><tr><th>Gün</th>' + thCols + '</tr></thead>' +
         '<tbody>' + trRows + '</tbody>' +
       '</table>' +
-    '</div>' +
-    '<div style="margin-top:10px;font-size:11.5px;color:var(--ink-soft);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
-      '<span>💡 <b>İpucu:</b> Herhangi bir ders kutusuna tıklayarak sınıfı veya ders kodunu kolayca değiştirebilir veya silebilirsiniz.</span>' +
-      '<span>Öğle Arası: 9-10. Sınıflar <b>11:35-12:25</b> | 11-12. Sınıflar <b>12:25-13:05</b></span>' +
     '</div>' +
   '</div>';
 }
@@ -4247,12 +4241,6 @@ function wireScheduleView(app){
 
   const presetBtn = document.getElementById('presetScheduleBtn');
   if(presetBtn) presetBtn.onclick = () => openPresetScheduleModal();
-
-  const viewImgBtn = document.getElementById('viewScheduleImageBtn');
-  if(viewImgBtn) viewImgBtn.onclick = openViewScheduleImageModal;
-
-  const printBtn = document.getElementById('printScheduleBtn');
-  if(printBtn) printBtn.onclick = printScheduleModal;
 
   const resetBtn = document.getElementById('resetScheduleBtn');
   if(resetBtn){
@@ -4994,7 +4982,7 @@ function openScheduleImageImportModal(){
 
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);flex-wrap:wrap;gap:10px;">' +
       '<label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--ink);cursor:pointer;">' +
-        '<input type="checkbox" id="schKeepPhotoCheck" checked> Bu fotoğrafı profilimde sakla (Ders Programı sekmesinde "Orijinal Fotoğrafı Gör" butonundan bakabilirsiniz)' +
+        '<input type="checkbox" id="schKeepPhotoCheck" checked> Bu fotoğrafı profilimde sakla' +
       '</label>' +
       '<div style="display:flex;gap:8px;">' +
         '<button type="button" class="btn btn-outline" id="schCancelBtn">İptal</button>' +
