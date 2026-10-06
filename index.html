@@ -1664,20 +1664,47 @@ function exportClassBackup(){
   }), 'Öğrenciler');
 
   const today = todayStr();
-  const hwRows = [];
-  sorted.forEach(s=>{
+  if(cls.homeworks.length || !g12){
+    const hwAoa = [];
+    const hwHeader = ['No', 'Ad Soyad'];
     cls.homeworks.forEach(h=>{
-      const done = !!(cls.hwStatus[s.id]||{})[h.slot_no];
-      const checked = h.check_date && h.check_date<=today;
-      hwRows.push({
-        'No': s.no||'', 'Ad Soyad': s.name,
-        'Ödev': h.topic||('Ödev #'+h.slot_no),
-        'Veriliş Tarihi': h.hw_date||'', 'Kontrol Tarihi': h.check_date||'',
-        'Durum': !checked ? 'Kontrol tarihi gelmedi' : (done?'Yaptı':'Yapmadı'),
-      });
+      hwHeader.push(h.topic || ('Ödev #' + h.slot_no));
     });
-  });
-  if(hwRows.length || !g12) addSheet(wb, hwRows, 'Ödevler');
+    hwAoa.push(hwHeader);
+
+    sorted.forEach(s=>{
+      const row = [s.no || '', s.name];
+      cls.homeworks.forEach(h=>{
+        const done = !!(cls.hwStatus[s.id] || {})[h.slot_no];
+        const checked = h.check_date && h.check_date <= today;
+        let statusVal = '';
+        if(done){
+          statusVal = '✓';
+        } else if(!checked){
+          statusVal = 'Bekliyor';
+        } else {
+          statusVal = '✗';
+        }
+        row.push(statusVal);
+      });
+      hwAoa.push(row);
+    });
+
+    const safeHwAoa = hwAoa.map(r => r.map(c => sanitizeCell(c)));
+    const wsHw = XLSX.utils.aoa_to_sheet(safeHwAoa);
+
+    const hwCols = [
+      { wch: 10 },
+      { wch: 28 },
+    ];
+    cls.homeworks.forEach(h=>{
+      const title = String(h.topic || ('Ödev #' + h.slot_no));
+      hwCols.push({ wch: Math.min(Math.max(title.length + 4, 14), 45) });
+    });
+    wsHw['!cols'] = hwCols;
+
+    XLSX.utils.book_append_sheet(wb, wsHw, 'Ödevler');
+  }
 
   if(!g12 && cls.quizzes.length){
     const rows = [];
