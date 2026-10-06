@@ -203,10 +203,113 @@
   .fl27-pill.amber{background:var(--amber-soft);color:var(--amber);border:1px solid #ffd8a8;}
   .fl27-pill.teal{background:var(--teal-soft);color:var(--teal);border:1px solid #b2dfdb;}
 
+  /* Home Nav Tabs */
+  .home-nav-tabs{display:inline-flex;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:5px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.03);flex-wrap:wrap;}
+  .home-tab-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:10px;border:none;background:transparent;color:var(--ink-soft);font-size:13.5px;font-weight:700;cursor:pointer;transition:all 0.15s ease;font-family:inherit;}
+  .home-tab-btn:hover{color:var(--ink);background:var(--surface-2);}
+  .home-tab-btn.active{background:var(--primary);color:#fff;box-shadow:0 2px 8px rgba(52,87,213,0.3);}
+  .home-tab-btn svg.ic{width:16px;height:16px;}
+
+  /* Timetable Schedule Styles */
+  .schedule-container{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:24px;}
+  .schedule-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;}
+  .schedule-title-wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .schedule-title{font-size:17px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:8px;}
+  .schedule-badge{font-size:11.5px;font-weight:800;background:var(--primary-soft);color:var(--primary);padding:3px 10px;border-radius:999px;}
+  .schedule-badge.hours{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;}
+  .schedule-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+
+  .today-timeline-banner{background:linear-gradient(135deg,#eff6ff,#f8fafc);border:1px solid #bfdbfe;border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  .today-timeline-items{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .timeline-chip{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #cbd5e1;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;color:var(--ink);}
+  .timeline-chip.active{background:var(--primary);color:#fff;border-color:var(--primary);box-shadow:0 0 0 3px rgba(52,87,213,0.2);}
+
+  .schedule-table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--line);background:#fff;}
+  .schedule-table{width:100%;border-collapse:collapse;min-width:960px;font-size:12px;}
+  .schedule-table th{background:#f8fafc;color:var(--ink-soft);font-weight:800;padding:10px 8px;text-align:center;border-bottom:2px solid var(--line);border-right:1px solid var(--line);font-size:12px;}
+  .schedule-table th:first-child{min-width:110px;text-align:left;padding-left:14px;background:#f1f5f9;position:sticky;left:0;z-index:2;}
+  .schedule-table th .period-num{font-size:13.5px;font-weight:900;color:var(--ink);display:block;}
+  .schedule-table th .period-time{font-size:11px;font-weight:600;color:var(--ink-faint);display:block;margin-top:2px;}
+  .schedule-table th .period-note{font-size:10px;font-weight:700;color:#c97a1f;background:#fef3c7;padding:1px 6px;border-radius:4px;display:inline-block;margin-top:3px;}
+
+  .schedule-table td{padding:8px 6px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);vertical-align:middle;text-align:center;height:72px;}
+  .schedule-table td.day-cell{font-weight:800;font-size:13px;color:var(--ink);background:#f8fafc;text-align:left;padding-left:14px;position:sticky;left:0;z-index:1;border-right:2px solid var(--line);}
+  .schedule-table tr.current-day td.day-cell{color:var(--primary);background:#eff6ff;}
+  .schedule-table tr:hover td.day-cell{background:#eef2f6;}
+
+  .slot-card{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:56px;border-radius:8px;padding:6px 4px;cursor:pointer;transition:all 0.15s ease;user-select:none;position:relative;}
+  .slot-card:hover{transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,0.08);}
+  .slot-card.empty{background:#fbfcfe;border:1px dashed #cbd5e1;color:var(--ink-faint);}
+  .slot-card.empty:hover{background:#f1f5f9;border-color:var(--primary);color:var(--primary);}
+  .slot-card.empty .empty-plus{font-size:14px;font-weight:700;}
+
+  .slot-card.filled{border:1px solid #cbd5e1;}
+  .slot-card .cls-name{font-size:13px;font-weight:900;line-height:1.2;}
+  .slot-card .subj-name{font-size:10.5px;font-weight:700;margin-top:3px;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,0.7);display:inline-block;}
+
+  /* Colors per class */
+  .slot-card.cls-09A, .slot-card.cls-9A{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8;}
+  .slot-card.cls-09A .subj-name, .slot-card.cls-9A .subj-name{background:#dbeafe;color:#1e40af;}
+
+  .slot-card.cls-09FL, .slot-card.cls-9FL{background:#ecfdf5;border-color:#6ee7b7;color:#047857;}
+  .slot-card.cls-09FL .subj-name, .slot-card.cls-9FL .subj-name{background:#d1fae5;color:#065f46;}
+
+  .slot-card.cls-11C, .slot-card.cls-11C-FM{background:#fffbeb;border-color:#fcd34d;color:#b45309;}
+  .slot-card.cls-11C .subj-name, .slot-card.cls-11C-FM .subj-name{background:#fef3c7;color:#92400e;}
+
+  .slot-card.cls-12D, .slot-card.cls-12D-FM{background:#f5f3ff;border-color:#c4b5fd;color:#6d28d9;}
+  .slot-card.cls-12D .subj-name, .slot-card.cls-12D-FM .subj-name{background:#ede9fe;color:#5b21b6;}
+
+  .slot-card.cls-other{background:#fdf2f8;border-color:#fbcfe8;color:#be185d;}
+  .slot-card.cls-other .subj-name{background:#fce7f3;color:#9d174d;}
+
+  .slot-card.is-active{box-shadow:0 0 0 2px var(--primary) !important;position:relative;}
+  .slot-card.is-active::after{content:'Şu an';position:absolute;top:-6px;right:-4px;background:var(--primary);color:#fff;font-size:9px;font-weight:900;padding:1px 4px;border-radius:4px;}
+
+  /* Calendar & Agenda Styles */
+  .cal-layout{display:grid;grid-template-columns:minmax(0, 1.45fr) minmax(320px, 1fr);gap:20px;margin-bottom:24px;}
+  @media(max-width:980px){.cal-layout{grid-template-columns:1fr;}}
+
+  .cal-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);}
+  .cal-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px;}
+  .cal-title-wrap{display:flex;align-items:center;gap:10px;}
+  .cal-month-title{font-size:18px;font-weight:900;color:var(--ink);}
+  .cal-nav-btns{display:flex;gap:4px;align-items:center;}
+
+  .cal-grid{display:grid;grid-template-columns:repeat(7, 1fr);gap:6px;}
+  .cal-day-head{text-align:center;font-size:11.5px;font-weight:800;color:var(--ink-soft);padding:8px 0;background:#f8fafc;border-radius:6px;}
+  .cal-day-head.weekend{color:#94a3b8;}
+
+  .cal-day-cell{min-height:86px;border:1px solid var(--line);border-radius:10px;padding:6px;background:#fff;cursor:pointer;transition:all 0.15s ease;display:flex;flex-direction:column;position:relative;overflow:hidden;}
+  .cal-day-cell:hover{border-color:var(--primary);background:#f8fafc;transform:translateY(-1px);}
+  .cal-day-cell.other-month{opacity:0.35;background:#fbfcfe;}
+  .cal-day-cell.selected{border-color:var(--primary);box-shadow:0 0 0 2px rgba(52,87,213,0.3);background:#f8fafc;}
+  .cal-day-cell.today{background:#f0f5ff;}
+
+  .cal-day-num{font-size:12.5px;font-weight:800;color:var(--ink);align-self:flex-end;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:999px;}
+  .cal-day-cell.today .cal-day-num{background:var(--primary);color:#fff;}
+
+  .cal-day-events{display:flex;flex-direction:column;gap:3px;margin-top:4px;flex:1;}
+  .cal-mini-event{font-size:10px;font-weight:700;padding:2px 5px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;}
+  .cal-more-badge{font-size:9.5px;font-weight:800;color:var(--ink-soft);padding:1px 4px;margin-top:auto;}
+
+  /* Agenda Panel */
+  .agenda-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line);flex-wrap:wrap;gap:8px;}
+  .agenda-date-lbl{font-size:15px;font-weight:900;color:var(--ink);}
+  .agenda-list{display:flex;flex-direction:column;gap:8px;max-height:480px;overflow-y:auto;}
+  .agenda-item{display:flex;align-items:flex-start;gap:10px;padding:12px;border-radius:10px;border:1px solid var(--line);background:#fff;transition:all 0.15s ease;}
+  .agenda-item:hover{border-color:#cbd5e1;box-shadow:0 2px 6px rgba(0,0,0,0.04);}
+  .agenda-item.completed{opacity:0.6;background:#f8fafc;}
+  .agenda-item.completed .agenda-title{text-decoration:line-through;color:var(--ink-soft);}
+  .agenda-cat-badge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;white-space:nowrap;display:inline-flex;align-items:center;gap:3px;}
+  .agenda-title{font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.3;}
+  .agenda-desc{font-size:12px;color:var(--ink-soft);margin-top:4px;line-height:1.4;}
+  .agenda-time{font-size:11px;font-weight:700;color:var(--ink-faint);margin-top:2px;}
+
   @media print {
     body * { visibility: hidden !important; }
-    #fl27PrintDoc, #fl27PrintDoc * { visibility: visible !important; }
-    #fl27PrintDoc {
+    #fl27PrintDoc, #fl27PrintDoc *, #schedulePrintDoc, #schedulePrintDoc * { visibility: visible !important; }
+    #fl27PrintDoc, #schedulePrintDoc {
       position: absolute !important;
       left: 0 !important;
       top: 0 !important;
@@ -232,7 +335,7 @@
 <header class="top">
   <button class="brand" id="brandBtn" type="button" title="Sınıflar sayfasına dön" aria-label="Sınıflar sayfasına dön">
     <div class="logo"><svg class="ic" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/></svg></div>
-    <h1>Sınıf Yönetim Panelim<span class="ver">v.2.5 · bulut</span></h1>
+    <h1>Sınıf Yönetim Panelim<span class="ver">v.2.6 · bulut</span></h1>
   </button>
   <div class="spacer"></div>
   <button class="teacherbox" id="teacherBtn" style="display:none;">
@@ -276,6 +379,11 @@ const ICONS = {
   key:'<circle cx="7.5" cy="15.5" r="4.5"/><path d="m11 12 9-9h4v4l-2 2v2l-2 2v2l-3.5-3.5"/>',
   eye:'<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
   eyeOff:'<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/>',
+  calendar:'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  check:'<polyline points="20 6 9 17 4 12"/>',
+  printer:'<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>',
+  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
 };
 function ic(name){ return '<svg class="ic" viewBox="0 0 24 24">'+(ICONS[name]||'')+'</svg>'; }
 
@@ -298,6 +406,10 @@ let state = {
   isAdmin: false,
   adminGradeFilter: 'all',
   page: 'login',
+  homeTab: 'classes',
+  calCurrentMonth: new Date().getMonth(),
+  calCurrentYear: new Date().getFullYear(),
+  calSelectedDate: todayStr(),
   classes: [], classId: null, cls: null,
   view: 'roster',
   studentId: null,
@@ -707,6 +819,9 @@ async function downloadFullBackupJson(){
       dump.class_evaluation_marks = [];
     }
 
+    dump.weekly_schedule = getTeacherSchedule();
+    dump.calendar_events = getCalendarEvents();
+
     const jsonStr = JSON.stringify(dump, null, 2);
     const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -835,6 +950,13 @@ async function restoreBackupFromFile(file){
     }
     if(data.class_evaluation_marks && data.class_evaluation_marks.length > 0){
       await sb.from('class_evaluation_marks').upsert(data.class_evaluation_marks, { onConflict: 'evaluation_id,student_id' });
+    }
+
+    if(data.weekly_schedule){
+      saveTeacherSchedule(data.weekly_schedule);
+    }
+    if(data.calendar_events && Array.isArray(data.calendar_events)){
+      saveCalendarEvents(data.calendar_events);
     }
 
     closeModal();
@@ -3701,6 +3823,824 @@ function render(){
   if(state.page==='home') return renderHome(app);
   if(state.page==='sinif_detail') return renderSinifDetail(app);
 }
+
+// ============================================================================
+// HAFTALIK DERS PROGRAMI (TIMETABLE) & AJANDA - TAKVİM (CALENDAR)
+// ============================================================================
+
+const SCHEDULE_STORAGE_KEY_PREFIX = 'teacher_schedule_';
+const CALENDAR_STORAGE_KEY_PREFIX = 'teacher_calendar_';
+
+const PERIOD_DEFS = [
+  { id: 0, no: '1', time: '08:25 - 09:05', start: '08:25', end: '09:05', label: '1. Ders' },
+  { id: 1, no: '2', time: '09:15 - 09:55', start: '09:15', end: '09:55', label: '2. Ders' },
+  { id: 2, no: '3', time: '10:05 - 10:45', start: '10:05', end: '10:45', label: '3. Ders' },
+  { id: 3, no: '4', time: '10:55 - 11:35', start: '10:55', end: '11:35', label: '4. Ders' },
+  { id: 4, no: '5', time: '11:45 - 12:25', start: '11:45', end: '12:25', label: '5. Ders (11-12)', note: '9-10 Öğle' },
+  { id: 5, no: '5', time: '12:25 - 13:05', start: '12:25', end: '13:05', label: '5. Ders (9-10)', note: '11-12 Öğle' },
+  { id: 6, no: '6', time: '13:15 - 13:55', start: '13:15', end: '13:55', label: '6. Ders' },
+  { id: 7, no: '7', time: '14:05 - 14:45', start: '14:05', end: '14:45', label: '7. Ders' },
+  { id: 8, no: '8', time: '14:55 - 15:35', start: '14:55', end: '15:35', label: '8. Ders' },
+  { id: 9, no: '9', time: '15:45 - 16:25', start: '15:45', end: '16:25', label: '9. Ders' }
+];
+
+const DAYS_DEF = [
+  { key: 'pazartesi', label: 'Pazartesi' },
+  { key: 'sali', label: 'Salı' },
+  { key: 'carsamba', label: 'Çarşamba' },
+  { key: 'persembe', label: 'Perşembe' },
+  { key: 'cuma', label: 'Cuma' }
+];
+
+const DEFAULT_SCHEDULE = {
+  pazartesi: [
+    null,
+    { cls: '09A', subj: 'MAT6' },
+    { cls: '09A', subj: 'MAT6' },
+    { cls: '12D-FM', subj: 'MAT8' },
+    { cls: '12D-FM', subj: 'MAT8' },
+    null,
+    { cls: '09FL', subj: 'MAT6' },
+    null,
+    null,
+    null
+  ],
+  sali: [
+    { cls: '11C-FM', subj: 'MAT6' },
+    { cls: '11C-FM', subj: 'MAT6' },
+    { cls: '09FL', subj: 'MAT6' },
+    { cls: '09FL', subj: 'MAT6' },
+    null,
+    null,
+    { cls: '12D-FM', subj: 'MAT8' },
+    { cls: '12D-FM', subj: 'MAT8' },
+    { cls: '09A', subj: 'MAT6' },
+    null
+  ],
+  carsamba: [
+    { cls: '09FL', subj: 'MAT6' },
+    { cls: '09FL', subj: 'MAT6' },
+    null,
+    null,
+    { cls: '11C-FM', subj: 'MAT6' },
+    null,
+    { cls: '12D-FM', subj: 'MAT8' },
+    { cls: '12D-FM', subj: 'MAT8' },
+    null,
+    null
+  ],
+  persembe: [
+    { cls: '09A', subj: 'MAT6' },
+    { cls: '09A', subj: 'MAT6' },
+    null,
+    null,
+    { cls: '12D-FM', subj: 'MAT8' },
+    null,
+    { cls: '11C-FM', subj: 'MAT6' },
+    { cls: '11C-FM', subj: 'MAT6' },
+    null,
+    null
+  ],
+  cuma: [
+    { cls: '12D-FM', subj: 'MAT8' },
+    { cls: '11C-FM', subj: 'MAT6' },
+    null,
+    { cls: '09FL', subj: 'MAT6' },
+    null,
+    { cls: '09A', subj: 'MAT6' },
+    { cls: '12D-FM', subj: 'REH' },
+    null,
+    null,
+    null
+  ]
+};
+
+function getTeacherSchedule(){
+  const key = SCHEDULE_STORAGE_KEY_PREFIX + (state.userId || 'default');
+  try{
+    const raw = localStorage.getItem(key);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
+}
+
+function saveTeacherSchedule(sched){
+  const key = SCHEDULE_STORAGE_KEY_PREFIX + (state.userId || 'default');
+  try{
+    localStorage.setItem(key, JSON.stringify(sched));
+  }catch(e){}
+}
+
+function getScheduleTotalHours(sched){
+  let count = 0;
+  Object.values(sched).forEach(daySlots=>{
+    if(Array.isArray(daySlots)){
+      daySlots.forEach(slot=>{
+        if(slot && slot.cls) count++;
+      });
+    }
+  });
+  return count;
+}
+
+function getDayHours(daySlots){
+  if(!Array.isArray(daySlots)) return 0;
+  return daySlots.filter(s => s && s.cls).length;
+}
+
+function getLiveScheduleStatus(){
+  const now = new Date();
+  const dayIdx = now.getDay();
+  const dayKeys = ['', 'pazartesi', 'sali', 'carsamba', 'persembe', 'cuma', ''];
+  const currentDayKey = dayKeys[dayIdx] || null;
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  let activePeriodId = null;
+  PERIOD_DEFS.forEach(p => {
+    const [sh, sm] = p.start.split(':').map(Number);
+    const [eh, em] = p.end.split(':').map(Number);
+    const sMin = sh * 60 + sm;
+    const eMin = eh * 60 + em;
+    if(currentMinutes >= sMin && currentMinutes <= eMin){
+      activePeriodId = p.id;
+    }
+  });
+
+  return { currentDayKey, activePeriodId };
+}
+
+function getClassColorCssClass(clsName){
+  if(!clsName) return '';
+  const c = String(clsName).trim().toUpperCase();
+  if(c.includes('09A') || c === '9A') return 'cls-09A';
+  if(c.includes('09FL') || c.includes('9FL')) return 'cls-09FL';
+  if(c.includes('11C')) return 'cls-11C';
+  if(c.includes('12D')) return 'cls-12D';
+  return 'cls-other';
+}
+
+function scheduleViewHtml(){
+  const sched = getTeacherSchedule();
+  const totalHours = getScheduleTotalHours(sched);
+  const { currentDayKey, activePeriodId } = getLiveScheduleStatus();
+
+  let todayBannerHtml = '';
+  if(currentDayKey && sched[currentDayKey]){
+    const todaySlots = sched[currentDayKey];
+    const todayClasses = [];
+    PERIOD_DEFS.forEach(p => {
+      const slot = todaySlots[p.id];
+      if(slot && slot.cls){
+        const isActive = (p.id === activePeriodId);
+        todayClasses.push(
+          '<div class="timeline-chip '+(isActive ? 'active' : '')+'">' +
+            '<span style="opacity:0.75;">'+p.no+'. Ders:</span> ' +
+            '<b>'+escapeHtml(slot.cls)+'</b> ' +
+            (slot.subj ? '<span style="font-size:11px;opacity:0.85;">('+escapeHtml(slot.subj)+')</span>' : '') +
+            (isActive ? ' <span style="font-size:10px;background:#fff;color:var(--primary);padding:1px 5px;border-radius:4px;font-weight:900;">ŞU AN</span>' : '') +
+          '</div>'
+        );
+      }
+    });
+
+    const dayObj = DAYS_DEF.find(d => d.key === currentDayKey);
+    const dayLabel = dayObj ? dayObj.label : 'Bugün';
+
+    todayBannerHtml =
+      '<div class="today-timeline-banner">' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+          '<span style="font-size:18px;">⏰</span>' +
+          '<div>' +
+            '<div style="font-size:13.5px;font-weight:800;color:var(--ink);">Bugünkü Programınız: '+dayLabel+' ('+todayClasses.length+' Saat)</div>' +
+            '<div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">Öğle Tatili: 9-10. Sınıflar (11:35 - 12:25) · 11-12. Sınıflar (12:25 - 13:05)</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="today-timeline-items">' +
+          (todayClasses.length ? todayClasses.join('') : '<span style="font-size:12.5px;color:var(--ink-soft);font-weight:600;">Bugün planlanmış dersiniz bulunmuyor (Boş gün).</span>') +
+        '</div>' +
+      '</div>';
+  }
+
+  const thCols = PERIOD_DEFS.map(p =>
+    '<th>' +
+      '<span class="period-num">'+p.no+'</span>' +
+      '<span class="period-time">'+p.time+'</span>' +
+      (p.note ? '<span class="period-note">'+p.note+'</span>' : '') +
+    '</th>'
+  ).join('');
+
+  const trRows = DAYS_DEF.map(day => {
+    const isToday = (day.key === currentDayKey);
+    const daySlots = sched[day.key] || [];
+    const dayHours = getDayHours(daySlots);
+
+    const tdCols = PERIOD_DEFS.map(p => {
+      const slot = daySlots[p.id];
+      const isActive = (isToday && p.id === activePeriodId);
+      if(slot && slot.cls){
+        const colorClass = getClassColorCssClass(slot.cls);
+        return '<td>' +
+          '<div class="slot-card filled '+colorClass+' '+(isActive ? 'is-active' : '')+'" data-day="'+day.key+'" data-period="'+p.id+'" title="Tıklayarak düzenleyin">' +
+            '<div class="cls-name">'+escapeHtml(slot.cls)+'</div>' +
+            (slot.subj ? '<div class="subj-name">'+escapeHtml(slot.subj)+'</div>' : '') +
+          '</div>' +
+        '</td>';
+      } else {
+        return '<td>' +
+          '<div class="slot-card empty '+(isActive ? 'is-active' : '')+'" data-day="'+day.key+'" data-period="'+p.id+'" title="Ders eklemek için tıklayın">' +
+            '<span class="empty-plus">+</span>' +
+          '</div>' +
+        '</td>';
+      }
+    }).join('');
+
+    return '<tr class="'+(isToday ? 'current-day' : '')+'">' +
+      '<td class="day-cell">' +
+        '<div>'+day.label+'</div>' +
+        '<div style="font-size:11px;font-weight:600;color:var(--ink-faint);margin-top:2px;">'+dayHours+' saat</div>' +
+      '</td>' +
+      tdCols +
+    '</tr>';
+  }).join('');
+
+  return '<div class="schedule-container">' +
+    '<div class="schedule-header">' +
+      '<div class="schedule-title-wrap">' +
+        '<div class="schedule-title">'+ic('clock')+' Haftalık Ders Programı</div>' +
+        '<span class="schedule-badge hours">Haftalık: '+totalHours+' Saat</span>' +
+        '<span class="schedule-badge">08:25 – 16:25 · 9 Ders</span>' +
+      '</div>' +
+      '<div class="schedule-actions">' +
+        '<button class="btn btn-outline btn-sm" id="printScheduleBtn">'+ic('printer')+'Yazdır / PDF</button>' +
+        '<button class="btn btn-soft btn-sm" id="resetScheduleBtn">'+ic('upload')+'Varsayılan Programa Dön</button>' +
+      '</div>' +
+    '</div>' +
+    todayBannerHtml +
+    '<div class="schedule-table-wrap">' +
+      '<table class="schedule-table">' +
+        '<thead><tr><th>Gün</th>' + thCols + '</tr></thead>' +
+        '<tbody>' + trRows + '</tbody>' +
+      '</table>' +
+    '</div>' +
+    '<div style="margin-top:10px;font-size:11.5px;color:var(--ink-soft);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
+      '<span>💡 <b>İpucu:</b> Herhangi bir ders kutusuna tıklayarak sınıfı veya ders kodunu kolayca değiştirebilir veya silebilirsiniz.</span>' +
+      '<span>Öğle Arası: 9-10. Sınıflar <b>11:35-12:25</b> | 11-12. Sınıflar <b>12:25-13:05</b></span>' +
+    '</div>' +
+  '</div>';
+}
+
+function wireScheduleView(app){
+  app.querySelectorAll('.slot-card').forEach(el => {
+    el.onclick = () => {
+      const day = el.dataset.day;
+      const period = parseInt(el.dataset.period, 10);
+      openEditScheduleSlotModal(day, period);
+    };
+  });
+
+  const printBtn = document.getElementById('printScheduleBtn');
+  if(printBtn) printBtn.onclick = printScheduleModal;
+
+  const resetBtn = document.getElementById('resetScheduleBtn');
+  if(resetBtn){
+    resetBtn.onclick = () => {
+      if(confirm('Haftalık ders programınız okulunuzun orijinal 27 saatlik çizelgesine sıfırlansın mı?')){
+        saveTeacherSchedule(JSON.parse(JSON.stringify(DEFAULT_SCHEDULE)));
+        showToast('Ders programı varsayılana sıfırlandı');
+        render();
+      }
+    };
+  }
+}
+
+function openEditScheduleSlotModal(dayKey, periodId){
+  const sched = getTeacherSchedule();
+  const currentSlot = (sched[dayKey] && sched[dayKey][periodId]) || null;
+  const pDef = PERIOD_DEFS.find(p=>p.id===periodId) || {};
+  const dDef = DAYS_DEF.find(d=>d.key===dayKey) || {};
+
+  const myClasses = (state.classes||[]).map(c=>c.name);
+  const quickClasses = [...new Set([...myClasses, '09A', '09FL', '11C-FM', '12D-FM'])];
+
+  const quickChips = quickClasses.map(c=>
+    '<button type="button" class="btn btn-outline btn-sm sch-chip-cls" data-cls="'+escapeHtml(c)+'" style="padding:4px 10px;font-size:12px;">'+escapeHtml(c)+'</button>'
+  ).join('');
+
+  const quickSubjs = ['MAT6', 'MAT8', 'REH', 'Nöbet'].map(s=>
+    '<button type="button" class="btn btn-outline btn-sm sch-chip-subj" data-subj="'+escapeHtml(s)+'" style="padding:4px 10px;font-size:12px;">'+escapeHtml(s)+'</button>'
+  ).join('');
+
+  const content =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+      '<div>' +
+        '<h3 style="margin:0;font-size:16px;font-weight:800;color:var(--ink);">'+dDef.label+' · '+pDef.label+'</h3>' +
+        '<div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">Saat: '+pDef.time+(pDef.note ? ' ('+pDef.note+')' : '')+'</div>' +
+      '</div>' +
+      '<button class="iconbtn" id="mCloseSch" title="Kapat">✕</button>' +
+    '</div>' +
+    '<div style="margin-bottom:14px;">' +
+      '<label style="display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;">Hızlı Sınıf Seç</label>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">'+quickChips+'</div>' +
+      '<input type="text" id="schClsInp" placeholder="Sınıf / Şube (Örn: 09A)" value="'+escapeHtml(currentSlot?currentSlot.cls:'')+'" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-weight:700;">' +
+    '</div>' +
+    '<div style="margin-bottom:18px;">' +
+      '<label style="display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;">Ders / Branş / Not</label>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">'+quickSubjs+'</div>' +
+      '<input type="text" id="schSubjInp" placeholder="Ders kodu (Örn: MAT6, MAT8, REH)" value="'+escapeHtml(currentSlot?currentSlot.subj:'')+'" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:14px;">' +
+    '</div>' +
+    '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
+      '<button class="btn btn-outline" id="schClearBtn" style="color:var(--red);border-color:#fecdd3;">Boşalt</button>' +
+      '<button class="btn btn-primary" id="schSaveBtn">Kaydet</button>' +
+    '</div>';
+
+  openModalHtml(content, '440px');
+
+  document.getElementById('mCloseSch').onclick = closeModal;
+
+  document.querySelectorAll('.sch-chip-cls').forEach(b => {
+    b.onclick = () => { document.getElementById('schClsInp').value = b.dataset.cls; };
+  });
+
+  document.querySelectorAll('.sch-chip-subj').forEach(b => {
+    b.onclick = () => { document.getElementById('schSubjInp').value = b.dataset.subj; };
+  });
+
+  document.getElementById('schClearBtn').onclick = () => {
+    if(!sched[dayKey]) sched[dayKey] = [];
+    sched[dayKey][periodId] = null;
+    saveTeacherSchedule(sched);
+    closeModal();
+    showToast('Ders boşaltıldı');
+    render();
+  };
+
+  document.getElementById('schSaveBtn').onclick = () => {
+    const clsVal = document.getElementById('schClsInp').value.trim();
+    const subjVal = document.getElementById('schSubjInp').value.trim();
+    if(!sched[dayKey]) sched[dayKey] = [];
+    if(clsVal){
+      sched[dayKey][periodId] = { cls: clsVal, subj: subjVal };
+    } else {
+      sched[dayKey][periodId] = null;
+    }
+    saveTeacherSchedule(sched);
+    closeModal();
+    showToast('Ders kaydedildi');
+    render();
+  };
+}
+
+function printScheduleModal(){
+  const sched = getTeacherSchedule();
+  const teacherName = state.teacherName || state.username || 'Öğretmen';
+  const totalHours = getScheduleTotalHours(sched);
+
+  const thCols = PERIOD_DEFS.map(p =>
+    '<th style="border:1px solid #111;padding:6px;font-size:11px;text-align:center;background:#f0f0f0;">' +
+      '<div>'+p.no+'</div>' +
+      '<div style="font-size:9.5px;font-weight:normal;">'+p.time+'</div>' +
+      (p.note ? '<div style="font-size:9px;color:#666;">('+p.note+')</div>' : '') +
+    '</th>'
+  ).join('');
+
+  const trRows = DAYS_DEF.map(day => {
+    const daySlots = sched[day.key] || [];
+    const tdCols = PERIOD_DEFS.map(p => {
+      const slot = daySlots[p.id];
+      if(slot && slot.cls){
+        return '<td style="border:1px solid #111;padding:6px;text-align:center;height:55px;">' +
+          '<div style="font-weight:bold;font-size:12px;">'+escapeHtml(slot.cls)+'</div>' +
+          (slot.subj ? '<div style="font-size:10px;color:#333;">'+escapeHtml(slot.subj)+'</div>' : '') +
+        '</td>';
+      }
+      return '<td style="border:1px solid #111;padding:6px;text-align:center;height:55px;color:#ccc;">—</td>';
+    }).join('');
+
+    return '<tr>' +
+      '<td style="border:1px solid #111;padding:6px 10px;font-weight:bold;font-size:12px;background:#f9f9f9;">'+day.label+'</td>' +
+      tdCols +
+    '</tr>';
+  }).join('');
+
+  const printDoc =
+    '<div id="schedulePrintDoc" style="font-family:sans-serif;color:#000;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px;border-bottom:2px solid #000;padding-bottom:10px;">' +
+        '<div>' +
+          '<div style="font-size:18px;font-weight:bold;letter-spacing:0.5px;">HAFTALIK DERS PROGRAMI</div>' +
+          '<div style="font-size:14px;color:#444;margin-top:2px;">Öğretmen: <b>'+escapeHtml(teacherName)+'</b></div>' +
+        '</div>' +
+        '<div style="text-align:right;">' +
+          '<div style="font-size:14px;font-weight:bold;">Toplam: '+totalHours+' Saat</div>' +
+          '<div style="font-size:11px;color:#666;">Saatler: 08:25 – 16:25</div>' +
+        '</div>' +
+      '</div>' +
+      '<table style="width:100%;border-collapse:collapse;margin-bottom:14px;">' +
+        '<thead><tr><th style="border:1px solid #111;padding:6px;font-size:11px;text-align:left;background:#f0f0f0;">Gün</th>' + thCols + '</tr></thead>' +
+        '<tbody>' + trRows + '</tbody>' +
+      '</table>' +
+      '<div style="font-size:10px;color:#666;text-align:center;">Öğle Arası: 9-10. Sınıflar (11:35 - 12:25) · 11-12. Sınıflar (12:25 - 13:05)</div>' +
+    '</div>';
+
+  const modalWrap =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+      '<h3 style="margin:0;">Yazdırma Önizlemesi</h3>' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button class="btn btn-primary" id="doPrintSchBtn">'+ic('printer')+'Yazdır</button>' +
+        '<button class="btn btn-outline" id="closePrintSchBtn">Kapat</button>' +
+      '</div>' +
+    '</div>' +
+    '<div style="max-height:75vh;overflow-y:auto;background:#fff;padding:12px;border:1px solid var(--line);border-radius:8px;">' +
+      printDoc +
+    '</div>';
+
+  openModalHtml(modalWrap, '860px');
+  document.getElementById('closePrintSchBtn').onclick = closeModal;
+  document.getElementById('doPrintSchBtn').onclick = () => window.print();
+}
+
+// ============================================================================
+// AJANDA & TAKVİM (CALENDAR)
+// ============================================================================
+
+const CALENDAR_CATEGORIES = [
+  { id: 'remind', label: 'Hatırlatma', color: '#3457d5', bg: '#e8edfc', icon: '📌' },
+  { id: 'exam', label: 'Sınav / Deneme', color: '#c97a1f', bg: '#faf0dd', icon: '🎯' },
+  { id: 'hw', label: 'Ödev / Görev', color: '#0f9d8c', bg: '#e1f5f2', icon: '📝' },
+  { id: 'parent', label: 'Veli Toplantısı', color: '#7c3aed', bg: '#f3e8ff', icon: '👥' },
+  { id: 'school', label: 'Okul Etkinliği', color: '#2563eb', bg: '#dbeafe', icon: '🏫' },
+  { id: 'personal', label: 'Kişisel Not', color: '#475569', bg: '#f1f5f9', icon: '💡' }
+];
+
+function getCalendarEvents(){
+  const key = CALENDAR_STORAGE_KEY_PREFIX + (state.userId || 'default');
+  try{
+    const raw = localStorage.getItem(key);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return [];
+}
+
+function saveCalendarEvents(events){
+  const key = CALENDAR_STORAGE_KEY_PREFIX + (state.userId || 'default');
+  try{
+    localStorage.setItem(key, JSON.stringify(events));
+  }catch(e){}
+}
+
+function formatTurkishDate(dateStr){
+  if(!dateStr) return '';
+  const parts = dateStr.split('-');
+  if(parts.length !== 3) return dateStr;
+  const y = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  const d = parseInt(parts[2], 10);
+  const dt = new Date(y, m - 1, d);
+  const dayNames = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+  const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+  return d + ' ' + monthNames[m - 1] + ' ' + y + ', ' + dayNames[dt.getDay()];
+}
+
+function calendarViewHtml(){
+  const curYear = state.calCurrentYear;
+  const curMonth = state.calCurrentMonth;
+  const selectedDate = state.calSelectedDate || todayStr();
+  const allEvents = getCalendarEvents();
+  const today = todayStr();
+
+  const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+
+  const firstDay = new Date(curYear, curMonth, 1).getDay();
+  const startOffset = (firstDay === 0 ? 6 : firstDay - 1);
+  const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
+  const prevMonthDays = new Date(curYear, curMonth, 0).getDate();
+
+  const pad = n => String(n).padStart(2, '0');
+
+  let gridCells = '';
+
+  for(let i = 0; i < startOffset; i++){
+    const dNum = prevMonthDays - startOffset + i + 1;
+    const pDate = new Date(curYear, curMonth - 1, dNum);
+    const dateStr = pDate.getFullYear() + '-' + pad(pDate.getMonth() + 1) + '-' + pad(dNum);
+    gridCells += '<div class="cal-day-cell other-month" data-caldate="'+dateStr+'">' +
+      '<span class="cal-day-num">'+dNum+'</span>' +
+    '</div>';
+  }
+
+  for(let d = 1; d <= daysInMonth; d++){
+    const dateStr = curYear + '-' + pad(curMonth + 1) + '-' + pad(d);
+    const isToday = (dateStr === today);
+    const isSelected = (dateStr === selectedDate);
+    const dayEvs = allEvents.filter(e => e.date === dateStr);
+
+    let evsHtml = '';
+    dayEvs.slice(0, 2).forEach(ev => {
+      const cat = CALENDAR_CATEGORIES.find(c => c.id === ev.cat) || CALENDAR_CATEGORIES[0];
+      evsHtml += '<div class="cal-mini-event" style="background:'+cat.bg+';color:'+cat.color+';">' +
+        cat.icon + ' ' + escapeHtml(ev.title) +
+      '</div>';
+    });
+    if(dayEvs.length > 2){
+      evsHtml += '<div class="cal-more-badge">+' + (dayEvs.length - 2) + ' daha</div>';
+    }
+
+    gridCells +=
+      '<div class="cal-day-cell '+(isToday ? 'today' : '')+' '+(isSelected ? 'selected' : '')+'" data-caldate="'+dateStr+'">' +
+        '<span class="cal-day-num">'+d+'</span>' +
+        '<div class="cal-day-events">'+evsHtml+'</div>' +
+      '</div>';
+  }
+
+  const totalCells = startOffset + daysInMonth;
+  const remCells = (7 - (totalCells % 7)) % 7;
+  for(let i = 1; i <= remCells; i++){
+    const nDate = new Date(curYear, curMonth + 1, i);
+    const dateStr = nDate.getFullYear() + '-' + pad(nDate.getMonth() + 1) + '-' + pad(i);
+    gridCells += '<div class="cal-day-cell other-month" data-caldate="'+dateStr+'">' +
+      '<span class="cal-day-num">'+i+'</span>' +
+    '</div>';
+  }
+
+  const selectedDayEvents = allEvents.filter(e => e.date === selectedDate);
+  let selectedEventsHtml = '';
+  if(selectedDayEvents.length){
+    selectedEventsHtml = selectedDayEvents.map(ev => {
+      const cat = CALENDAR_CATEGORIES.find(c => c.id === ev.cat) || CALENDAR_CATEGORIES[0];
+      return '<div class="agenda-item '+(ev.completed ? 'completed' : '')+'" data-evid="'+ev.id+'">' +
+        '<input type="checkbox" class="agenda-toggle" data-evid="'+ev.id+'" '+(ev.completed ? 'checked' : '')+' title="Tamamlandı olarak işaretle" style="width:18px;height:18px;accent-color:var(--primary);cursor:pointer;margin-top:2px;">' +
+        '<div style="flex:1;">' +
+          '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">' +
+            '<span class="agenda-cat-badge" style="background:'+cat.bg+';color:'+cat.color+';">'+cat.icon+' '+cat.label+'</span>' +
+            (ev.time ? '<span class="agenda-time">⏰ '+escapeHtml(ev.time)+'</span>' : '') +
+          '</div>' +
+          '<div class="agenda-title">'+escapeHtml(ev.title)+'</div>' +
+          (ev.desc ? '<div class="agenda-desc">'+escapeHtml(ev.desc)+'</div>' : '') +
+        '</div>' +
+        '<button class="iconbtn del-ev-btn" data-evid="'+ev.id+'" title="Sil" style="color:var(--ink-faint);">'+ic('trash')+'</button>' +
+      '</div>';
+    }).join('');
+  } else {
+    selectedEventsHtml =
+      '<div style="text-align:center;padding:32px 14px;color:var(--ink-soft);background:#fbfcfe;border:1px dashed var(--line);border-radius:12px;">' +
+        '<div style="font-size:28px;margin-bottom:6px;">📅</div>' +
+        '<div style="font-weight:700;font-size:13.5px;color:var(--ink);">Bu tarihte henüz bir not veya etkinlik yok</div>' +
+        '<div style="font-size:12px;color:var(--ink-faint);margin-top:4px;">Aşağıdaki butonla hemen bu güne not ekleyebilirsiniz.</div>' +
+        '<button class="btn btn-outline btn-sm" id="emptyAddEvBtn" style="margin-top:12px;">'+ic('plus')+'Bu Güne Not Ekle</button>' +
+      '</div>';
+  }
+
+  const upcomingEvents = allEvents
+    .filter(e => e.date >= today && !e.completed)
+    .sort((a,b) => (a.date + (a.time||'')) > (b.date + (b.time||'')) ? 1 : -1)
+    .slice(0, 5);
+
+  let upcomingHtml = '';
+  if(upcomingEvents.length){
+    upcomingHtml = upcomingEvents.map(ev => {
+      const cat = CALENDAR_CATEGORIES.find(c => c.id === ev.cat) || CALENDAR_CATEGORIES[0];
+      return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;background:#fff;border:1px solid var(--line);border-radius:8px;font-size:12.5px;margin-bottom:6px;">' +
+        '<div style="display:flex;align-items:center;gap:8px;flex:1;overflow:hidden;">' +
+          '<span>'+cat.icon+'</span>' +
+          '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
+            '<b style="color:var(--ink);">'+escapeHtml(ev.title)+'</b>' +
+            '<span style="color:var(--ink-faint);font-size:11px;margin-left:4px;">('+formatTurkishDate(ev.date).split(',')[0]+(ev.time ? ' · '+ev.time : '')+')</span>' +
+          '</div>' +
+        '</div>' +
+        '<button class="iconbtn quick-jump-date-btn" data-date="'+ev.date+'" title="Tarihe git" style="font-size:11px;padding:2px 6px;">'+ic('chevron')+'</button>' +
+      '</div>';
+    }).join('');
+  } else {
+    upcomingHtml = '<div style="font-size:12px;color:var(--ink-faint);padding:8px 0;">Yaklaşan tamamlanmamış etkinlik bulunmuyor.</div>';
+  }
+
+  return '<div class="cal-layout">' +
+    '<div class="cal-card">' +
+      '<div class="cal-header">' +
+        '<div class="cal-title-wrap">' +
+          '<span style="font-size:22px;">🗓️</span>' +
+          '<span class="cal-month-title">'+monthNames[curMonth]+' '+curYear+'</span>' +
+        '</div>' +
+        '<div class="cal-nav-btns">' +
+          '<button class="btn btn-outline btn-sm" id="calPrevMonthBtn" title="Önceki Ay">&lt;</button>' +
+          '<button class="btn btn-outline btn-sm" id="calTodayBtn">Bugün</button>' +
+          '<button class="btn btn-outline btn-sm" id="calNextMonthBtn" title="Sonraki Ay">&gt;</button>' +
+          '<button class="btn btn-primary btn-sm" id="calAddEventBtn" style="margin-left:6px;">'+ic('plus')+'Yeni Ekle</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="cal-grid">' +
+        '<div class="cal-day-head">Pzt</div>' +
+        '<div class="cal-day-head">Sal</div>' +
+        '<div class="cal-day-head">Çar</div>' +
+        '<div class="cal-day-head">Per</div>' +
+        '<div class="cal-day-head">Cum</div>' +
+        '<div class="cal-day-head weekend">Cmt</div>' +
+        '<div class="cal-day-head weekend">Paz</div>' +
+        gridCells +
+      '</div>' +
+    '</div>' +
+    '<div style="display:flex;flex-direction:column;gap:18px;">' +
+      '<div class="cal-card">' +
+        '<div class="agenda-header">' +
+          '<div>' +
+            '<div style="font-size:11px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:0.5px;">GÜNLÜK AJANDA</div>' +
+            '<div class="agenda-date-lbl">'+formatTurkishDate(selectedDate)+'</div>' +
+          '</div>' +
+          '<button class="btn btn-primary btn-sm" id="agendaAddBtn">'+ic('plus')+'Ekle</button>' +
+        '</div>' +
+        '<div class="agenda-list">' +
+          selectedEventsHtml +
+        '</div>' +
+      '</div>' +
+      '<div class="cal-card" style="padding:16px 18px;">' +
+        '<div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:10px;display:flex;align-items:center;gap:6px;">' +
+          '<span>📌</span> Yaklaşan Hatırlatma & Etkinlikler' +
+        '</div>' +
+        upcomingHtml +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function wireCalendarView(app){
+  const prevBtn = document.getElementById('calPrevMonthBtn');
+  if(prevBtn){
+    prevBtn.onclick = () => {
+      if(state.calCurrentMonth === 0){
+        state.calCurrentMonth = 11;
+        state.calCurrentYear--;
+      } else {
+        state.calCurrentMonth--;
+      }
+      render();
+    };
+  }
+
+  const nextBtn = document.getElementById('calNextMonthBtn');
+  if(nextBtn){
+    nextBtn.onclick = () => {
+      if(state.calCurrentMonth === 11){
+        state.calCurrentMonth = 0;
+        state.calCurrentYear++;
+      } else {
+        state.calCurrentMonth++;
+      }
+      render();
+    };
+  }
+
+  const todayBtn = document.getElementById('calTodayBtn');
+  if(todayBtn){
+    todayBtn.onclick = () => {
+      const now = new Date();
+      state.calCurrentMonth = now.getMonth();
+      state.calCurrentYear = now.getFullYear();
+      state.calSelectedDate = todayStr();
+      render();
+    };
+  }
+
+  app.querySelectorAll('.cal-day-cell').forEach(el => {
+    el.onclick = () => {
+      const d = el.dataset.caldate;
+      if(d){
+        state.calSelectedDate = d;
+        const parts = d.split('-');
+        if(parts.length === 3){
+          state.calCurrentYear = parseInt(parts[0], 10);
+          state.calCurrentMonth = parseInt(parts[1], 10) - 1;
+        }
+        render();
+      }
+    };
+  });
+
+  const addBtn = document.getElementById('calAddEventBtn');
+  if(addBtn) addBtn.onclick = () => openAddCalendarEventModal(state.calSelectedDate);
+
+  const agendaAddBtn = document.getElementById('agendaAddBtn');
+  if(agendaAddBtn) agendaAddBtn.onclick = () => openAddCalendarEventModal(state.calSelectedDate);
+
+  const emptyAddBtn = document.getElementById('emptyAddEvBtn');
+  if(emptyAddBtn) emptyAddBtn.onclick = () => openAddCalendarEventModal(state.calSelectedDate);
+
+  app.querySelectorAll('.quick-jump-date-btn').forEach(btn => {
+    btn.onclick = () => {
+      const d = btn.dataset.date;
+      if(d){
+        state.calSelectedDate = d;
+        const parts = d.split('-');
+        if(parts.length === 3){
+          state.calCurrentYear = parseInt(parts[0], 10);
+          state.calCurrentMonth = parseInt(parts[1], 10) - 1;
+        }
+        render();
+      }
+    };
+  });
+
+  app.querySelectorAll('.agenda-toggle').forEach(chk => {
+    chk.onchange = () => {
+      const id = chk.dataset.evid;
+      const evs = getCalendarEvents();
+      const ev = evs.find(e => e.id === id);
+      if(ev){
+        ev.completed = chk.checked;
+        saveCalendarEvents(evs);
+        render();
+      }
+    };
+  });
+
+  app.querySelectorAll('.del-ev-btn').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.evid;
+      if(confirm('Bu notu/etkinliği silmek istediğinize emin misiniz?')){
+        const evs = getCalendarEvents().filter(e => e.id !== id);
+        saveCalendarEvents(evs);
+        showToast('Etkinlik silindi');
+        render();
+      }
+    };
+  });
+}
+
+function openAddCalendarEventModal(dateStr){
+  const selDate = dateStr || state.calSelectedDate || todayStr();
+
+  const catOptions = CALENDAR_CATEGORIES.map(c =>
+    '<option value="'+c.id+'">'+c.icon+' '+c.label+'</option>'
+  ).join('');
+
+  const content =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+      '<h3 style="margin:0;font-size:16px;font-weight:800;color:var(--ink);">Yeni Not / Etkinlik Ekle</h3>' +
+      '<button class="iconbtn" id="mCloseCalEv" title="Kapat">✕</button>' +
+    '</div>' +
+    '<div style="margin-bottom:14px;">' +
+      '<label style="display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;">Tarih</label>' +
+      '<input type="date" id="evDateInp" value="'+selDate+'" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-weight:700;">' +
+    '</div>' +
+    '<div style="margin-bottom:14px;">' +
+      '<label style="display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;">Başlık</label>' +
+      '<input type="text" id="evTitleInp" placeholder="Örn: 9A Veli Toplantısı, Proje Teslimi, Sınav..." style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:14px;">' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">' +
+      '<div>' +
+        '<label style="display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;">Kategori</label>' +
+        '<select id="evCatInp" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;background:#fff;">' +
+          catOptions +
+        '</select>' +
+      '</div>' +
+      '<div>' +
+        '<label style="display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;">Saat (Opsiyonel)</label>' +
+        '<input type="time" id="evTimeInp" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;">' +
+      '</div>' +
+    '</div>' +
+    '<div style="margin-bottom:18px;">' +
+      '<label style="display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;">Açıklama / Notlar (Opsiyonel)</label>' +
+      '<textarea id="evDescInp" rows="3" placeholder="Varsa toplantı odası, yapılacaklar veya hatırlatma notları..." style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;"></textarea>' +
+    '</div>' +
+    '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
+      '<button class="btn btn-outline" id="evCancelBtn">İptal</button>' +
+      '<button class="btn btn-primary" id="evSaveBtn">Kaydet</button>' +
+    '</div>';
+
+  openModalHtml(content, '460px');
+  document.getElementById('mCloseCalEv').onclick = closeModal;
+  document.getElementById('evCancelBtn').onclick = closeModal;
+
+  document.getElementById('evSaveBtn').onclick = () => {
+    const dVal = document.getElementById('evDateInp').value;
+    const tVal = document.getElementById('evTitleInp').value.trim();
+    const catVal = document.getElementById('evCatInp').value;
+    const timeVal = document.getElementById('evTimeInp').value;
+    const descVal = document.getElementById('evDescInp').value.trim();
+
+    if(!dVal){ showToast('Lütfen tarih seçin'); return; }
+    if(!tVal){ showToast('Lütfen başlık yazın'); return; }
+
+    const newEv = {
+      id: 'ev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      date: dVal,
+      title: tVal,
+      cat: catVal,
+      time: timeVal || '',
+      desc: descVal || '',
+      completed: false,
+      created_at: new Date().toISOString()
+    };
+
+    const evs = getCalendarEvents();
+    evs.push(newEv);
+    saveCalendarEvents(evs);
+    state.calSelectedDate = dVal;
+    closeModal();
+    showToast('Etkinlik ajandaya eklendi');
+    render();
+  };
+}
+
 function renderHome(app){
   const adminBanner = state.isAdmin ?
     '<div style="background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius);padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;color:#8a4d05;">' +
@@ -3729,23 +4669,56 @@ function renderHome(app){
     }
   }
 
+  const activeTab = state.homeTab || 'classes';
+  const navTabsHtml =
+    '<div class="home-nav-tabs">' +
+      '<button class="home-tab-btn '+(activeTab==='classes'?'active':'')+'" data-hometab="classes">'+ic('school')+'Sınıflarım</button>' +
+      '<button class="home-tab-btn '+(activeTab==='schedule'?'active':'')+'" data-hometab="schedule">'+ic('clock')+'Ders Programı</button>' +
+      '<button class="home-tab-btn '+(activeTab==='calendar'?'active':'')+'" data-hometab="calendar">'+ic('calendar')+'Ajanda & Takvim</button>' +
+    '</div>';
+
+  let tabBodyHtml = '';
+  if(activeTab === 'classes'){
+    tabBodyHtml =
+      '<div class="section-title"><span>'+(state.isAdmin?('Tüm Sınıflar ('+state.classes.length+' Sınıf)'):'Sınıflarım')+'</span><span class="line"></span></div>' +
+      filterBar +
+      classGridHtml();
+  } else if(activeTab === 'schedule'){
+    tabBodyHtml = scheduleViewHtml();
+  } else if(activeTab === 'calendar'){
+    tabBodyHtml = calendarViewHtml();
+  }
+
   app.innerHTML =
     adminBanner +
     '<div class="pagehead" style="margin-bottom:14px;"><h2>Hoş geldin, '+escapeHtml(state.username||'')+(state.isAdmin?' (Yönetici)':'')+'</h2></div>' +
-    '<div class="section-title"><span>'+(state.isAdmin?('Tüm Sınıflar ('+state.classes.length+' Sınıf)'):'Sınıflarım')+'</span><span class="line"></span></div>' +
-    filterBar +
-    classGridHtml();
-  if(state.isAdmin){
-    const aBtn = document.getElementById('adminNewUserBtn');
-    if(aBtn) aBtn.onclick = openCreateUserModal;
-    app.querySelectorAll('[data-filtergrade]').forEach(btn=>{
-      btn.onclick = ()=>{
-        state.adminGradeFilter = btn.dataset.filtergrade;
-        render();
-      };
-    });
+    navTabsHtml +
+    tabBodyHtml;
+
+  app.querySelectorAll('.home-tab-btn').forEach(btn => {
+    btn.onclick = () => {
+      state.homeTab = btn.dataset.hometab;
+      render();
+    };
+  });
+
+  if(activeTab === 'classes'){
+    if(state.isAdmin){
+      const aBtn = document.getElementById('adminNewUserBtn');
+      if(aBtn) aBtn.onclick = openCreateUserModal;
+      app.querySelectorAll('[data-filtergrade]').forEach(btn=>{
+        btn.onclick = ()=>{
+          state.adminGradeFilter = btn.dataset.filtergrade;
+          render();
+        };
+      });
+    }
+    wireClassCards(app);
+  } else if(activeTab === 'schedule'){
+    wireScheduleView(app);
+  } else if(activeTab === 'calendar'){
+    wireCalendarView(app);
   }
-  wireClassCards(app);
 }
 function classGridHtml(){
   let html = '<div class="classgrid">';
