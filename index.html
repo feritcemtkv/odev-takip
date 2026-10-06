@@ -1719,23 +1719,52 @@ function exportClassBackup(){
   }
 
   if(!g12 && cls.perfTasks.length){
-    const rows = [];
+    const perfAoa = [];
+    const perfHeader = ['No', 'Ad Soyad'];
+    cls.perfTasks.forEach(t=>{
+      perfHeader.push(t.label || ('Performans #' + t.slot_no));
+    });
+    if(cls.perfTasks.length > 1){
+      perfHeader.push('Ortalama');
+    }
+    perfAoa.push(perfHeader);
+
     sorted.forEach(s=>{
+      const row = [s.no || '', s.name];
+      const grades = [];
       cls.perfTasks.forEach(t=>{
         const total = rubricTotal(s.id, t.label);
-        rows.push({
-          'No': s.no||'',
-          'Ad Soyad': s.name,
-          'Performans Ödevi': t.label,
-          'Verilme Tarihi': t.given_date ? fmtDate(t.given_date) : '',
-          'Kontrol Tarihi': t.due_date ? fmtDate(t.due_date) : '',
-          'Puan': total.sum,
-          'Tam Puan': total.max,
-          'Not': total.grade??''
-        });
+        if(total.grade != null){
+          row.push(total.grade);
+          grades.push(total.grade);
+        } else {
+          row.push('-');
+        }
       });
+      if(cls.perfTasks.length > 1){
+        const avg = grades.length ? Math.round((grades.reduce((a,b)=>a+b,0)/grades.length)*10)/10 : '-';
+        row.push(avg);
+      }
+      perfAoa.push(row);
     });
-    addSheet(wb, rows, 'Performans');
+
+    const safePerfAoa = perfAoa.map(r => r.map(c => sanitizeCell(c)));
+    const wsPerf = XLSX.utils.aoa_to_sheet(safePerfAoa);
+
+    const perfCols = [
+      { wch: 10 },
+      { wch: 28 },
+    ];
+    cls.perfTasks.forEach(t=>{
+      const title = String(t.label || ('Performans #' + t.slot_no));
+      perfCols.push({ wch: Math.min(Math.max(title.length + 4, 16), 45) });
+    });
+    if(cls.perfTasks.length > 1){
+      perfCols.push({ wch: 14 });
+    }
+    wsPerf['!cols'] = perfCols;
+
+    XLSX.utils.book_append_sheet(wb, wsPerf, 'Performans');
   }
 
   if(showTytAyt){
