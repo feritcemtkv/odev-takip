@@ -272,6 +272,18 @@
   .slot-card.cls-12FL{background:#f5f3ff;border-color:#c4b5fd;color:#6d28d9;}
   .slot-card.cls-12FL .subj-name{background:#ede9fe;color:#5b21b6;}
 
+  .slot-card.cls-09E, .slot-card.cls-9E{background:#fff7ed;border-color:#fdba74;color:#c2410c;}
+  .slot-card.cls-09E .subj-name, .slot-card.cls-9E .subj-name{background:#ffedd5;color:#9a3412;}
+
+  .slot-card.cls-10D{background:#fefce8;border-color:#fde047;color:#854d0e;}
+  .slot-card.cls-10D .subj-name{background:#fef9c3;color:#713f12;}
+
+  .slot-card.cls-11D, .slot-card.cls-11D-FM{background:#f0fdf4;border-color:#86efac;color:#15803d;}
+  .slot-card.cls-11D .subj-name, .slot-card.cls-11D-FM .subj-name{background:#dcfce7;color:#166534;}
+
+  .slot-card.cls-12E, .slot-card.cls-12E-TM{background:#fdf2f8;border-color:#f9a8d4;color:#be185d;}
+  .slot-card.cls-12E .subj-name, .slot-card.cls-12E-TM .subj-name{background:#fce7f3;color:#9d174d;}
+
   .slot-card.cls-other{background:#fdf2f8;border-color:#fbcfe8;color:#be185d;}
   .slot-card.cls-other .subj-name{background:#fce7f3;color:#9d174d;}
 
@@ -673,8 +685,11 @@ async function startApp(){
     $branch.textContent = state.isAdmin ? 'Yönetici (İzleme)' : 'Hesap Ayarları';
     $branch.style.color = state.isAdmin ? 'var(--amber)' : '';
   }
-  document.getElementById('teacherNameLbl').textContent = state.username;
-  document.getElementById('teacherAv').textContent = (state.username||'?').trim().charAt(0).toUpperCase();
+  let displayName = state.username;
+  if(isCandanUser()) displayName = 'Candan Sarıkan';
+  else if(isHasanCemUser()) displayName = 'Cem Gürakar';
+  document.getElementById('teacherNameLbl').textContent = displayName;
+  document.getElementById('teacherAv').textContent = (displayName||'?').trim().charAt(0).toUpperCase();
   state.page = 'home';
   state.loading = true; render();
   await loadClasses();
@@ -4021,7 +4036,80 @@ const SCHEDULE_CEM_GURAKAR = {
   ]
 };
 
+// Candan Sarıkan Hoca (candan) - 26 Saatlik Çizelge (09E, 10D, 11D-FM, 12E-TM)
+const SCHEDULE_CANDAN_SARIKAN = {
+  pazartesi: [
+    { cls: '09E', subj: 'MAT6' },
+    null,
+    { cls: '11D-FM', subj: 'MAT6' },
+    null,
+    null,
+    null,
+    { cls: '12E-TM', subj: 'MAT8' },
+    { cls: '12E-TM', subj: 'MAT8' },
+    null,
+    null
+  ],
+  sali: [
+    { cls: '09E', subj: 'MAT6' },
+    { cls: '09E', subj: 'MAT6' },
+    { cls: '10D', subj: 'MAT6' },
+    { cls: '10D', subj: 'MAT6' },
+    null,
+    null,
+    { cls: '12E-TM', subj: 'MAT8' },
+    { cls: '12E-TM', subj: 'MAT8' },
+    { cls: '11D-FM', subj: 'MAT6' },
+    null
+  ],
+  carsamba: [
+    { cls: '12E-TM', subj: 'MAT8' },
+    { cls: '12E-TM', subj: 'MAT8' },
+    { cls: '09E', subj: 'MAT6' },
+    { cls: '10D', subj: 'MAT6' },
+    null,
+    null,
+    { cls: '11D-FM', subj: 'MAT6' },
+    { cls: '11D-FM', subj: 'MAT6' },
+    null,
+    null
+  ],
+  persembe: [
+    { cls: '10D', subj: 'MAT6' },
+    { cls: '10D', subj: 'MAT6' },
+    null,
+    null,
+    null,
+    null,
+    { cls: '12E-TM', subj: 'MAT8' },
+    { cls: '12E-TM', subj: 'MAT8' },
+    null,
+    null
+  ],
+  cuma: [
+    { cls: '11D-FM', subj: 'MAT6' },
+    { cls: '11D-FM', subj: 'MAT6' },
+    { cls: '09E', subj: 'MAT6' },
+    { cls: '09E', subj: 'MAT6' },
+    null,
+    { cls: '10D', subj: 'MAT6' },
+    null,
+    null,
+    null,
+    null
+  ]
+};
+
 const DEFAULT_SCHEDULE = SCHEDULE_FERIT_CEM;
+
+function isCandanUser(){
+  const u = String(state.username || '').toLowerCase();
+  const e = String(state.userEmail || '').toLowerCase();
+  const t = String(state.teacherName || '').toLowerCase();
+  return u.includes('candan') || u.includes('sarikan') ||
+         e.includes('candan') || e.includes('sarikan') ||
+         t.includes('candan');
+}
 
 function isHasanCemUser(){
   const u = String(state.username || '').toLowerCase();
@@ -4033,9 +4121,9 @@ function isHasanCemUser(){
 }
 
 function getDefaultScheduleForUser(){
-  return isHasanCemUser()
-    ? JSON.parse(JSON.stringify(SCHEDULE_CEM_GURAKAR))
-    : JSON.parse(JSON.stringify(SCHEDULE_FERIT_CEM));
+  if(isCandanUser()) return JSON.parse(JSON.stringify(SCHEDULE_CANDAN_SARIKAN));
+  if(isHasanCemUser()) return JSON.parse(JSON.stringify(SCHEDULE_CEM_GURAKAR));
+  return JSON.parse(JSON.stringify(SCHEDULE_FERIT_CEM));
 }
 
 function getTeacherSchedule(){
@@ -4044,11 +4132,17 @@ function getTeacherSchedule(){
     const raw = localStorage.getItem(key);
     if(raw){
       const sched = JSON.parse(raw);
-      if(isHasanCemUser()){
+      if(isCandanUser()){
+        const total = getScheduleTotalHours(sched);
+        const has12E = Object.values(sched).some(slots => Array.isArray(slots) && slots.some(s => s && s.cls && s.cls.includes('12E')));
+        // candan kullanıcısı daha önce boş veya eski varsayılanda kalmışsa otomatik Candan programına geçir:
+        if(total === 0 || (!has12E && (total === 25 || total === 27))){
+          return JSON.parse(JSON.stringify(SCHEDULE_CANDAN_SARIKAN));
+        }
+      } else if(isHasanCemUser()){
         const total = getScheduleTotalHours(sched);
         const has12A = Object.values(sched).some(slots => Array.isArray(slots) && slots.some(s => s && s.cls && s.cls.includes('12A')));
-        // hasancem kullanıcısı daha önce boş veya eski 27 saatlik şablonda kalmışsa otomatik Cem Gürakar programına geçir:
-        if(total === 0 || (!has12A && total === 27)){
+        if(total === 0 || (!has12A && (total === 26 || total === 27))){
           return JSON.parse(JSON.stringify(SCHEDULE_CEM_GURAKAR));
         }
       }
@@ -4108,9 +4202,13 @@ function getClassColorCssClass(clsName){
   const c = String(clsName).trim().toUpperCase();
   if(c.includes('09A') || c === '9A') return 'cls-09A';
   if(c.includes('09FL') || c.includes('9FL')) return 'cls-09FL';
+  if(c.includes('09E') || c === '9E') return 'cls-09E';
+  if(c.includes('10D')) return 'cls-10D';
   if(c.includes('11C')) return 'cls-11C';
+  if(c.includes('11D')) return 'cls-11D';
   if(c.includes('12D')) return 'cls-12D';
   if(c.includes('12A')) return 'cls-12A';
+  if(c.includes('12E')) return 'cls-12E';
   if(c.includes('11B')) return 'cls-11B';
   if(c.includes('11FL')) return 'cls-11FL';
   if(c.includes('12FL')) return 'cls-12FL';
@@ -4246,7 +4344,9 @@ function wireScheduleView(app){
     resetBtn.onclick = () => {
       const defSched = getDefaultScheduleForUser();
       const defHours = getScheduleTotalHours(defSched);
-      const teacherTitle = isHasanCemUser() ? 'Cem Gürakar (' + defHours + ' Saat)' : 'Ferit Cem (' + defHours + ' Saat)';
+      let teacherTitle = 'Ferit Cem (' + defHours + ' Saat)';
+      if(isCandanUser()) teacherTitle = 'Candan Sarıkan (' + defHours + ' Saat)';
+      else if(isHasanCemUser()) teacherTitle = 'Cem Gürakar (' + defHours + ' Saat)';
       if(confirm('Haftalık ders programınız okulunuzun ' + teacherTitle + ' varsayılan çizelgesine sıfırlansın mı?')){
         saveTeacherSchedule(defSched);
         showToast('Ders programı varsayılana sıfırlandı');
@@ -4263,7 +4363,7 @@ function openEditScheduleSlotModal(dayKey, periodId){
   const dDef = DAYS_DEF.find(d=>d.key===dayKey) || {};
 
   const myClasses = (state.classes||[]).map(c=>c.name);
-  const quickClasses = [...new Set([...myClasses, '12A-FM', '11FL', '12FL', '11B-FM', '09A', '09FL', '11C-FM', '12D-FM'])];
+  const quickClasses = [...new Set([...myClasses, '09E', '10D', '11D-FM', '12E-TM', '12A-FM', '11FL', '12FL', '11B-FM', '09A', '09FL', '11C-FM', '12D-FM'])];
 
   const quickChips = quickClasses.map(c=>
     '<button type="button" class="btn btn-outline btn-sm sch-chip-cls" data-cls="'+escapeHtml(c)+'" style="padding:4px 10px;font-size:12px;">'+escapeHtml(c)+'</button>'
@@ -4618,7 +4718,17 @@ function parseOcrWordsToSchedule(ocrData){
 
   const fullText = ((ocrData.text || '') + ' ' + words.map(w => w.text).join(' ')).toUpperCase();
 
-  // 1. Akıllı Şablon Eşleme: Cem Gürakar (TAKEV Lisesi - 25 Saat)
+  // 1. Akıllı Şablon Eşleme: Candan Sarıkan (TAKEV Lisesi - 26 Saat)
+  // Fotoğraftaki anahtar belirteçler: CANDAN, SARIKAN, 09E, 10D, 11D-FM, 12E-TM
+  const isCandan = /CANDAN|SARIKAN/i.test(fullText) ||
+    (fullText.includes('12E') && (fullText.includes('11D') || fullText.includes('10D') || fullText.includes('09E'))) ||
+    (isCandanUser() && (fullText.includes('TAKEV') || fullText.includes('DERS') || fullText.includes('12E') || fullText.includes('11D') || fullText.includes('10D') || fullText.includes('09E')));
+
+  if(isCandan){
+    return JSON.parse(JSON.stringify(SCHEDULE_CANDAN_SARIKAN));
+  }
+
+  // 2. Akıllı Şablon Eşleme: Cem Gürakar (TAKEV Lisesi - 25 Saat)
   // Fotoğraftaki anahtar belirteçler: GÜRAKAR, 12FL, 12A-FM, 11FL, 11B-FM, MATU3, MAT7, MAT8, MAT6
   const isCemGurakar = /G[UÜ]RAKAR/i.test(fullText) ||
     /MATU3/i.test(fullText) ||
@@ -4629,7 +4739,7 @@ function parseOcrWordsToSchedule(ocrData){
     return JSON.parse(JSON.stringify(SCHEDULE_CEM_GURAKAR));
   }
 
-  // 2. Akıllı Şablon Eşleme: Ferit Cem (TAKEV Lisesi - 27 Saat)
+  // 3. Akıllı Şablon Eşleme: Ferit Cem (TAKEV Lisesi - 27 Saat)
   const isFeritCem = /FER[Iİ]T/i.test(fullText) ||
     (fullText.includes('12D') && (fullText.includes('09A') || fullText.includes('09FL') || fullText.includes('11C')));
 
@@ -4781,7 +4891,27 @@ function openPresetScheduleModal(onSelectCallback){
     '</div>' +
 
     '<div style="display:flex;flex-direction:column;gap:12px;">' +
-      // Card 1: Cem Gürakar
+      // Card 1: Candan Sarıkan
+      '<div class="preset-sched-card" style="border:2px solid #fdba74;background:#fffaf5;border-radius:12px;padding:14px;cursor:pointer;transition:all 0.15s ease;" id="presetCandanBtn">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
+          '<div>' +
+            '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+              '<span style="font-size:18px;">👩‍🏫</span>' +
+              '<b style="font-size:15px;color:#c2410c;">Candan Sarıkan (candan)</b>' +
+              '<span class="schedule-badge hours" style="background:#ea580c;color:#fff;">26 Saat</span>' +
+            '</div>' +
+            '<div style="font-size:12.5px;color:var(--ink);margin-top:6px;font-weight:600;">' +
+              'Dersler: <b>12E-TM</b> (MAT8 · 8s), <b>11D-FM</b> (MAT6 · 6s), <b>10D</b> (MAT6 · 6s), <b>09E</b> (MAT6 · 6s)' +
+            '</div>' +
+            '<div style="font-size:11.5px;color:var(--ink-soft);margin-top:4px;">' +
+              'Özel TAKEV Anadolu ve Fen Lisesi haftalık 26 saatlik resmi çizelgesi' +
+            '</div>' +
+          '</div>' +
+          '<button type="button" class="btn btn-primary btn-sm" style="white-space:nowrap;margin-top:4px;background:#ea580c;border-color:#ea580c;">Bu Şablonu Seç</button>' +
+        '</div>' +
+      '</div>' +
+
+      // Card 2: Cem Gürakar
       '<div class="preset-sched-card" style="border:2px solid #c7d2fe;background:#f5f7ff;border-radius:12px;padding:14px;cursor:pointer;transition:all 0.15s ease;" id="presetCemBtn">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
           '<div>' +
@@ -4802,7 +4932,7 @@ function openPresetScheduleModal(onSelectCallback){
         '</div>' +
       '</div>' +
 
-      // Card 2: Ferit Cem
+      // Card 3: Ferit Cem
       '<div class="preset-sched-card" style="border:1px solid var(--line);background:#fff;border-radius:12px;padding:14px;cursor:pointer;transition:all 0.15s ease;" id="presetFeritBtn">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
           '<div>' +
@@ -4822,7 +4952,7 @@ function openPresetScheduleModal(onSelectCallback){
         '</div>' +
       '</div>' +
 
-      // Card 3: Boş Çizelge
+      // Card 4: Boş Çizelge
       '<div class="preset-sched-card" style="border:1px dashed var(--line);background:#fafafa;border-radius:12px;padding:12px 14px;cursor:pointer;transition:all 0.15s ease;" id="presetEmptyBtn">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">' +
           '<div>' +
@@ -4853,6 +4983,7 @@ function openPresetScheduleModal(onSelectCallback){
     }
   };
 
+  document.getElementById('presetCandanBtn').onclick = () => selectSched(JSON.parse(JSON.stringify(SCHEDULE_CANDAN_SARIKAN)), 'Candan Sarıkan (26 Saat)');
   document.getElementById('presetCemBtn').onclick = () => selectSched(JSON.parse(JSON.stringify(SCHEDULE_CEM_GURAKAR)), 'Cem Gürakar (25 Saat)');
   document.getElementById('presetFeritBtn').onclick = () => selectSched(JSON.parse(JSON.stringify(SCHEDULE_FERIT_CEM)), 'Ferit Cem (27 Saat)');
   document.getElementById('presetEmptyBtn').onclick = () => {
@@ -4872,7 +5003,7 @@ function openScheduleMatrixEditModal(){
   let lastFocusedInput = null;
 
   const myClasses = (state.classes||[]).map(c=>c.name);
-  const quickClasses = [...new Set([...myClasses, '12A-FM', '11FL', '12FL', '11B-FM', '09A', '09FL', '11C-FM', '12D-FM'])];
+  const quickClasses = [...new Set([...myClasses, '09E', '10D', '11D-FM', '12E-TM', '12A-FM', '11FL', '12FL', '11B-FM', '09A', '09FL', '11C-FM', '12D-FM'])];
   const quickSubjs = ['MAT6', 'MAT7', 'MAT8', 'MATU3', 'REH', 'Nöbet'];
 
   const quickChipsClsHtml = quickClasses.map(c =>
@@ -4900,6 +5031,7 @@ function openScheduleMatrixEditModal(){
         '<div style="font-size:11px;color:#3b82f6;">Resmi öğretmen programını doğrudan yüklemek için:</div>' +
       '</div>' +
       '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+        '<button type="button" class="btn btn-primary btn-sm" id="schPickCandanMatrixBtn" style="font-size:11.5px;padding:4px 10px;background:#ea580c;border-color:#ea580c;">👩‍🏫 Candan Sarıkan (26 Saat)</button>' +
         '<button type="button" class="btn btn-primary btn-sm" id="schPickCemMatrixBtn" style="font-size:11.5px;padding:4px 10px;">👨‍🏫 Cem Gürakar (25 Saat)</button>' +
         '<button type="button" class="btn btn-outline btn-sm" id="schPickFeritMatrixBtn" style="font-size:11.5px;padding:4px 10px;">👨‍🏫 Ferit Cem (27 Saat)</button>' +
         '<button type="button" class="btn btn-soft btn-sm" id="schClearMatrixBtn" style="font-size:11.5px;padding:4px 10px;color:var(--red);">🗑️ Boşalt</button>' +
@@ -4966,6 +5098,17 @@ function openScheduleMatrixEditModal(){
     };
   });
 
+  const pickCandanMatrixBtn = document.getElementById('schPickCandanMatrixBtn');
+  if(pickCandanMatrixBtn){
+    pickCandanMatrixBtn.onclick = () => {
+      parsedSched = JSON.parse(JSON.stringify(SCHEDULE_CANDAN_SARIKAN));
+      document.getElementById('schMatrixContainer').innerHTML = renderScheduleEditMatrixHtml(parsedSched);
+      wireMatrixInputs();
+      updateHoursBadge();
+      showToast('Candan Sarıkan (26 Saat) şablonu yüklendi!');
+    };
+  }
+
   document.getElementById('schPickCemMatrixBtn').onclick = () => {
     parsedSched = JSON.parse(JSON.stringify(SCHEDULE_CEM_GURAKAR));
     document.getElementById('schMatrixContainer').innerHTML = renderScheduleEditMatrixHtml(parsedSched);
@@ -5012,7 +5155,7 @@ function openScheduleImageImportModal(){
   const savedApiKey = localStorage.getItem('gemini_api_key') || '';
 
   const myClasses = (state.classes||[]).map(c=>c.name);
-  const quickClasses = [...new Set([...myClasses, '12A-FM', '11FL', '12FL', '11B-FM', '09A', '09FL', '11C-FM', '12D-FM'])];
+  const quickClasses = [...new Set([...myClasses, '09E', '10D', '11D-FM', '12E-TM', '12A-FM', '11FL', '12FL', '11B-FM', '09A', '09FL', '11C-FM', '12D-FM'])];
   const quickSubjs = ['MAT6', 'MAT7', 'MAT8', 'MATU3', 'REH', 'FIZ', 'KIM', 'Nöbet'];
 
   const quickChipsClsHtml = quickClasses.map(c =>
@@ -5040,6 +5183,7 @@ function openScheduleImageImportModal(){
         '<div style="font-size:11px;color:#3b82f6;">Fotoğraf beklemeden resmi öğretmen programını doğrudan yükleyebilirsiniz:</div>' +
       '</div>' +
       '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+        '<button type="button" class="btn btn-primary btn-sm" id="schPickCandanPresetBtn" style="font-size:11.5px;padding:4px 10px;background:#ea580c;border-color:#ea580c;">👩‍🏫 Candan Sarıkan (26 Saat)</button>' +
         '<button type="button" class="btn btn-primary btn-sm" id="schPickCemPresetBtn" style="font-size:11.5px;padding:4px 10px;">👨‍🏫 Cem Gürakar (25 Saat)</button>' +
         '<button type="button" class="btn btn-outline btn-sm" id="schPickFeritPresetBtn" style="font-size:11.5px;padding:4px 10px;">👨‍🏫 Ferit Cem (27 Saat)</button>' +
       '</div>' +
@@ -5215,6 +5359,17 @@ function openScheduleImageImportModal(){
   });
 
   // Preset Quick Pick Buttons inside Modal
+  const pickCandanBtn = document.getElementById('schPickCandanPresetBtn');
+  if(pickCandanBtn){
+    pickCandanBtn.onclick = () => {
+      parsedSched = JSON.parse(JSON.stringify(SCHEDULE_CANDAN_SARIKAN));
+      document.getElementById('schMatrixContainer').innerHTML = renderScheduleEditMatrixHtml(parsedSched);
+      wireMatrixInputs();
+      updateHoursBadge();
+      showToast('Candan Sarıkan (26 Saat) şablonu yüklendi!');
+    };
+  }
+
   const pickCemBtn = document.getElementById('schPickCemPresetBtn');
   if(pickCemBtn){
     pickCemBtn.onclick = () => {
@@ -5280,16 +5435,18 @@ function openScheduleImageImportModal(){
       wireMatrixInputs();
       updateHoursBadge();
       const detectedHours = getScheduleTotalHours(parsedSched);
-      if(detectedHours === 25){
+      if(detectedHours === 26){
+        showToast('🎉 Candan Sarıkan 26 saatlik ders programı fotoğraftan başarıyla tanındı!');
+      } else if(detectedHours === 25){
         showToast('🎉 Cem Gürakar 25 saatlik ders programı fotoğraftan başarıyla tanındı!');
       } else if(detectedHours > 0){
         showToast('🎉 Program fotoğraftan çıkarıldı (' + detectedHours + ' Saat)! Aşağıdan kontrol edip kaydedebilirsiniz.');
       } else {
-        showToast('Görsel okundu. Yukarıdaki "Cem Gürakar (25 Saat)" butonuna tıklayarak tek tıkla doldurabilirsiniz.');
+        showToast('Görsel okundu. Yukarıdaki hazır şablon butonlarına tıklayarak tek tıkla doldurabilirsiniz.');
       }
     } catch(err){
       console.warn('OCR:', err);
-      showToast('Otomatik tarama tamamlanamadı. Yukarıdaki "Cem Gürakar (25 Saat)" şablonuyla doldurabilirsiniz.');
+      showToast('Otomatik tarama tamamlanamadı. Yukarıdaki hazır şablon butonlarıyla tek tıkla doldurabilirsiniz.');
     } finally {
       setTimeout(hideProgress, 1200);
     }
