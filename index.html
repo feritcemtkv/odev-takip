@@ -6536,24 +6536,9 @@ function renderRoster(app){
   if(!g12){
     const exWord = examWord(cls.name), exWordPl = examWordPlural(cls.name);
     document.getElementById('quizMenuBtn').onclick = ()=>{
-      if(state.isAdmin){
-        openActionMenu('KDS & Quiz & Sınav', [
-          {label:'📝 1. Sınav Notları', icon:'clipboard', onClick:()=>{ openOrAddOfficialExam('1. Sınav'); }},
-          {label:'📝 2. Sınav Notları', icon:'clipboard', onClick:()=>{ openOrAddOfficialExam('2. Sınav'); }},
-          {label:'📋 Sınav Notlarını İncele', icon:'clipboard', onClick:()=>{ state.quizPickerTab='all'; state.view='quiz_picker'; render(); }},
-          {label:'📊 Sınav Notları (Tüm Sınıf)', icon:'target', onClick:()=>{ state.quizPickerTab='matrix'; state.view='quiz_picker'; render(); }},
-        ]);
-      } else {
-        openActionMenu('KDS & Quiz & Sınav', [
-          {label:'➕ Yeni Quiz Ekle', icon:'plus', onClick:()=>{ openAddQuizModal('quiz'); }},
-          {label:'➕ Yeni KDS Ekle', icon:'plus', onClick:()=>{ openAddQuizModal('kds'); }},
-          {label:'📝 1. Sınav Notları', icon:'clipboard', onClick:()=>{ openOrAddOfficialExam('1. Sınav'); }},
-          {label:'📝 2. Sınav Notları', icon:'clipboard', onClick:()=>{ openOrAddOfficialExam('2. Sınav'); }},
-          {label:'📋 Sınav Notlarını Gir / İncele', icon:'clipboard', onClick:()=>{ state.quizPickerTab='all'; state.view='quiz_picker'; render(); }},
-          {label:'📊 Sınav Notları (Tüm Sınıf)', icon:'target', onClick:()=>{ state.quizPickerTab='matrix'; state.view='quiz_picker'; render(); }},
-          {label:'✏️ Başlıkları Düzenle / Sil', icon:'file', onClick:()=>{ state.view='quizzes'; render(); }},
-        ]);
-      }
+      state.quizPickerTab = 'all';
+      state.view = 'quiz_picker';
+      render();
     };
     document.getElementById('perfMenuBtn').onclick = ()=>{
       if(state.isAdmin){
