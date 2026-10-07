@@ -627,6 +627,34 @@ function examBadge(label, size = 'normal'){
   }
 }
 
+function getExamCategory(label){
+  const clean = formatExamLabel(label || '').toLowerCase();
+  if(/kds/i.test(clean)) return 'kds';
+  if(/s[ıi]nav|yaz[ıi]l[ıi]/i.test(clean)) return 'sinav';
+  return 'quiz';
+}
+
+function extractExamNumber(label){
+  const m = String(label || '').match(/(\d+)/);
+  return m ? parseInt(m[1], 10) : 999;
+}
+
+function sortQuizzes(list){
+  if(!Array.isArray(list)) return [];
+  const catOrder = { 'quiz': 1, 'kds': 2, 'sinav': 3 };
+  return [...list].sort((a, b) => {
+    const catA = getExamCategory(a.label);
+    const catB = getExamCategory(b.label);
+    if(catOrder[catA] !== catOrder[catB]){
+      return catOrder[catA] - catOrder[catB];
+    }
+    const numA = extractExamNumber(a.label);
+    const numB = extractExamNumber(b.label);
+    if(numA !== numB) return numA - numB;
+    return (a.label || '').localeCompare(b.label || '', 'tr');
+  });
+}
+
 function getLocalCounselorMap(){
   try{ return JSON.parse(localStorage.getItem('takip_danisman_map')||'{}'); }
   catch(e){ return {}; }
@@ -1910,21 +1938,23 @@ function exportClassBackup(){
   }
 
   if(!g12 && cls.quizzes.length){
+    const sortedQuizzes = sortQuizzes(cls.quizzes || []);
     const qzAoa = [];
     const qzHeader = ['No', 'Ad Soyad'];
-    cls.quizzes.forEach(q=>{
+    sortedQuizzes.forEach(q=>{
+      const title = formatExamLabel(q.label);
       if(isQuizExam(q.label)){
-        qzHeader.push(q.label + ' (Puan)');
+        qzHeader.push(title + ' (Puan)');
       } else {
-        qzHeader.push(q.label + ' Net');
-        qzHeader.push(q.label + ' (D/Y/B)');
+        qzHeader.push(title + ' Net');
+        qzHeader.push(title + ' (D/Y/B)');
       }
     });
     qzAoa.push(qzHeader);
 
     sorted.forEach(s=>{
       const row = [s.no || '', s.name];
-      cls.quizzes.forEach(q=>{
+      sortedQuizzes.forEach(q=>{
         const v = (cls.quizScores[s.id]||{})[q.slot_no] || {};
         if(isQuizExam(q.label)){
           row.push(v.score != null ? v.score : '-');
@@ -1948,7 +1978,7 @@ function exportClassBackup(){
     const safeQzAoa = qzAoa.map(r => r.map(c => sanitizeCell(c)));
     const wsQz = XLSX.utils.aoa_to_sheet(safeQzAoa);
     const qzCols = [{ wch: 10 }, { wch: 28 }];
-    cls.quizzes.forEach(q=>{
+    sortedQuizzes.forEach(q=>{
       if(isQuizExam(q.label)){
         qzCols.push({ wch: 14 });
       } else {
@@ -2128,13 +2158,16 @@ function exportParentReport(sid){
   if(hwRows.length || !g12) addSheet(wb, hwRows, 'Ödev Geçmişi');
 
   if(!g12 && cls.quizzes.length){
-    const rows = cls.quizzes.map(q=>{
+    const sortedQuizzes = sortQuizzes(cls.quizzes || []);
+    const rows = sortedQuizzes.map(q=>{
       const v = (cls.quizScores[s.id]||{})[q.slot_no] || {};
+      const cat = getExamCategory(q.label);
       const isQuiz = isQuizExam(q.label);
+      const typeLabel = (cat === 'quiz') ? 'Quiz' : ((cat === 'sinav') ? 'Yazılı Sınav' : 'KDS');
       if(isQuiz){
         return {
-          'Sınav Türü': 'Quiz',
-          'Sınav Adı': q.label,
+          'Sınav Türü': typeLabel,
+          'Sınav Adı': formatExamLabel(q.label),
           'Puan': v.score != null ? v.score : '',
           'Doğru': '',
           'Yanlış': '',
@@ -2145,8 +2178,8 @@ function exportParentReport(sid){
       const d = v.dogru, y = v.yanlis, b = v.bos;
       const net = (d != null || y != null) ? Number(((d || 0) - ((y || 0) / 4)).toFixed(2)) : '';
       return {
-        'Sınav Türü': 'KDS',
-        'Sınav Adı': q.label,
+        'Sınav Türü': typeLabel,
+        'Sınav Adı': formatExamLabel(q.label),
         'Puan': '',
         'Doğru': d??'',
         'Yanlış': y??'',
@@ -2377,7 +2410,7 @@ async function loadClassDetail(classId){
   state.cls = {
     id: classId, name: classObj?classObj.name:'',
     students: students||[], homeworks: homeworks||[], hwStatus,
-    quizzes: quizzes||[], quizScores,
+    quizzes: sortQuizzes(quizzes||[]), quizScores,
     perfTasks: effectivePerfTasks, rubrics, rubricScores,
     tytExams: (denemeExams||[]).filter(e=>e.exam_type==='tyt'),
     aytExams: (denemeExams||[]).filter(e=>e.exam_type==='ayt'),
@@ -2792,6 +2825,7 @@ async function createQuizWithLabel(label){
   }
   const created = (data && data[0]) || { class_id: state.cls.id, slot_no: nextSlot, label: label.trim() };
   state.cls.quizzes.push(created);
+  state.cls.quizzes = sortQuizzes(state.cls.quizzes);
   logActivity('"' + label.trim() + '" sınavını ekledi');
   return created;
 }
@@ -2818,11 +2852,39 @@ function openAddQuizModal(defaultType = 'quiz', onCreatedCallback){
   let suggested = suggestNextQuizLabel(currentType);
 
   function getChipsHtml(t){
+    const quizzes = (state.cls && state.cls.quizzes) || [];
     if(t === 'quiz' || t === 'mini'){
-      const chips = ['Quiz 1', 'Quiz 2', 'Quiz 3', 'Quiz 4', 'Quiz 5', '1. Sınav', '2. Sınav'];
+      let maxN = 0;
+      quizzes.forEach(q => {
+        if(getExamCategory(q.label) === 'quiz'){
+          const n = extractExamNumber(q.label);
+          if(n < 900) maxN = Math.max(maxN, n);
+        }
+      });
+      const nextN = maxN + 1;
+      const chips = [
+        'Quiz ' + nextN,
+        'Quiz ' + (nextN + 1),
+        'Quiz ' + (nextN + 2),
+        '1. Sınav',
+        '2. Sınav'
+      ];
       return chips.map(c => '<button type="button" class="btn btn-outline btn-sm qz-preset-chip" data-v="'+escapeHtml(c)+'" style="padding:3px 9px;font-size:11.5px;font-weight:700;">'+escapeHtml(c)+'</button>').join('');
     } else {
-      const chips = ['KDS 1', 'KDS 2', 'KDS 3', 'KDS 4', 'KDS 5', 'KDS 6'];
+      let maxN = 0;
+      quizzes.forEach(q => {
+        if(getExamCategory(q.label) === 'kds'){
+          const n = extractExamNumber(q.label);
+          if(n < 900) maxN = Math.max(maxN, n);
+        }
+      });
+      const nextN = maxN + 1;
+      const chips = [
+        'KDS ' + nextN,
+        'KDS ' + (nextN + 1),
+        'KDS ' + (nextN + 2),
+        'KDS ' + (nextN + 3)
+      ];
       return chips.map(c => '<button type="button" class="btn btn-outline btn-sm qz-preset-chip" data-v="'+escapeHtml(c)+'" style="padding:3px 9px;font-size:11.5px;font-weight:700;">'+escapeHtml(c)+'</button>').join('');
     }
   }
@@ -2924,6 +2986,7 @@ async function renameQuiz(slotNo, label){
   const q = state.cls.quizzes.find(x=>x.slot_no===slotNo);
   const old = q?q.label:null;
   if(q) q.label = label;
+  state.cls.quizzes = sortQuizzes(state.cls.quizzes);
   await sb.from('quizzes').update({label}).eq('class_id', state.cls.id).eq('slot_no', slotNo);
   if(old && old!==label) logActivity('"'+old+'" öğesini "'+label+'" olarak yeniden adlandırdı');
   showToast('Kaydedildi');
@@ -2933,7 +2996,7 @@ async function deleteQuiz(slotNo){
   const q = state.cls.quizzes.find(x=>x.slot_no===slotNo);
   const label = q?q.label:('Sınav #'+slotNo);
   if(!confirm('"' + label + '" silinsin mi? Öğrencilerin bu sınava ait notları da silinir.')) return;
-  state.cls.quizzes = state.cls.quizzes.filter(x=>x.slot_no!==slotNo);
+  state.cls.quizzes = sortQuizzes(state.cls.quizzes.filter(x=>x.slot_no!==slotNo));
   render();
   const ids = state.cls.students.map(s=>s.id);
   if(ids.length) await sb.from('quiz_scores').delete().eq('slot_no', slotNo).in('student_id', ids);
@@ -3050,6 +3113,7 @@ async function addQuizFromExcel(file){
     const { data: qData, error: qErr } = await sb.from('quizzes').insert({class_id:state.cls.id, slot_no:nextSlot, label:label.trim()}).select();
     if(qErr){ showToast('Hata: '+qErr.message); return; }
     state.cls.quizzes.push(qData[0]);
+    state.cls.quizzes = sortQuizzes(state.cls.quizzes);
 
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, {type:'array'});
@@ -3168,6 +3232,7 @@ async function importKdsRaporuFromExcel(file){
         }
       }
     }
+    state.cls.quizzes = sortQuizzes(state.cls.quizzes);
     render();
     logActivity('Branş bazlı rapordan Matematik KDS notlarını içe aktardı ('+quizzesTouched+' sınav, '+totalEntries+' not)');
     showToast(quizzesTouched+' KDS işlendi, '+totalEntries+' not girildi'+(unmatchedNames.size?(', '+unmatchedNames.size+' öğrenci eşleşmedi'):''));
@@ -6582,7 +6647,8 @@ function renderStudentDetail(app){
 
   let quizHtml = '', perfHtml = '', tytHtml = '', aytHtml = '';
   if(!g12){
-    quizHtml = cls.quizzes.map(q=>{
+    const sortedQuizzes = sortQuizzes(cls.quizzes || []);
+    quizHtml = sortedQuizzes.map(q=>{
       const v = (cls.quizScores[s.id]||{})[q.slot_no];
       const isQuiz = isQuizExam(q.label);
       let disp = '-';
@@ -7409,33 +7475,83 @@ function renderRubric(app){
 
 function renderQuizzesEdit(app){
   const exWord = examWord(), exWordPl = examWordPlural();
-  const rows = (state.cls.quizzes || []).map(q => {
+  state.cls.quizzes = sortQuizzes(state.cls.quizzes || []);
+  const allQuizzes = state.cls.quizzes;
+
+  const renderEditRow = (q) => {
     const badge = examBadge(q.label);
     const title = formatExamLabel(q.label || '');
 
-    return '<div class="listedit-row" style="display:flex;align-items:center;gap:10px;">' +
-      '<div class="slot" style="min-width:32px;">#' + q.slot_no + '</div>' +
+    return '<div class="listedit-row" style="display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid #f1f5f9;">' +
+      '<div class="slot" style="min-width:32px;font-size:12px;font-weight:700;color:var(--ink-soft);">#' + q.slot_no + '</div>' +
       badge +
-      '<input type="text" value="' + escapeHtml(title) + '" data-slot="' + q.slot_no + '" placeholder="Sınav adı" style="flex:1;" ' + (state.isAdmin ? 'readonly style="background:var(--surface-2);cursor:not-allowed;"' : '') + '>' +
+      '<input type="text" value="' + escapeHtml(title) + '" data-slot="' + q.slot_no + '" placeholder="Sınav adı" style="flex:1;font-size:13.5px;padding:6px 10px;" ' + (state.isAdmin ? 'readonly style="background:var(--surface-2);cursor:not-allowed;"' : '') + '>' +
       (!state.isAdmin ? '<button class="iconbtn" data-del="' + q.slot_no + '" title="Sınavı Sil">' + ic('trash') + '</button>' : '') +
     '</div>';
-  }).join('');
+  };
+
+  const quizRows = allQuizzes.filter(q => getExamCategory(q.label) === 'quiz');
+  const kdsRows = allQuizzes.filter(q => getExamCategory(q.label) === 'kds');
+  const sinavRows = allQuizzes.filter(q => getExamCategory(q.label) === 'sinav');
+
+  let bodyHtml = '';
+  if(!allQuizzes.length){
+    bodyHtml = '<div class="card"><div class="empty">Henüz ' + exWord + ' eklenmedi.</div></div>';
+  } else {
+    let sections = [];
+    if(quizRows.length){
+      sections.push(
+        '<div class="card" style="margin-bottom:14px;padding:12px 16px;">' +
+          '<div style="font-size:13px;font-weight:900;color:var(--ink);margin-bottom:8px;display:flex;align-items:center;gap:6px;border-bottom:2px solid #e0f2fe;padding-bottom:6px;">' +
+            '<span>📝 Quizler</span>' +
+            '<span class="tag teal" style="font-size:10px;padding:1px 6px;">' + quizRows.length + ' Quiz</span>' +
+          '</div>' +
+          quizRows.map(renderEditRow).join('') +
+        '</div>'
+      );
+    }
+    if(kdsRows.length){
+      sections.push(
+        '<div class="card" style="margin-bottom:14px;padding:12px 16px;">' +
+          '<div style="font-size:13px;font-weight:900;color:var(--ink);margin-bottom:8px;display:flex;align-items:center;gap:6px;border-bottom:2px solid #fef3c7;padding-bottom:6px;">' +
+            '<span>📊 KDS Sınavları</span>' +
+            '<span class="tag amber" style="font-size:10px;padding:1px 6px;">' + kdsRows.length + ' KDS</span>' +
+          '</div>' +
+          kdsRows.map(renderEditRow).join('') +
+        '</div>'
+      );
+    }
+    if(sinavRows.length){
+      sections.push(
+        '<div class="card" style="margin-bottom:14px;padding:12px 16px;">' +
+          '<div style="font-size:13px;font-weight:900;color:var(--ink);margin-bottom:8px;display:flex;align-items:center;gap:6px;border-bottom:2px solid #e2e8f0;padding-bottom:6px;">' +
+            '<span>📄 Yazılı Sınavlar</span>' +
+            '<span class="tag blue" style="font-size:10px;padding:1px 6px;">' + sinavRows.length + ' Sınav</span>' +
+          '</div>' +
+          sinavRows.map(renderEditRow).join('') +
+        '</div>'
+      );
+    }
+    bodyHtml = sections.join('');
+  }
 
   app.innerHTML =
     '<button class="backlink" id="back6">' + ic('chevron') + ' ' + escapeHtml(state.cls.name) + ' paneline dön</button>' +
     (state.isAdmin ? '<div class="admin-badge-banner" style="background:var(--amber-soft);border:1px solid var(--amber);color:var(--amber);padding:10px 14px;border-radius:10px;font-size:12.5px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;">Yönetici Modu (Salt Okunur) — Sınav listesi sadece incelenebilir.</div>' : '') +
     '<div class="pagehead">' +
       '<h2>' + exWordPl + ' Düzenle</h2>' +
-      '<div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">Sınav başlıklarını buradan güncelleyebilir, yeni quiz veya KDS ekleyebilirsiniz.</div>' +
+      '<div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">Sınav başlıklarını buradan güncelleyebilir veya silebilirsiniz. Quizler, KDSler ve Sınavlar otomatik olarak ayrı gruplar halinde alt alta listelenir.</div>' +
     '</div>' +
     (!state.isAdmin ? (
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">' +
         '<button class="btn btn-primary" id="editAddQuizBtn" style="font-weight:800;">➕ Yeni Quiz Ekle</button>' +
         '<button class="btn btn-outline" id="editAddKdsBtn" style="font-weight:700;">➕ Yeni KDS Ekle</button>' +
+        '<button class="btn btn-outline" id="editAddS1Btn" style="font-weight:700;">📝 1. Sınav</button>' +
+        '<button class="btn btn-outline" id="editAddS2Btn" style="font-weight:700;">📝 2. Sınav</button>' +
         '<button class="btn btn-soft" id="editGoPickerBtn" style="font-weight:700;margin-left:auto;">📋 Not Girişine Git ➔</button>' +
       '</div>'
     ) : '') +
-    '<div class="card">' + (rows || '<div class="empty">Henüz ' + exWord + ' eklenmedi.</div>') + '</div>';
+    bodyHtml;
 
   document.getElementById('back6').onclick = backToRoster;
   if(!state.isAdmin){
@@ -7443,11 +7559,18 @@ function renderQuizzesEdit(app){
     if(addQuizBtn) addQuizBtn.onclick = () => openAddQuizModal('quiz', () => render());
     const addKdsBtn = document.getElementById('editAddKdsBtn');
     if(addKdsBtn) addKdsBtn.onclick = () => openAddQuizModal('kds', () => render());
+    const addS1Btn = document.getElementById('editAddS1Btn');
+    if(addS1Btn) addS1Btn.onclick = async () => { await openOrAddOfficialExam('1. Sınav'); render(); };
+    const addS2Btn = document.getElementById('editAddS2Btn');
+    if(addS2Btn) addS2Btn.onclick = async () => { await openOrAddOfficialExam('2. Sınav'); render(); };
     const goPickBtn = document.getElementById('editGoPickerBtn');
     if(goPickBtn) goPickBtn.onclick = () => { state.view = 'quiz_picker'; render(); };
 
     app.querySelectorAll('input[data-slot]').forEach(inp => {
-      inp.onblur = () => renameQuiz(parseInt(inp.dataset.slot, 10), inp.value);
+      inp.onblur = () => {
+        renameQuiz(parseInt(inp.dataset.slot, 10), inp.value);
+        render();
+      };
       inp.addEventListener('keydown', (e) => {
         if(e.key === 'Enter'){ inp.blur(); }
       });
@@ -7459,30 +7582,33 @@ function renderQuizzesEdit(app){
 }
 function renderQuizPicker(app){
   const exWord = examWord(), exWordPl = examWordPlural();
-  const allQuizzes = state.cls.quizzes || [];
+  state.cls.quizzes = sortQuizzes(state.cls.quizzes || []);
+  const allQuizzes = state.cls.quizzes;
 
   // Auto-normalize any legacy "Mini Sınav" in memory and in Supabase
+  let hadMini = false;
   allQuizzes.forEach(q => {
     if(/mini\s*s[ıi]nav/i.test(q.label || '')){
       const updated = formatExamLabel(q.label);
       q.label = updated;
+      hadMini = true;
       if(!state.isAdmin){
         sb.from('quizzes').update({ label: updated }).eq('class_id', state.cls.id).eq('slot_no', q.slot_no);
       }
     }
   });
+  if(hadMini){
+    state.cls.quizzes = sortQuizzes(state.cls.quizzes);
+  }
 
   if(state.quizPickerTab === 'mini') state.quizPickerTab = 'quiz';
   state.quizPickerTab = state.quizPickerTab || 'all';
 
-  const quizExams = allQuizzes.filter(q => isQuizExam(q.label));
-  const kdsQuizzes = allQuizzes.filter(q => !isQuizExam(q.label));
+  const quizOnlyExams = allQuizzes.filter(q => getExamCategory(q.label) === 'quiz');
+  const kdsExams = allQuizzes.filter(q => getExamCategory(q.label) === 'kds');
+  const sinavExams = allQuizzes.filter(q => getExamCategory(q.label) === 'sinav');
 
-  let displayedQuizzes = allQuizzes;
-  if(state.quizPickerTab === 'quiz') displayedQuizzes = quizExams;
-  else if(state.quizPickerTab === 'kds') displayedQuizzes = kdsQuizzes;
-
-  const rows = displayedQuizzes.map(q => {
+  const buildQuizCard = (q) => {
     const avg = quizSlotAvgDYB(q.slot_no);
     const isQuiz = isQuizExam(q.label);
     const badge = examBadge(q.label);
@@ -7501,7 +7627,7 @@ function renderQuizPicker(app){
       }
     }
 
-    return '<div class="card rowcard" data-pick="' + q.slot_no + '" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;cursor:pointer;">' +
+    return '<div class="card rowcard" data-pick="' + q.slot_no + '" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;cursor:pointer;margin-bottom:8px;">' +
       '<div style="flex:1;min-width:0;">' +
         '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
           '<span style="font-size:15px;font-weight:800;color:var(--ink);">' + escapeHtml(title) + '</span>' +
@@ -7516,7 +7642,7 @@ function renderQuizPicker(app){
         '<div class="chev">' + ic('chevron') + '</div>' +
       '</div>' +
     '</div>';
-  }).join('');
+  };
 
   let mainBodyHtml = '';
   if(state.quizPickerTab === 'matrix'){
@@ -7626,8 +7752,61 @@ function renderQuizPicker(app){
           '</table>' +
         '</div>';
     }
-  } else {
-    mainBodyHtml = (rows || '<div class="empty" style="padding:28px 14px;">Bu kategoride henüz sınav tanımlanmadı.' + (!state.isAdmin ? ' Yukarıdaki <b>"➕ Yeni Quiz Ekle"</b> butonuna tıklayarak ilk sınavı başlatabilirsiniz.' : '') + '</div>');
+  } else if(state.quizPickerTab === 'all'){
+    if(!allQuizzes.length){
+      mainBodyHtml = '<div class="empty" style="padding:28px 14px;">Bu sınıfta henüz sınav tanımlanmadı.' + (!state.isAdmin ? ' Yukarıdaki butonlardan <b>"➕ Yeni Quiz Ekle"</b>, <b>"➕ Yeni KDS Ekle"</b> veya <b>"📝 1. Sınav Notları"</b> ile ilk sınavı başlatabilirsiniz.' : '') + '</div>';
+    } else {
+      let sections = [];
+      if(quizOnlyExams.length){
+        sections.push(
+          '<div style="margin-bottom:20px;">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #e0f2fe;">' +
+              '<div style="font-size:14px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:8px;">' +
+                '<span>📝 Quizler</span>' +
+                '<span class="tag teal" style="font-size:10.5px;padding:2px 8px;font-weight:800;">' + quizOnlyExams.length + ' Sınav</span>' +
+              '</div>' +
+              '<span style="font-size:11.5px;color:var(--ink-soft);font-weight:600;">100 Üzerinden Puan</span>' +
+            '</div>' +
+            quizOnlyExams.map(buildQuizCard).join('') +
+          '</div>'
+        );
+      }
+      if(kdsExams.length){
+        sections.push(
+          '<div style="margin-bottom:20px;">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #fef3c7;">' +
+              '<div style="font-size:14px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:8px;">' +
+                '<span>📊 KDS Sınavları</span>' +
+                '<span class="tag amber" style="font-size:10.5px;padding:2px 8px;font-weight:800;">' + kdsExams.length + ' Sınav</span>' +
+              '</div>' +
+              '<span style="font-size:11.5px;color:var(--ink-soft);font-weight:600;">Doğru / Yanlış / Boş / Net</span>' +
+            '</div>' +
+            kdsExams.map(buildQuizCard).join('') +
+          '</div>'
+        );
+      }
+      if(sinavExams.length){
+        sections.push(
+          '<div style="margin-bottom:20px;">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #e2e8f0;">' +
+              '<div style="font-size:14px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:8px;">' +
+                '<span>📄 Yazılı Sınavlar</span>' +
+                '<span class="tag blue" style="font-size:10.5px;padding:2px 8px;font-weight:800;">' + sinavExams.length + ' Sınav</span>' +
+              '</div>' +
+              '<span style="font-size:11.5px;color:var(--ink-soft);font-weight:600;">Okul Yazılı Notları</span>' +
+            '</div>' +
+            sinavExams.map(buildQuizCard).join('') +
+          '</div>'
+        );
+      }
+      mainBodyHtml = sections.join('');
+    }
+  } else if(state.quizPickerTab === 'quiz'){
+    mainBodyHtml = quizOnlyExams.length ? quizOnlyExams.map(buildQuizCard).join('') : '<div class="empty" style="padding:28px 14px;">Henüz Quiz eklenmedi.</div>';
+  } else if(state.quizPickerTab === 'kds'){
+    mainBodyHtml = kdsExams.length ? kdsExams.map(buildQuizCard).join('') : '<div class="empty" style="padding:28px 14px;">Henüz KDS eklenmedi.</div>';
+  } else if(state.quizPickerTab === 'sinav'){
+    mainBodyHtml = sinavExams.length ? sinavExams.map(buildQuizCard).join('') : '<div class="empty" style="padding:28px 14px;">Henüz Yazılı Sınav eklenmedi.</div>';
   }
 
   app.innerHTML =
@@ -7650,8 +7829,9 @@ function renderQuizPicker(app){
 
     '<div style="display:flex;gap:6px;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:8px;flex-wrap:wrap;">' +
       '<button type="button" class="btn btn-sm ' + (state.quizPickerTab === 'all' ? 'btn-primary' : 'btn-soft') + '" id="tabAllExams" style="font-size:12px;padding:4px 12px;font-weight:800;">Tümü (' + allQuizzes.length + ')</button>' +
-      '<button type="button" class="btn btn-sm ' + (state.quizPickerTab === 'quiz' ? 'btn-primary' : 'btn-soft') + '" id="tabQuizExams" style="font-size:12px;padding:4px 12px;font-weight:800;">📝 Quizler (' + quizExams.length + ')</button>' +
-      '<button type="button" class="btn btn-sm ' + (state.quizPickerTab === 'kds' ? 'btn-primary' : 'btn-soft') + '" id="tabKdsExams" style="font-size:12px;padding:4px 12px;font-weight:800;">📊 KDS Sınavları (' + kdsQuizzes.length + ')</button>' +
+      '<button type="button" class="btn btn-sm ' + (state.quizPickerTab === 'quiz' ? 'btn-primary' : 'btn-soft') + '" id="tabQuizExams" style="font-size:12px;padding:4px 12px;font-weight:800;">📝 Quizler (' + quizOnlyExams.length + ')</button>' +
+      '<button type="button" class="btn btn-sm ' + (state.quizPickerTab === 'kds' ? 'btn-primary' : 'btn-soft') + '" id="tabKdsExams" style="font-size:12px;padding:4px 12px;font-weight:800;">📊 KDS Sınavları (' + kdsExams.length + ')</button>' +
+      '<button type="button" class="btn btn-sm ' + (state.quizPickerTab === 'sinav' ? 'btn-primary' : 'btn-soft') + '" id="tabSinavExams" style="font-size:12px;padding:4px 12px;font-weight:800;">📄 Sınavlar (' + sinavExams.length + ')</button>' +
       '<button type="button" class="btn btn-sm ' + (state.quizPickerTab === 'matrix' ? 'btn-primary' : 'btn-soft') + '" id="tabMatrixExams" style="font-size:12px;padding:4px 12px;font-weight:800;margin-left:auto;">📋 Sınav Notları (' + allQuizzes.length + ')</button>' +
     '</div>' +
 
@@ -7685,6 +7865,7 @@ function renderQuizPicker(app){
   document.getElementById('tabAllExams').onclick = () => { state.quizPickerTab = 'all'; render(); };
   document.getElementById('tabQuizExams').onclick = () => { state.quizPickerTab = 'quiz'; render(); };
   document.getElementById('tabKdsExams').onclick = () => { state.quizPickerTab = 'kds'; render(); };
+  document.getElementById('tabSinavExams').onclick = () => { state.quizPickerTab = 'sinav'; render(); };
   document.getElementById('tabMatrixExams').onclick = () => { state.quizPickerTab = 'matrix'; render(); };
 
   if(state.quizPickerTab === 'matrix'){
