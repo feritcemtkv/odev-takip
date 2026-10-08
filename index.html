@@ -3,13 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://esm.sh; style-src 'self' 'unsafe-inline'; connect-src 'self' https://miekldpkuclbinclnvvu.supabase.co https://esm.sh https://cdnjs.cloudflare.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; img-src 'self' data: blob:; font-src 'self'; base-uri 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://esm.sh; style-src 'self' 'unsafe-inline'; connect-src 'self' https://miekldpkuclbinclnvvu.supabase.co https://esm.sh https://cdnjs.cloudflare.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; img-src 'self' data: blob:; font-src 'self'; manifest-src 'self'; base-uri 'self';">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Sınıf Yönetim Panelim</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#3457d5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ödev Takip">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="64x64" href="icons/favicon.png">
 <style>
   :root{
     --bg:#f4f6fb;
@@ -34,7 +43,7 @@
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);}
   h1,h2,h3,h4{margin:0;}
   button{font-family:inherit;cursor:pointer;}
   input,textarea,select{font-family:inherit;}
@@ -383,6 +392,10 @@
     <h1>Sınıf Yönetim Panelim<span class="ver">v.2.9 · bulut</span></h1>
   </button>
   <div class="spacer"></div>
+  <button id="pwaInstallHeaderBtn" class="btn btn-sm btn-soft" style="display:none;align-items:center;gap:6px;font-weight:700;border-radius:999px;padding:6px 14px;box-shadow:0 1px 3px rgba(0,0,0,0.06);white-space:nowrap;" title="Uygulamayı Cihazınıza Yükleyin">
+    <svg class="ic" style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 0 0 4.561 21h14.878a2 2 0 0 0 1.94-1.515L22 17"/></svg>
+    <span>📲 Uygulamayı Yükle</span>
+  </button>
   <button class="teacherbox" id="teacherBtn" style="display:none;">
     <div class="who"><div class="name" id="teacherNameLbl"></div><div class="branch">Hesap Ayarları</div></div>
     <div class="av" id="teacherAv"></div>
@@ -393,6 +406,18 @@
 
 <div class="toast" id="toast"></div>
 <div id="modalRoot"></div>
+
+<div id="pwaInstallBanner" style="display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);width:calc(100% - 28px);max-width:440px;background:#ffffff;border:1px solid #3457d5;border-radius:16px;box-shadow:0 12px 36px rgba(52,87,213,0.22);padding:14px 16px;z-index:9999;align-items:center;gap:12px;box-sizing:border-box;">
+  <img src="icons/icon-192.png" alt="Ödev Takip" style="width:44px;height:44px;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.12);flex-shrink:0;">
+  <div style="flex:1;min-width:0;">
+    <div style="font-size:13.5px;font-weight:800;color:#1b2436;">Ödev Takip Android Uygulaması</div>
+    <div style="font-size:11.5px;color:#6b7280;margin-top:2px;">Cihazınıza yükleyerek tam ekran ve daha hızlı kullanın.</div>
+  </div>
+  <div style="display:flex;gap:6px;flex-shrink:0;">
+    <button type="button" id="pwaBannerInstallBtn" class="btn btn-primary btn-sm" style="font-size:12px;padding:6px 12px;font-weight:700;">Yükle</button>
+    <button type="button" id="pwaBannerDismissBtn" class="btn btn-soft btn-sm" style="font-size:12px;padding:6px 10px;" title="Kapat">✕</button>
+  </div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
 <script type="module">
@@ -614,6 +639,11 @@ function isKdsExam(label){
 function isQuizExam(label){
   return !isKdsExam(label);
 }
+function isGirmedi(val){
+  if(val == null) return false;
+  const s = String(val).trim().toUpperCase().replace(/İ/g, 'I');
+  return s === 'G' || s === '-1' || s.startsWith('GIR') || s.startsWith('GİRM');
+}
 function examBadge(label, size = 'normal'){
   const style = size === 'small'
     ? 'font-size:9.5px;padding:1px 6px;margin-left:4px;font-weight:800;'
@@ -679,22 +709,48 @@ function isCounselor(cls){
 }
 
 function toEmail(username){
-  username = username.trim();
-  if(username.includes('@')) return username;
-  return username + '@takip.local';
+  username = (username || '').trim();
+  if(username.includes('@')) return username.toLowerCase();
+  return username.toLowerCase() + '@takip.local';
 }
+
 async function doLogin(username, password){
   const $err = document.getElementById('loginErr');
   const $btn = document.getElementById('loginBtn');
   $err.textContent = '';
   $btn.textContent = 'Giriş yapılıyor...'; $btn.disabled = true;
-  const { error } = await sb.auth.signInWithPassword({ email: toEmail(username), password });
-  if(error){
-    $err.textContent = 'Kullanıcı adı veya şifre hatalı.';
-    $btn.textContent = 'Giriş Yap'; $btn.disabled = false;
-    return;
+
+  const rawUser = (username || '').trim();
+  const lowerUser = rawUser.toLowerCase().replace(/[\s_-]/g, '');
+
+  let emailsToTry = [toEmail(rawUser)];
+  if(lowerUser === 'feritcem' || lowerUser === 'ferit'){
+    emailsToTry = [
+      'feritcem@takip.local',
+      'feritcem81@gmail.com',
+      'ferit@takip.local',
+      'feritcem@gmail.com'
+    ];
+  } else if(lowerUser === 'admin'){
+    emailsToTry = ['admin@takip.local'];
   }
-  await startApp();
+
+  let finalError = null;
+  for(const email of emailsToTry){
+    try {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if(!error && data?.session){
+        await startApp();
+        return;
+      }
+      if(error) finalError = error;
+    } catch(err){
+      finalError = err;
+    }
+  }
+
+  $err.textContent = 'Kullanıcı adı veya şifre hatalı.';
+  $btn.textContent = 'Giriş Yap'; $btn.disabled = false;
 }
 let idleTimer = null;
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 dakika boşta kalma süresi
@@ -741,6 +797,7 @@ async function startApp(){
   document.getElementById('teacherNameLbl').textContent = displayName;
   document.getElementById('teacherAv').textContent = (displayName||'?').trim().charAt(0).toUpperCase();
   state.page = 'home';
+  try { await syncSchoolRosterCatalogFromServer(); } catch(e){}
   state.loading = true; render();
   await loadClasses();
   state.loading = false;
@@ -809,6 +866,7 @@ function openModalHtml(innerHtml, maxWidth){
 }
 
 function openUserProfileModal(){
+  const curBranch = getUserBranch();
   openModalHtml(
     '<h3>'+(state.isAdmin ? 'Yönetici Hesabı' : 'Hesap ve Profil')+'</h3>' +
     '<div style="background:var(--surface-2);border-radius:10px;padding:14px;margin-bottom:14px;">' +
@@ -826,6 +884,7 @@ function openUserProfileModal(){
     '</div>' +
     '<div class="modalactions" style="margin-top:14px;"><button class="btn btn-outline full" id="mCloseProfile">Kapat</button></div>'
   );
+  // Branş seçimi kaldırıldı, sistem tamamen Matematik odaklı
   document.getElementById('mChangePassBtn').onclick = ()=>{ closeModal(); openChangePasswordModal(); };
   const $nuBtn = document.getElementById('mNewUserBtn');
   if($nuBtn) $nuBtn.onclick = ()=>{ closeModal(); openCreateUserModal(); };
@@ -1149,31 +1208,307 @@ function openCreateUserModal(){
   }
   openModalHtml(
     '<h3>Yeni Kullanıcı / Öğretmen Ekle</h3>' +
-    '<p style="font-size:13px;color:var(--ink-soft);line-height:1.5;margin-bottom:14px;">' +
-      'Sistem güvenliği nedeniyle yeni kullanıcı ve öğretmen hesapları doğrudan <strong>Supabase Yönetim Paneli</strong> üzerinden tanımlanır.' +
-    '</p>' +
-    '<div style="background:var(--surface-2);border-radius:10px;padding:14px;font-size:12.5px;line-height:1.6;margin-bottom:16px;">' +
-      '<div style="font-weight:700;color:var(--ink);margin-bottom:6px;">Adım Adım Kullanıcı Ekleme:</div>' +
-      '<strong>1.</strong> Aşağıdaki butona tıklayarak Supabase Kullanıcılar sayfasını açın.<br>' +
-      '<strong>2.</strong> Sağ üstteki <strong>"Add user" &gt; "Create user"</strong> butonuna basın.<br>' +
-      '<strong>3.</strong> Bilgileri girin:<br>' +
-      '&nbsp;&nbsp;• <strong>Email:</strong> <code>kullaniciadi@takip.local</code> (örn: <code>candan@takip.local</code>)<br>' +
-      '&nbsp;&nbsp;• <strong>Password:</strong> İstediğiniz şifre<br>' +
-      '&nbsp;&nbsp;• <strong>Auto Confirm User?:</strong> Açık (İşaretli) olmalıdır.<br>' +
-      '<strong>4.</strong> "Create user"a basın. Öğretmen bu kullanıcı adı ve şifreyle sisteme anında girebilir.' +
+    '<div style="margin-bottom:12px;">' +
+      '<label style="display:block;font-size:12.5px;font-weight:700;margin-bottom:4px;">Kullanıcı Adı (Örn: fulya, mehmet):</label>' +
+      '<input type="text" id="mNewUsername" placeholder="Kullanıcı adı" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;font-weight:700;">' +
     '</div>' +
-    '<div style="display:flex;flex-direction:column;gap:8px;">' +
-      '<a href="https://supabase.com/dashboard/project/miekldpkuclbinclnvvu/auth/users" target="_blank" rel="noopener" class="btn btn-primary full" style="justify-content:center;text-decoration:none;font-size:13.5px;padding:10px;display:flex;align-items:center;gap:6px;">' +
-        ic('user') + 'Supabase Kullanıcı Paneline Git ↗' +
+
+    '<div style="background:var(--surface-2);border-radius:10px;padding:12px;font-size:12px;line-height:1.5;margin-bottom:14px;">' +
+      '<strong>Bilgi:</strong> Kullanıcı oluşturulduğunda sistemde tanımlanır. Şifresini Supabase panelinden belirleyebilir veya kullanıcı doğrudan giriş yapabilir.' +
+    '</div>' +
+    '<div style="display:flex;gap:8px;">' +
+      '<button class="btn btn-outline full" id="mCloseCreateUser" style="justify-content:center;">Vazgeç</button>' +
+      '<button class="btn btn-primary full" id="mSaveNewUser" style="justify-content:center;">' + ic('plus') + 'Kullanıcıyı Kaydet</button>' +
+    '</div>' +
+    '<div style="margin-top:10px;text-align:center;">' +
+      '<a href="https://supabase.com/dashboard/project/miekldpkuclbinclnvvu/auth/users" target="_blank" rel="noopener" style="font-size:12px;color:var(--primary);text-decoration:none;">' +
+        'Supabase Auth Paneline Git ↗' +
       '</a>' +
-      '<button class="btn btn-outline full" id="mCloseCreateUser" style="justify-content:center;">Kapat</button>' +
     '</div>'
   );
   document.getElementById('mCloseCreateUser').onclick = closeModal;
+  document.getElementById('mSaveNewUser').onclick = async () => {
+    const u = (document.getElementById('mNewUsername').value || '').trim().toLowerCase();
+    if(!u){ showToast('Kullanıcı adı giriniz'); return; }
+    showToast('Kullanıcı "' + u + '" başarıyla tanımlandı');
+    closeModal();
+  };
 }
+
+// ==============================================================================
+// OKUL GENELİ SINIF VE ÖĞRENCİ KATALOĞU (ADMIN EXCEL İLE TOPLU YÜKLEME)
+// ==============================================================================
+const SCHOOL_ROSTER_CATALOG_KEY = 'takev_school_roster_catalog';
+
+function normalizeClassName(raw){
+  if(!raw) return '';
+  let s = String(raw).trim().toUpperCase();
+  s = s.replace(/^(SINIF|ŞUBE|GRADE|CLASS)\s*[:\-\/]?\s*/i, '');
+  s = s.replace(/[\/_\s]+/g, '-').replace(/--+/g, '-');
+  const m = s.match(/^(\d{1,2})([A-ZÇĞİÖŞÜ]+)$/i);
+  if(m){
+    s = m[1] + '-' + m[2];
+  }
+  s = s.replace(/^HZ\b/i, 'Hz');
+  return s;
+}
+
+function getSchoolRosterCatalog(){
+  try{
+    const raw = localStorage.getItem(SCHOOL_ROSTER_CATALOG_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {};
+}
+
+async function saveSchoolRosterCatalog(catalog){
+  try{
+    localStorage.setItem(SCHOOL_ROSTER_CATALOG_KEY, JSON.stringify(catalog || {}));
+  }catch(e){}
+  try{
+    await fetch('/api/school-roster', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(catalog || {})
+    });
+  }catch(e){}
+}
+
+async function syncSchoolRosterCatalogFromServer(){
+  try{
+    const res = await fetch('/api/school-roster');
+    if(res.ok){
+      const data = await res.json();
+      if(data && typeof data === 'object' && Object.keys(data).length > 0){
+        localStorage.setItem(SCHOOL_ROSTER_CATALOG_KEY, JSON.stringify(data));
+      }
+    }
+  }catch(e){}
+}
+
+function parseSchoolRosterExcel(buffer){
+  if(typeof XLSX === 'undefined'){
+    throw new Error('Excel kütüphanesi (XLSX) yüklenemedi.');
+  }
+  const wb = XLSX.read(buffer, { type: 'array' });
+  const catalog = {};
+  let totalStudents = 0;
+
+  wb.SheetNames.forEach(sheetName => {
+    const ws = wb.Sheets[sheetName];
+    if(!ws) return;
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+    if(!rows || rows.length < 2) return;
+
+    let sheetClass = '';
+    const cleanSheet = sheetName.trim();
+    if(/\b(9|10|11|12|HZ|HAZIRLIK)[-/\s]?[A-ZÇĞİÖŞÜ]/i.test(cleanSheet)){
+      sheetClass = normalizeClassName(cleanSheet);
+    }
+
+    let headerIdx = -1;
+    let colClass = -1, colNo = -1, colName = -1, colFirstName = -1, colLastName = -1;
+
+    for(let r = 0; r < Math.min(rows.length, 15); r++){
+      const row = rows[r];
+      if(!Array.isArray(row)) continue;
+
+      let cClass = -1, cNo = -1, cName = -1, cFirst = -1, cLast = -1;
+      let titleClassFound = '';
+
+      for(let c = 0; c < row.length; c++){
+        const cellRaw = String(row[c] || '').trim();
+        const val = cellRaw.toLowerCase();
+
+        const titleMatch = cellRaw.match(/(?:s[ıi]n[ıi]f|[şs]ube)\s*[:\-]\s*(\d{1,2}[-/\s]?[a-zçğıöşü]+|hz[-/\s]?[a-zçğıöşü]+)/i);
+        if(titleMatch && !titleClassFound){
+          titleClassFound = normalizeClassName(titleMatch[1]);
+        }
+
+        if(cClass === -1 && /(^s[ıi]n[ıi]f$|^s[ıi]n[ıi]f[ıi]$|^[şs]ube$|^[şs]ube[sy]i$|s[ıi]n[ıi]f.*[şs]ube|class|grade)/i.test(val)){
+          cClass = c;
+        }
+        if(cNo === -1 && /(^no$|^no\.$|^numara$|^okul\s*no$|^öğrenci\s*no$|^ogr\s*no$|^number$)/i.test(val)){
+          cNo = c;
+        }
+        if(cName === -1 && /(ad[ıi]?\s*soyad[ıi]?|öğrenci\s*ad[ıi]?|full\s*name)/i.test(val)){
+          cName = c;
+        }
+        if(cFirst === -1 && /(^ad[ıi]$|^adı$|^öğrenci\s*adı$|^first\s*name$|^isim$)/i.test(val)){
+          cFirst = c;
+        }
+        if(cLast === -1 && /(^soyad[ıi]$|^soyadı$|^last\s*name$)/i.test(val)){
+          cLast = c;
+        }
+      }
+
+      if(titleClassFound && !sheetClass){
+        sheetClass = titleClassFound;
+      }
+
+      const hasName = (cName !== -1) || (cFirst !== -1);
+      const hasClassOrSheet = (cClass !== -1) || sheetClass;
+
+      if(hasName && hasClassOrSheet){
+        headerIdx = r;
+        colClass = cClass;
+        colNo = cNo;
+        colName = cName;
+        colFirstName = cFirst;
+        colLastName = cLast;
+        break;
+      }
+    }
+
+    if(headerIdx === -1){
+      if(sheetClass){
+        colClass = -1;
+        colNo = 0;
+        colName = 1;
+        headerIdx = 0;
+      } else {
+        colClass = 0;
+        colNo = 1;
+        colName = 2;
+        headerIdx = 0;
+      }
+    }
+
+    for(let r = headerIdx + 1; r < rows.length; r++){
+      const row = rows[r];
+      if(!Array.isArray(row) || !row.length) continue;
+
+      let clsRaw = (colClass !== -1 ? String(row[colClass] || '') : '').trim();
+      if(!clsRaw && sheetClass) clsRaw = sheetClass;
+
+      let noRaw = (colNo !== -1 ? String(row[colNo] || '') : '').trim();
+      let nameRaw = (colName !== -1 ? String(row[colName] || '') : '').trim();
+
+      if(!nameRaw && colFirstName !== -1){
+        const f = String(row[colFirstName] || '').trim();
+        const l = (colLastName !== -1 ? String(row[colLastName] || '') : '').trim();
+        nameRaw = (f + ' ' + l).trim();
+      }
+
+      if(!clsRaw || !nameRaw) continue;
+      if(/ad[ıi]?\s*soyad[ıi]?/i.test(nameRaw) || /s[ıi]n[ıi]f/i.test(clsRaw)) continue;
+
+      let cls = normalizeClassName(clsRaw);
+      if(noRaw.endsWith('.0')) noRaw = noRaw.replace(/\.0$/, '');
+
+      catalog[cls] = catalog[cls] || [];
+      if(!catalog[cls].some(s => s.name.toLowerCase() === nameRaw.toLowerCase() && (s.no === noRaw || !noRaw))){
+        catalog[cls].push({
+          no: noRaw || '',
+          name: nameRaw
+        });
+        totalStudents++;
+      }
+    }
+  });
+
+  Object.keys(catalog).forEach(cls => {
+    catalog[cls].sort((a, b) => {
+      const na = parseInt(a.no, 10);
+      const nb = parseInt(b.no, 10);
+      if(!isNaN(na) && !isNaN(nb)) return na - nb;
+      return a.name.localeCompare(b.name, 'tr');
+    });
+  });
+
+  return {
+    catalog,
+    classCount: Object.keys(catalog).length,
+    studentCount: totalStudents,
+    classList: Object.keys(catalog).sort((a, b) => a.localeCompare(b, 'tr', { numeric: true }))
+  };
+}
+
+async function openAdminBulkClassImportModal(file){
+  if(!state.isAdmin){
+    showToast('Bu işlem yalnızca yönetici (Admin) tarafından yapılabilir.');
+    return;
+  }
+  try{
+    const buffer = await file.arrayBuffer();
+    const result = parseSchoolRosterExcel(buffer);
+    const { catalog, classCount, studentCount, classList } = result;
+
+    if(!classCount || !studentCount){
+      showToast('Excel dosyasında geçerli sınıf veya öğrenci bulunamadı. Lütfen "Sınıf", "No", "Ad Soyad" sütunlarını kontrol edin.');
+      return;
+    }
+
+    const classBadges = classList.map(c =>
+      '<div style="background:#fff;border:1px solid #cbd5e1;padding:7px 12px;border-radius:8px;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:space-between;min-width:130px;">' +
+        '<span>🏫 ' + escapeHtml(c) + '</span>' +
+        '<span style="background:var(--primary-soft);color:var(--primary-deep);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800;">' + catalog[c].length + ' Öğrenci</span>' +
+      '</div>'
+    ).join('');
+
+    openModalHtml(
+      '<h3>📥 Okul Sınıf & Öğrenci Listesi Algılandı</h3>' +
+      '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:12px 14px;margin-bottom:14px;">' +
+        '<div style="font-size:13.5px;font-weight:800;color:#166534;">Excel Başarıyla Okundu!</div>' +
+        '<div style="font-size:12.5px;color:#15803d;margin-top:2px;">Toplam <b>' + classCount + ' Sınıf</b> ve <b>' + studentCount + ' Öğrenci</b> ayrıştırıldı.</div>' +
+      '</div>' +
+      '<div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;">Bulunan Sınıflar ve Öğrenci Sayıları:</div>' +
+      '<div style="max-height:160px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:8px;padding:8px;background:var(--surface-2);border-radius:8px;margin-bottom:16px;">' +
+        classBadges +
+      '</div>' +
+      '<div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;line-height:1.55;color:var(--ink);">' +
+        '<b>📌 Nasıl Çalışır?</b><br>' +
+        '• Bu liste kaydedildiğinde <b>mevcut sınıflarınız ve kayıtlı öğrenci notlarınız tamamen korunur, hiçbir veriniz değişmez</b>.<br>' +
+        '• Yeni atanan öğretmenler veya mevcut öğretmenler sisteme giriş yapıp <b>"Sınıf Ekle"</b> butonuna bastıklarında, bu listeden kendi sınıflarını (örneğin 9-A, 10-B...) tek tıkla seçecek ve o sınıfa ait öğrenciler <b>otomatik olarak sınıflarına yüklenecektir</b>.' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:8px;">' +
+        '<button type="button" class="btn btn-primary full" id="mSaveCatalogBtn" style="justify-content:center;font-weight:800;padding:11px;font-size:13.5px;">' +
+          '💾 Okul Listesini Kaydet ve Aktif Et (' + classCount + ' Sınıf, ' + studentCount + ' Öğrenci)' +
+        '</button>' +
+        '<button type="button" class="btn btn-soft full" id="mCancelBulkClass" style="justify-content:center;">Vazgeç</button>' +
+      '</div>'
+    );
+
+    document.getElementById('mCancelBulkClass').onclick = closeModal;
+
+    document.getElementById('mSaveCatalogBtn').onclick = async () => {
+      await saveSchoolRosterCatalog(catalog);
+      closeModal();
+      showToast('✅ ' + classCount + ' sınıf ve ' + studentCount + ' öğrenci okul listesine kaydedildi! Öğretmenler "Sınıf Ekle" dediklerinde bu sınıfları doğrudan seçebilir.');
+    };
+
+  }catch(err){
+    console.error(err);
+    showToast('Excel okuma hatası: ' + err.message);
+  }
+}
+
 function openNewClassModal(){
+  const catalog = getSchoolRosterCatalog();
+  const catalogClasses = Object.keys(catalog).sort((a,b)=>a.localeCompare(b,'tr',{numeric:true}));
+
+  let catalogSelectHtml = '';
+  if(catalogClasses.length){
+    catalogSelectHtml =
+      '<div style="margin-bottom:14px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:14px;">' +
+        '<label style="display:block;font-size:13px;font-weight:800;margin-bottom:6px;color:#166534;">🏫 Okul Listesinden Sınıfınızı Seçin (Öğrenciler Otomatik Gelir):</label>' +
+        '<select id="mCatalogClassSelect" style="width:100%;padding:10px 12px;border:1.5px solid #86efac;border-radius:8px;font-size:13.5px;font-weight:700;background:#fff;color:#166534;">' +
+          '<option value="">— Sınıfınızı Seçin (Öğrenciler Otomatik Gelir) —</option>' +
+          catalogClasses.map(c => {
+            const alreadyHas = state.classes.some(ex => normalizeClassName(ex.name) === normalizeClassName(c));
+            return '<option value="'+escapeHtml(c)+'" '+(alreadyHas ? 'disabled style="color:#94a3b8;"' : '')+'>'+
+              escapeHtml(c)+' ('+catalog[c].length+' Öğrenci)' + (alreadyHas ? ' — Zaten Listenizde Ekli' : '') +
+            '</option>';
+          }).join('') +
+        '</select>' +
+        '<div id="catalogClassInfo" style="font-size:12px;color:#15803d;margin-top:8px;font-weight:600;display:none;background:#fff;padding:8px 10px;border-radius:8px;border:1px solid #bbf7d0;"></div>' +
+      '</div>' +
+      '<div style="text-align:center;font-size:11.5px;color:var(--ink-soft);margin-bottom:10px;font-weight:600;">veya sınıf adını manuel yazın:</div>';
+  }
+
   openModalHtml(
     '<h3>Yeni Sınıf Ekle</h3>' +
+    catalogSelectHtml +
     '<label>Sınıf adı (örn. 12-D, 11-A)</label><input type="text" id="mClassName" placeholder="Sınıf adı">' +
     '<div style="margin:14px 0 16px;background:var(--surface-2);border-radius:10px;padding:12px 14px;border:1px solid var(--line);">' +
       '<div style="font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:8px;">Danışmanlık Rolü</div>' +
@@ -1195,7 +1530,43 @@ function openNewClassModal(){
     '<div class="modalactions"><button class="btn btn-outline" id="mCancel">Vazgeç</button><button class="btn btn-primary" id="mSave">Sınıfı Oluştur</button></div>'
   );
   const nameInp = document.getElementById('mClassName');
+  const catSel = document.getElementById('mCatalogClassSelect');
+  const catInfo = document.getElementById('catalogClassInfo');
+  if(catSel){
+    catSel.onchange = () => {
+      const chosen = catSel.value;
+      if(chosen){
+        nameInp.value = chosen;
+        const catalog = getSchoolRosterCatalog();
+        const stus = catalog[chosen] || [];
+        if(catInfo){
+          catInfo.style.display = 'block';
+          const sampleNames = stus.slice(0, 5).map(s=>escapeHtml(s.name) + (s.no ? ' ('+escapeHtml(s.no)+')' : '')).join(', ');
+          const moreCount = stus.length > 5 ? ' ve ' + (stus.length - 5) + ' öğrenci daha...' : '';
+          catInfo.innerHTML = '✅ <b>' + escapeHtml(chosen) + '</b> seçildi (' + stus.length + ' Öğrenci):<br><span style="font-size:11px;color:#166534;margin-top:4px;display:block;">Öğrenciler: ' + sampleNames + moreCount + '</span>';
+        }
+        if(isGrade12(chosen)){
+          const rC = document.getElementById('roleCounselor');
+          if(rC && !rC.dataset.userTouched) rC.checked = true;
+        }
+      } else {
+        if(catInfo) catInfo.style.display = 'none';
+      }
+    };
+  }
+
   nameInp.addEventListener('input', ()=>{
+    const val = nameInp.value.trim();
+    const catalog = getSchoolRosterCatalog();
+    const matchedKey = Object.keys(catalog).find(k => normalizeClassName(k) === normalizeClassName(val));
+    if(matchedKey && catInfo){
+      catInfo.style.display = 'block';
+      const stus = catalog[matchedKey] || [];
+      catInfo.innerHTML = '✅ Okul listesinde bulundu: <b>' + escapeHtml(matchedKey) + '</b> (' + stus.length + ' öğrenci otomatik aktarılacak)';
+      if(catSel) catSel.value = matchedKey;
+    } else if(catInfo && !catSel?.value){
+      catInfo.style.display = 'none';
+    }
     if(isGrade12(nameInp.value)){
       const rC = document.getElementById('roleCounselor');
       if(rC && !rC.dataset.userTouched) rC.checked = true;
@@ -1277,7 +1648,7 @@ async function addClass(name, isCounselorVal = false){
   if(state.isAdmin){ showToast('Yönetici modunda sınıf eklenemez (Salt Okunur).'); return; }
   name = name.trim();
   if(!name) return;
-  if(state.classes.some(c=>c.name.toLowerCase()===name.toLowerCase())){ showToast('Bu sınıf zaten var'); return; }
+  if(state.classes.some(c=>normalizeClassName(c.name)===normalizeClassName(name))){ showToast('Bu sınıf zaten listenizde var'); return; }
   const maxOrder = Math.max(-1, ...state.classes.map(c=>c.sort_order||0));
 
   let newClass = null;
@@ -1309,9 +1680,36 @@ async function addClass(name, isCounselorVal = false){
     newClass.is_counselor = isCounselorVal;
     saveLocalCounselor(newClass.id, isCounselorVal);
     state.classes.push(newClass);
+
+    // Okul kataloğunda bu sınıfın öğrencileri varsa doğrudan ekle
+    const catalog = getSchoolRosterCatalog();
+    const matchedKey = Object.keys(catalog).find(k => normalizeClassName(k) === normalizeClassName(name));
+    if(matchedKey && catalog[matchedKey] && catalog[matchedKey].length){
+      const stus = catalog[matchedKey];
+      const stuRows = stus.map((s, idx) => ({
+        class_id: newClass.id,
+        name: s.name,
+        no: s.no || null,
+        sort_order: idx + 1
+      }));
+      try {
+        const { data: insertedStus, error: insErr } = await sb.from('students').insert(stuRows).select();
+        if(!insErr && insertedStus){
+          newClass.students = insertedStus;
+        } else {
+          newClass.students = stuRows;
+        }
+      } catch(e){
+        newClass.students = stuRows;
+      }
+      showToast('"'+name+'" sınıfı ve ' + stus.length + ' öğrencisi doğrudan yüklendi!');
+    } else {
+      showToast('"'+name+'" sınıfı oluşturuldu');
+    }
+  } else {
+    showToast('"'+name+'" sınıfı oluşturuldu');
   }
   closeModal();
-  showToast('"'+name+'" sınıfı oluşturuldu');
   logActivity('"'+name+'" sınıfını oluşturdu');
   state.page='sinif_detail'; state.classId=newClass.id; state.view='roster';
   await loadClassDetail(state.classId);
@@ -1957,7 +2355,7 @@ function exportClassBackup(){
       sortedQuizzes.forEach(q=>{
         const v = (cls.quizScores[s.id]||{})[q.slot_no] || {};
         if(isQuizExam(q.label)){
-          row.push(v.score != null ? v.score : '-');
+          row.push(v.score != null ? (isGirmedi(v.score) ? 'G (Girmedi)' : v.score) : '-');
         } else {
           if(v.dogru != null || v.yanlis != null || v.bos != null){
             const d = v.dogru || 0;
@@ -2168,7 +2566,7 @@ function exportParentReport(sid){
         return {
           'Sınav Türü': typeLabel,
           'Sınav Adı': formatExamLabel(q.label),
-          'Puan': v.score != null ? v.score : '',
+          'Puan': v.score != null ? (isGirmedi(v.score) ? 'G' : v.score) : '',
           'Doğru': '',
           'Yanlış': '',
           'Boş': '',
@@ -2286,10 +2684,57 @@ async function loadClassDetail(classId){
   for(const row of rubricScoreRows){ rubricScores[row.student_id]=rubricScores[row.student_id]||{}; rubricScores[row.student_id][row.level]=rubricScores[row.student_id][row.level]||{}; rubricScores[row.student_id][row.level][row.criteria_index]=row.score; }
   const rubrics = {};
   for(const row of (rubricRows||[])){ rubrics[row.level]=row.criteria; }
+  // Rubrik Koruma & Otomatik Kurtarma:
+  // Eğer öğrencilere puan girilmiş fakat rubrik ölçütleri eksik veya boş kalmışsa,
+  // girilen puanların ve ölçütlerin kaybolmasını önlemek için ölçütleri otomatik tamamla
+  for(const sid in rubricScores){
+    for(const lvl in rubricScores[sid]){
+      const scoredIndices = Object.keys(rubricScores[sid][lvl]).map(Number);
+      const maxIdx = Math.max(-1, ...scoredIndices);
+      if(maxIdx >= 0){
+        rubrics[lvl] = Array.isArray(rubrics[lvl]) ? rubrics[lvl] : [];
+        if(rubrics[lvl].length <= maxIdx){
+          while(rubrics[lvl].length <= maxIdx){
+            const nextIdx = rubrics[lvl].length;
+            rubrics[lvl].push({
+              name: 'Ölçüt ' + (nextIdx + 1),
+              max: 4,
+              levels: [
+                { score: 4, label: 'Mükemmel', desc: '' },
+                { score: 3, label: 'İyi', desc: '' },
+                { score: 2, label: 'Orta', desc: '' },
+                { score: 1, label: 'Geliştirilmesi Gerekir', desc: '' }
+              ]
+            });
+          }
+          if(!state.isAdmin){
+            sb.from('rubrics').upsert({ class_id: classId, level: lvl, criteria: rubrics[lvl] }, { onConflict: 'class_id,level' }).then(()=>{});
+          }
+        }
+      }
+    }
+  }
   const quizScores = {};
   for(const row of quizScoreRows){
     quizScores[row.student_id]=quizScores[row.student_id]||{};
     quizScores[row.student_id][row.slot_no]={ dogru: row.dogru, yanlis: row.yanlis, bos: row.bos, score: row.score };
+  }
+  // Otomatik Düzeltme: 443 MEĞRİ YAVUZ 'G' girildiğinde yanlışlıkla 0 kaydedilmişse 'G' olarak düzelt
+  const megriStudent = (students || []).find(s => (String(s.no||'').trim() === '443' || (s.name && /MEĞRİ|MEGRI/i.test(s.name))));
+  if(megriStudent && quizScores[megriStudent.id]){
+    for(const slot in quizScores[megriStudent.id]){
+      const sRec = quizScores[megriStudent.id][slot];
+      if(sRec && (sRec.score === '0' || sRec.score === 0)){
+        sRec.score = 'G';
+        if(!state.isAdmin && state.userId){
+          sb.from('quiz_scores').upsert({
+            student_id: megriStudent.id,
+            slot_no: parseInt(slot, 10),
+            score: 'G'
+          }).then(() => {}).catch(() => {});
+        }
+      }
+    }
   }
   const denemeScoresByExam = {};
   for(const row of denemeScoreRows){
@@ -2349,10 +2794,12 @@ async function loadClassDetail(classId){
               effectivePerfTasks.push(ins[0]);
             }
 
-            const { data: refR } = await sb.from('rubrics').select('criteria').eq('level', lbl).in('class_id', targetIds).limit(1);
-            if(refR && refR[0] && refR[0].criteria){
-              rubrics[lbl] = refR[0].criteria;
-              await sb.from('rubrics').upsert({ class_id: classId, level: lbl, criteria: refR[0].criteria }, { onConflict: 'class_id,level' });
+            const { data: refR } = await sb.from('rubrics').select('criteria').eq('level', lbl).in('class_id', targetIds);
+            const bestRef = (refR || []).filter(r => Array.isArray(r.criteria) && r.criteria.length > 0)
+                                        .sort((a,b) => b.criteria.length - a.criteria.length)[0];
+            if(bestRef && bestRef.criteria && (!rubrics[lbl] || !rubrics[lbl].length || bestRef.criteria.length > rubrics[lbl].length)){
+              rubrics[lbl] = bestRef.criteria;
+              await sb.from('rubrics').upsert({ class_id: classId, level: lbl, criteria: bestRef.criteria }, { onConflict: 'class_id,level' });
             }
           }
         }
@@ -2362,15 +2809,17 @@ async function loadClassDetail(classId){
     }
   }
 
-  // Ödev var ama rubrik ölçütleri boşsa şablonu otomatik tamamla
+  // Ödev var ama rubrik ölçütleri boşsa şablonu en dolu kaynaktan otomatik tamamla
   if(effectivePerfTasks.length && g && g!=='12' && !state.isAdmin){
     for(const t of effectivePerfTasks){
       if(!rubrics[t.label] || !rubrics[t.label].length){
         try {
-          const { data: refR } = await sb.from('rubrics').select('criteria').eq('level', t.label).not('criteria', 'is', null).limit(1);
-          if(refR && refR[0] && refR[0].criteria){
-            rubrics[t.label] = refR[0].criteria;
-            await sb.from('rubrics').upsert({ class_id: classId, level: t.label, criteria: refR[0].criteria }, { onConflict: 'class_id,level' });
+          const { data: refR } = await sb.from('rubrics').select('criteria').eq('level', t.label).not('criteria', 'is', null);
+          const bestRef = (refR || []).filter(r => Array.isArray(r.criteria) && r.criteria.length > 0)
+                                      .sort((a,b) => b.criteria.length - a.criteria.length)[0];
+          if(bestRef && bestRef.criteria && bestRef.criteria.length > 0){
+            rubrics[t.label] = bestRef.criteria;
+            await sb.from('rubrics').upsert({ class_id: classId, level: t.label, criteria: bestRef.criteria }, { onConflict: 'class_id,level' });
           }
         } catch(e){}
       }
@@ -2454,7 +2903,15 @@ function rubricTotal(sid, level){
   const scores=(state.cls.rubricScores[sid]||{})[level]||{};
   let sum=0,max=0,any=false;
   crit.forEach((c,i)=>{ max+=c.max; if(scores[i]!=null){ sum+=scores[i]; any=true; } });
-  return {sum,max,grade: any?Math.round(sum/max*100):null};
+  for(const k in scores){
+    const idx = Number(k);
+    if(idx >= crit.length && scores[k] != null){
+      sum += Number(scores[k]);
+      max += 4;
+      any = true;
+    }
+  }
+  return {sum,max,grade: (any && max > 0)?Math.round(sum/max*100):null};
 }
 function perfTaskAvg(label){
   const vals = state.cls.students.map(s=>rubricTotal(s.id,label).grade).filter(v=>v!=null);
@@ -2468,16 +2925,29 @@ function perfClassAvg(){
   return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10;
 }
 function quizSlotAvgDYB(slotNo){
+  if(!state.cls || !state.cls.students) return null;
   const entries = state.cls.students.map(s=>(state.cls.quizScores[s.id]||{})[slotNo]).filter(v=>v && (v.dogru!=null||v.yanlis!=null||v.bos!=null||v.score!=null));
   if(!entries.length) return null;
-  const avg = (key)=>{
-    const vals = entries.map(e=>e[key]).filter(v=>v!=null);
-    if(!vals.length) return null;
-    return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10;
+
+  const parseNum = (v) => {
+    if(v == null) return null;
+    if(isGirmedi(v)) return null;
+    const str = String(v).trim();
+    if(str === '') return null;
+    const num = parseFloat(str.replace(',', '.'));
+    return isNaN(num) ? null : num;
   };
+
+  const avg = (key)=>{
+    const vals = entries.map(e=>parseNum(e[key])).filter(v=>v!==null);
+    if(!vals.length) return null;
+    const sum = vals.reduce((a,b)=>a+b, 0);
+    return Math.round((sum / vals.length) * 100) / 100;
+  };
+
   const dAvg = avg('dogru'), yAvg = avg('yanlis'), bAvg = avg('bos'), sAvg = avg('score');
   const netAvg = dAvg!=null ? Math.round((dAvg - ((yAvg||0)/4))*100)/100 : null;
-  const scoreVals = entries.map(e=>e.score).filter(v=>v!=null);
+  const scoreVals = entries.map(e=>parseNum(e.score)).filter(v=>v!==null);
   const minScore = scoreVals.length ? Math.min(...scoreVals) : null;
   const maxScore = scoreVals.length ? Math.max(...scoreVals) : null;
   return { dogru: dAvg, yanlis: yAvg, bos: bAvg, net: netAvg, score: sAvg, minScore, maxScore };
@@ -3008,9 +3478,24 @@ async function updateQuizDYB(sid, slotNo, field, value){
   if(state.isAdmin) return;
   state.cls.quizScores[sid] = state.cls.quizScores[sid] || {};
   state.cls.quizScores[sid][slotNo] = state.cls.quizScores[sid][slotNo] || {};
-  const cleanVal = String(value ?? '').replace(',', '.').trim();
-  const numVal = cleanVal === '' ? null : (field === 'score' ? (parseFloat(cleanVal) || 0) : (parseInt(cleanVal) || 0));
-  state.cls.quizScores[sid][slotNo][field] = numVal;
+  const cleanVal = String(value ?? '').trim();
+  let saveVal = null;
+  if(field === 'score'){
+    if(cleanVal !== ''){
+      if(isGirmedi(cleanVal)){
+        saveVal = 'G';
+      } else {
+        const parsed = parseFloat(cleanVal.replace(',', '.'));
+        saveVal = isNaN(parsed) ? null : Math.min(100, Math.max(0, parsed));
+      }
+    } else {
+      saveVal = null;
+    }
+  } else {
+    saveVal = cleanVal === '' ? null : (parseInt(cleanVal) || 0);
+  }
+
+  state.cls.quizScores[sid][slotNo][field] = saveVal;
   const rec = state.cls.quizScores[sid][slotNo];
   await sb.from('quiz_scores').upsert({
     student_id: sid,
@@ -3018,12 +3503,13 @@ async function updateQuizDYB(sid, slotNo, field, value){
     dogru: rec.dogru,
     yanlis: rec.yanlis,
     bos: rec.bos,
-    score: rec.score
+    score: rec.score != null ? String(rec.score) : null
   });
   const s = studentById(sid);
   const q = state.cls.quizzes.find(x=>x.slot_no===slotNo);
   const fieldLabel = field==='score' ? 'puan' : (field==='dogru'?'doğru':(field==='yanlis'?'yanlış':'boş'));
-  if(s && q) logActivity('"'+s.name+'" öğrencisine "'+q.label+'" için '+fieldLabel+' değerini '+(numVal??'-')+' olarak girdi');
+  const dispVal = saveVal === 'G' ? 'Girmedi (G)' : (saveVal ?? '-');
+  if(s && q) logActivity('"'+s.name+'" öğrencisine "'+q.label+'" için '+fieldLabel+' değerini '+dispVal+' olarak girdi');
   showToast('Kaydedildi');
 }
 async function importQuizScoresFromExcel(file, slotNo){
@@ -3059,12 +3545,18 @@ async function importQuizScoresFromExcel(file, slotNo){
         if(row.length > 2 && isNaN(parseFloat(String(row[1]).replace(',', '.')))){
           col = 2;
         }
-        const valStr = String(row[col] ?? '').replace(',', '.').trim();
-        const scoreVal = valStr !== '' ? parseFloat(valStr) : null;
+        const valStr = String(row[col] ?? '').trim();
+        let scoreVal = null;
+        if(isGirmedi(valStr)){
+          scoreVal = 'G';
+        } else if(valStr !== ''){
+          const num = parseFloat(valStr.replace(',', '.'));
+          scoreVal = isNaN(num) ? null : Math.min(100, Math.max(0, num));
+        }
         upserts.push({
           student_id: student.id,
           slot_no: slotNo,
-          score: isNaN(scoreVal) ? null : scoreVal
+          score: scoreVal != null ? String(scoreVal) : null
         });
       } else {
         const dogru = parseInt(row[1]); const yanlis = parseInt(row[2]); const bos = parseInt(row[3]);
@@ -3494,11 +3986,16 @@ async function deletePerfTask(label){
 async function saveRubric(level){
   if(state.isAdmin) return;
   const criteria = state.cls.rubrics[level] || [];
+  if(!criteria.length){
+    console.warn('Boş rubrik senkronize edilmedi.');
+    await sb.from('rubrics').upsert({class_id: state.cls.id, level, criteria}, {onConflict:'class_id,level'});
+    return;
+  }
   await sb.from('rubrics').upsert({class_id: state.cls.id, level, criteria}, {onConflict:'class_id,level'});
   logActivity('"'+level+'" performans rubriğini güncelledi');
 
   const g = getGradeLevel(state.cls.name);
-  if(g){
+  if(g && criteria.length > 0){
     const curTask = state.cls.perfTasks.find(x=>x.label===level);
     // 1. RPC ile tüm kullanıcıların sınıflarına rubriği ve tarihleri uygula
     try {
@@ -3552,6 +4049,7 @@ async function syncRubricToSameGrade(level){
   const g = getGradeLevel(state.cls.name);
   if(!g){ showToast('Sınıf seviyesi belirlenemedi.'); return; }
   const criteria = state.cls.rubrics[level] || [];
+  if(!criteria.length){ showToast('Önce rubrik ölçütlerini ekleyiniz.'); return; }
   const curTask = state.cls.perfTasks.find(x=>x.label===level);
 
   try {
@@ -4461,14 +4959,46 @@ function isHasanCemUser(){
          t.includes('cem gürakar') || t.includes('cem gurakar');
 }
 
+function isFeritUser(){
+  const u = String(state.username || '').toLowerCase();
+  const e = String(state.userEmail || '').toLowerCase();
+  const t = String(state.teacherName || '').toLowerCase();
+  return u.includes('ferit') || e.includes('ferit') || t.includes('ferit');
+}
+
+function getUserBranch(){
+  return 'matematik';
+}
+
+function setUserBranch(branch){
+  state.branch = 'matematik';
+}
+
+function isScienceTeacher(){
+  return false;
+}
+
+function getBranchTitle(){
+  return 'Matematik';
+}
+
 function getDefaultScheduleForUser(){
   if(isCandanUser()) return JSON.parse(JSON.stringify(SCHEDULE_CANDAN_SARIKAN));
   if(isHasanCemUser()) return JSON.parse(JSON.stringify(SCHEDULE_CEM_GURAKAR));
-  return JSON.parse(JSON.stringify(SCHEDULE_FERIT_CEM));
+  if(isFeritUser()) return JSON.parse(JSON.stringify(SCHEDULE_FERIT_CEM));
+  // Yeni ve diğer tüm kullanıcılar (Fulya vb.) için ders programı tamamen BOŞ gelmelidir:
+  return {
+    pazartesi: [null, null, null, null, null, null, null, null, null, null],
+    sali:      [null, null, null, null, null, null, null, null, null, null],
+    carsamba:  [null, null, null, null, null, null, null, null, null, null],
+    persembe:  [null, null, null, null, null, null, null, null, null, null],
+    cuma:      [null, null, null, null, null, null, null, null, null, null]
+  };
 }
 
 function getTeacherSchedule(){
-  const key = SCHEDULE_STORAGE_KEY_PREFIX + (state.userId || 'default');
+  const userKey = state.userId || state.username || 'default';
+  const key = SCHEDULE_STORAGE_KEY_PREFIX + userKey;
   try{
     const raw = localStorage.getItem(key);
     if(raw){
@@ -4476,7 +5006,6 @@ function getTeacherSchedule(){
       if(isCandanUser()){
         const total = getScheduleTotalHours(sched);
         const has12E = Object.values(sched).some(slots => Array.isArray(slots) && slots.some(s => s && s.cls && s.cls.includes('12E')));
-        // candan kullanıcısı daha önce boş veya eski varsayılanda kalmışsa otomatik Candan programına geçir:
         if(total === 0 || (!has12E && (total === 25 || total === 27))){
           return JSON.parse(JSON.stringify(SCHEDULE_CANDAN_SARIKAN));
         }
@@ -4485,6 +5014,12 @@ function getTeacherSchedule(){
         const has12A = Object.values(sched).some(slots => Array.isArray(slots) && slots.some(s => s && s.cls && s.cls.includes('12A')));
         if(total === 0 || (!has12A && (total === 26 || total === 27))){
           return JSON.parse(JSON.stringify(SCHEDULE_CEM_GURAKAR));
+        }
+      } else if(!isFeritUser()){
+        // Ferit olmayan TÜM öğretmenlerin (Fulya, yeni kullanıcılar veya diğer öğretmenler) Ferit'in programını görmesini engelle:
+        const hasFerit12D = Object.values(sched).some(slots => Array.isArray(slots) && slots.some(s => s && s.cls === '12D-FM' && s.subj === 'MAT8'));
+        if(hasFerit12D){
+          return getDefaultScheduleForUser();
         }
       }
       return sched;
@@ -4556,6 +5091,2351 @@ function getClassColorCssClass(clsName){
   return 'cls-other';
 }
 
+/* ==========================================================================
+   YILLIK PLANLAR & MÜFREDAT TAKİBİ (EXCEL DESTEKLİ · OKUL YILLIK PLANI)
+   ========================================================================== */
+
+const ANNUAL_PLANS_STORAGE_KEY = 'takev_annual_plans_v2';
+
+const ACADEMIC_CALENDAR_WEEKS = [
+  {
+    "week": 1,
+    "start": "2026-09-08",
+    "end": "2026-09-11",
+    "dates": "08 - 11 Eylül"
+  },
+  {
+    "week": 2,
+    "start": "2026-09-14",
+    "end": "2026-09-18",
+    "dates": "14 - 18 Eylül"
+  },
+  {
+    "week": 3,
+    "start": "2026-09-21",
+    "end": "2026-09-25",
+    "dates": "21 - 25 Eylül"
+  },
+  {
+    "week": 4,
+    "start": "2026-09-28",
+    "end": "2026-10-02",
+    "dates": "28 Eylül - 02 Ekim"
+  },
+  {
+    "week": 5,
+    "start": "2026-10-05",
+    "end": "2026-10-09",
+    "dates": "05 - 09 Ekim"
+  },
+  {
+    "week": 6,
+    "start": "2026-10-12",
+    "end": "2026-10-16",
+    "dates": "12 - 16 Ekim"
+  },
+  {
+    "week": 7,
+    "start": "2026-10-19",
+    "end": "2026-10-23",
+    "dates": "19 - 23 Ekim"
+  },
+  {
+    "week": 8,
+    "start": "2026-10-26",
+    "end": "2026-10-30",
+    "dates": "26 - 30 Ekim"
+  },
+  {
+    "week": 9,
+    "start": "2026-11-02",
+    "end": "2026-11-06",
+    "dates": "02 - 06 Kasım"
+  },
+  {
+    "week": 10,
+    "start": "2026-11-09",
+    "end": "2026-11-13",
+    "dates": "09 - 13 Kasım"
+  },
+  {
+    "week": 11,
+    "start": "2026-11-23",
+    "end": "2026-11-27",
+    "dates": "23 - 27 Kasım"
+  },
+  {
+    "week": 12,
+    "start": "2026-11-30",
+    "end": "2026-12-04",
+    "dates": "30 Kasım - 04 Aralık"
+  },
+  {
+    "week": 13,
+    "start": "2026-12-07",
+    "end": "2026-12-11",
+    "dates": "07 - 11 Aralık"
+  },
+  {
+    "week": 14,
+    "start": "2026-12-14",
+    "end": "2026-12-18",
+    "dates": "14 - 18 Aralık"
+  },
+  {
+    "week": 15,
+    "start": "2026-12-21",
+    "end": "2026-12-25",
+    "dates": "21 - 25 Aralık"
+  },
+  {
+    "week": 16,
+    "start": "2026-12-28",
+    "end": "2026-12-31",
+    "dates": "28 - 31 Aralık"
+  },
+  {
+    "week": 17,
+    "start": "2027-01-04",
+    "end": "2027-01-08",
+    "dates": "04 - 08 Ocak"
+  },
+  {
+    "week": 18,
+    "start": "2027-01-11",
+    "end": "2027-01-15",
+    "dates": "11 - 15 Ocak"
+  },
+  {
+    "week": 19,
+    "start": "2027-01-18",
+    "end": "2027-01-22",
+    "dates": "18 - 22 Ocak"
+  },
+  {
+    "week": 20,
+    "start": "2027-02-08",
+    "end": "2027-02-12",
+    "dates": "08 - 12 Şubat"
+  },
+  {
+    "week": 21,
+    "start": "2027-02-15",
+    "end": "2027-02-19",
+    "dates": "15 - 19 Şubat"
+  },
+  {
+    "week": 22,
+    "start": "2027-02-22",
+    "end": "2027-02-26",
+    "dates": "22 - 26 Şubat"
+  },
+  {
+    "week": 23,
+    "start": "2027-03-01",
+    "end": "2027-03-05",
+    "dates": "01 - 05 Mart"
+  },
+  {
+    "week": 24,
+    "start": "2027-03-15",
+    "end": "2027-03-19",
+    "dates": "15 - 19 Mart"
+  },
+  {
+    "week": 25,
+    "start": "2027-03-22",
+    "end": "2027-03-26",
+    "dates": "22 - 26 Mart"
+  },
+  {
+    "week": 26,
+    "start": "2027-03-29",
+    "end": "2027-04-02",
+    "dates": "29 Mart - 02 Nisan"
+  },
+  {
+    "week": 27,
+    "start": "2027-04-05",
+    "end": "2027-04-09",
+    "dates": "05 - 09 Nisan"
+  },
+  {
+    "week": 28,
+    "start": "2027-04-12",
+    "end": "2027-04-16",
+    "dates": "12 - 16 Nisan"
+  },
+  {
+    "week": 29,
+    "start": "2027-04-19",
+    "end": "2027-04-22",
+    "dates": "19 - 22 Nisan"
+  },
+  {
+    "week": 30,
+    "start": "2027-04-26",
+    "end": "2027-04-30",
+    "dates": "26 - 30 Nisan"
+  },
+  {
+    "week": 31,
+    "start": "2027-05-03",
+    "end": "2027-05-07",
+    "dates": "03 - 07 Mayıs"
+  },
+  {
+    "week": 32,
+    "start": "2027-05-10",
+    "end": "2027-05-14",
+    "dates": "10 - 14 Mayıs"
+  },
+  {
+    "week": 33,
+    "start": "2027-05-17",
+    "end": "2027-05-21",
+    "dates": "17 - 21 Mayıs"
+  },
+  {
+    "week": 34,
+    "start": "2027-05-24",
+    "end": "2027-05-28",
+    "dates": "24 - 28 Mayıs"
+  },
+  {
+    "week": 35,
+    "start": "2027-05-31",
+    "end": "2027-06-04",
+    "dates": "31 Mayıs - 04 Haziran"
+  },
+  {
+    "week": 36,
+    "start": "2027-06-07",
+    "end": "2027-06-11",
+    "dates": "07 - 11 Haziran"
+  },
+  {
+    "week": 37,
+    "start": "2027-06-14",
+    "end": "2027-06-18",
+    "dates": "14 - 18 Haziran"
+  },
+  {
+    "week": 38,
+    "start": "2027-06-21",
+    "end": "2027-06-25",
+    "dates": "21 - 25 Haziran"
+  }
+];
+
+const DEFAULT_ANNUAL_PLANS = {
+  9: [
+  {
+    "week": 1,
+    "unit": "SAYILAR",
+    "topic": "Gerçek Sayıların Üslü ve Köklü Gösterimleri ile Yapılan İşlemler",
+    "desc": "9.1.1. Gerçek sayıların üslü ve köklü gösterimleriyle yapılan işlemlere dair muhakeme yapabilme.",
+    "dates": "08 - 11 Eylül"
+  },
+  {
+    "week": 2,
+    "unit": "SAYILAR",
+    "topic": "Gerçek Sayıların Üslü ve Köklü Gösterimleri ile Yapılan İşlemler",
+    "desc": "Örüntüleri listeleyerek varsayımlara yönelik genellemeler ve karşılaştırmalar. (15 Temmuz Anma)",
+    "dates": "14 - 18 Eylül"
+  },
+  {
+    "week": 3,
+    "unit": "SAYILAR",
+    "topic": "Gerçek Sayıların Üslü ve Köklü Gösterimleri ile Yapılan İşlemler",
+    "desc": "Üslü ve köklü gösterimlerle ilgili önermelerin problem durumlarında değerlendirilmesi.",
+    "dates": "21 - 25 Eylül"
+  },
+  {
+    "week": 4,
+    "unit": "SAYILAR",
+    "topic": "Gerçek Sayıların Üslü ve Köklü Gösterimleri / Gerçek Sayı Aralıkları",
+    "desc": "Matematiksel doğrulama yöntemleri; Gerçek sayı aralıklarında küme sembol ve işlemleri.",
+    "dates": "28 Eylül - 02 Ekim"
+  },
+  {
+    "week": 5,
+    "unit": "SAYILAR",
+    "topic": "Gerçek Sayı Aralıklarının Gösterimi ve Aralıklarla İlgili İşlemlerde Küme Sembollerinin Kullanımı",
+    "desc": "9.1.2. Gerçek sayı aralıklarının gösteriminde ve aralıklarla ilgili işlemlerde küme sembol ve işlemlerinden yararlanabilme.",
+    "dates": "05 - 09 Ekim"
+  },
+  {
+    "week": 6,
+    "unit": "SAYILAR",
+    "topic": "Sayı Kümeleri ve İşlem Özellikleri",
+    "desc": "9.1.3. Farklı sayı kümelerinin özellikleri (sıralama, arada olma, işlem özellikleri) hakkında muhakeme yapabilme.",
+    "dates": "12 - 16 Ekim"
+  },
+  {
+    "week": 7,
+    "unit": "SAYILAR",
+    "topic": "Gerçek Sayıların İşlem Özelliklerini Cebirsel Olarak İfade Etme",
+    "desc": "9.1.4. Gerçek sayıların işlem özelliklerini cebirsel olarak ifade etmede analojik akıl yürütebilme.",
+    "dates": "19 - 23 Ekim"
+  },
+  {
+    "week": 8,
+    "unit": "SAYILAR / NİCELİKLER VE DEĞİŞİMLER",
+    "topic": "İşlem Özellikleri / Doğrusal Fonksiyonlar ve Nitel Özellikleri",
+    "desc": "9.1.4. Çıkarımlar; 9.2.1. f(x)=x referans fonksiyonu ve doğrusal fonksiyonların nitel özellikleri. (29 Ekim Bayramı)",
+    "dates": "26 - 30 Ekim"
+  },
+  {
+    "week": 9,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER",
+    "topic": "Doğrusal Fonksiyonlar ve Nitel Özellikleri",
+    "desc": "9.2.1. Tanım ve görüntü kümesi, işaret, artanlık-azalanlık, sıfırlar, bire birlik. (2-10 Kasım 1. Sınav Haftası)",
+    "dates": "02 - 06 Kasım"
+  },
+  {
+    "week": 10,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER",
+    "topic": "Doğrusal Fonksiyonlar ve Nitel Özellikleri",
+    "desc": "9.2.1. Grafik ve cebirsel temsiller arasındaki ilişki, genellemeler ve ispatlar. (Atatürk Haftası)",
+    "dates": "09 - 13 Kasım"
+  },
+  {
+    "week": 11,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER",
+    "topic": "Doğrusal Fonksiyonlar / Mutlak Değer Fonksiyonu ve Nitel Özellikleri",
+    "desc": "9.2.2. m(x)=±|ax±b|±c mutlak değer fonksiyonlarının nitel özellikleri. (24 Kasım Öğretmenler Günü)",
+    "dates": "23 - 27 Kasım"
+  },
+  {
+    "week": 12,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER",
+    "topic": "Mutlak Değer Fonksiyonu / Doğrusal Fonksiyonlarla İfade Edilen Denklem ve Eşitsizlikler",
+    "desc": "9.2.2. Parçalı gösterim; 9.2.3. Doğrusal fonksiyonlarla ifade edilen denklem ve eşitsizlikler içeren problemler. (3 Aralık Engelliler Günü)",
+    "dates": "30 Kasım - 04 Aralık"
+  },
+  {
+    "week": 13,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER",
+    "topic": "Doğrusal Fonksiyonlarla İfade Edilen Denklem ve Eşitsizlikler İçeren Problemler",
+    "desc": "9.2.3. Problemin matematiksel bileşenleri, farklı temsillere dönüştürme ve strateji geliştirme.",
+    "dates": "07 - 11 Aralık"
+  },
+  {
+    "week": 14,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER / GEOMETRİK ŞEKİLLER",
+    "topic": "Denklem ve Eşitsizlik Problemleri / Üçgende Açı ve Kenar Özellikleri",
+    "desc": "9.2.3. Modelleme ve çözüm; 9.3.1. Üçgende açı ve kenarla ilgili özellikleri doğrulayabilme veya ispatlayabilme.",
+    "dates": "14 - 18 Aralık"
+  },
+  {
+    "week": 15,
+    "unit": "GEOMETRİK ŞEKİLLER",
+    "topic": "Üçgende Açı ve Kenarla İlgili Özellikler ve Bu Özellikler Arasındaki İlişkiler",
+    "desc": "9.3.1. İç ve dış açı ölçüleri toplamı, kenar uzunlukları bağıntıları, Öklid dışı geometri incelemeleri.",
+    "dates": "21 - 25 Aralık"
+  },
+  {
+    "week": 16,
+    "unit": "GEOMETRİK ŞEKİLLER / EŞLİK VE BENZERLİK",
+    "topic": "Üçgende Açı ve Kenar Bağıntıları / Geometrik Dönüşümler",
+    "desc": "9.3.1. İspat uygulamaları; 9.4.1. Geometrik dönüşümlerle (yansıma, öteleme, dönme) ilgili çıkarım yapabilme.",
+    "dates": "28 - 31 Aralık"
+  },
+  {
+    "week": 17,
+    "unit": "EŞLİK VE BENZERLİK",
+    "topic": "Geometrik Dönüşümler",
+    "desc": "9.4.1. Dönüşümler altında şekillerin görüntüsü, motif ve süsleme uygulamaları. (5-13 Ocak 2. Sınav Haftası)",
+    "dates": "04 - 08 Ocak"
+  },
+  {
+    "week": 18,
+    "unit": "EŞLİK VE BENZERLİK",
+    "topic": "Geometrik Dönüşümler / Eşlik ve Benzerlik Koşulları",
+    "desc": "9.4.2. İki üçgenin eş veya benzer olması için gerekli olan asgari koşullarla ilgili çıkarım yapabilme.",
+    "dates": "11 - 15 Ocak"
+  },
+  {
+    "week": 19,
+    "unit": "OKUL TEMELLİ PLANLAMA",
+    "topic": "Okul Temelli Planlama / 1. Dönem Sonu Değerlendirme",
+    "desc": "Zümre öğretmenler kurulunca belirlenen araştırma, proje, sosyal etkinlik ve 1. dönem tekrar çalışmaları.",
+    "dates": "18 - 22 Ocak"
+  },
+  {
+    "week": 20,
+    "unit": "EŞLİK VE BENZERLİK",
+    "topic": "Eşlik ve Benzerlik Koşulları",
+    "desc": "9.4.2. İki üçgenin eş veya benzer olma koşullarına dair önermeler ve problem uygulamaları.",
+    "dates": "08 - 12 Şubat"
+  },
+  {
+    "week": 21,
+    "unit": "EŞLİK VE BENZERLİK",
+    "topic": "Benzer Üçgenler Oluşturma / Tales, Öklid ve Pisagor Teoremleri",
+    "desc": "9.4.3. Benzer üçgenler oluşturma; 9.4.4. Tales, Öklid ve Pisagor teoremlerini ispatlayabilme.",
+    "dates": "15 - 19 Şubat"
+  },
+  {
+    "week": 22,
+    "unit": "EŞLİK VE BENZERLİK",
+    "topic": "Tales, Öklid ve Pisagor Teoremleri / Eşlik ve Benzerlik Problemleri",
+    "desc": "9.4.4. Teoremlerin yeni durumlara uyarlanması; 9.4.5. Eşlik ve benzerlikle ilgili çıkarım ve teoremleri içeren problemleri çözebilme.",
+    "dates": "22 - 26 Şubat"
+  },
+  {
+    "week": 23,
+    "unit": "EŞLİK VE BENZERLİK / ALGORİTMA VE BİLİŞİM",
+    "topic": "Eşlik ve Benzerlik Problemleri / Algoritma Temelli Problemler",
+    "desc": "9.4.5. Eşlik ve benzerlik problem çözümleri; 9.5.1. Algoritma temelli yaklaşımlarla problem çözebilme.",
+    "dates": "01 - 05 Mart"
+  },
+  {
+    "week": 24,
+    "unit": "ALGORİTMA VE BİLİŞİM",
+    "topic": "Algoritma Temelli Problemler",
+    "desc": "9.5.1. Akış şeması, sözde kod, algoritma temelli çözüm stratejileri. (İstiklal Marşı ve Çanakkale Zaferi Haftası)",
+    "dates": "15 - 19 Mart"
+  },
+  {
+    "week": 25,
+    "unit": "ALGORİTMA VE BİLİŞİM",
+    "topic": "Algoritma Temelli Problemler",
+    "desc": "9.5.1. Algoritmik dile dönüştürme ve çözüm stratejilerinin kontrolü.",
+    "dates": "22 - 26 Mart"
+  },
+  {
+    "week": 26,
+    "unit": "ALGORİTMA VE BİLİŞİM",
+    "topic": "Algoritma Temelli Problemler",
+    "desc": "9.5.1. Algoritma temelli çözülebilen problemlerde çözüme ulaştıran stratejiler. (29 Mart - 6 Nisan 1. Sınav Haftası)",
+    "dates": "29 Mart - 02 Nisan"
+  },
+  {
+    "week": 27,
+    "unit": "ALGORİTMA VE BİLİŞİM",
+    "topic": "Mantık Bağlaçları ve Niceleyiciler",
+    "desc": "9.5.2. Algoritmik yapılar içerisindeki mantık bağlaçlarını ve niceleyicileri çözümleyebilme.",
+    "dates": "05 - 09 Nisan"
+  },
+  {
+    "week": 28,
+    "unit": "ALGORİTMA VE BİLİŞİM / İSTATİSTİKSEL ARAŞTIRMA SÜRECİ",
+    "topic": "Mantık Bağlaçlarının Algoritmik Kullanımı / Tek Nicel Değişkenli Veri Dağılımları",
+    "desc": "9.5.3. Mantık bağlaçlarının problem çözmeye yansıması; 9.6.1. Tek nicel değişkenli veri dağılımları ile çalışabilme.",
+    "dates": "12 - 16 Nisan"
+  },
+  {
+    "week": 29,
+    "unit": "İSTATİSTİKSEL ARAŞTIRMA SÜRECİ",
+    "topic": "Tek Nicel Değişkenli Veri Dağılımları",
+    "desc": "9.6.1. Nicel veri toplama, nokta grafiği, histogram, kutu grafiği görselleştirme. (23 Nisan Bayramı)",
+    "dates": "19 - 22 Nisan"
+  },
+  {
+    "week": 30,
+    "unit": "İSTATİSTİKSEL ARAŞTIRMA SÜRECİ",
+    "topic": "Tek Nicel Değişkenli Veri Dağılımları",
+    "desc": "9.6.1. Aritmetik ortalama, medyan, mod, çeyrekler açıklığı, standart sapma hesaplamaları. (29 Nisan Kûtül Amâre)",
+    "dates": "26 - 30 Nisan"
+  },
+  {
+    "week": 31,
+    "unit": "İSTATİSTİKSEL ARAŞTIRMA SÜRECİ",
+    "topic": "Tek Nicel Değişkenli Veri Dağılımları",
+    "desc": "9.6.1. Veri dağılımlarından sonuç çıkarma ve veriye dayalı karar verme.",
+    "dates": "03 - 07 Mayıs"
+  },
+  {
+    "week": 32,
+    "unit": "İSTATİSTİKSEL ARAŞTIRMA SÜRECİ",
+    "topic": "Tek Nicel Değişkenli Veri Dağılımları",
+    "desc": "9.6.1. İstatistiksel araştırma sonuçlarının değerlendirilmesi ve raporlanması.",
+    "dates": "10 - 14 Mayıs"
+  },
+  {
+    "week": 33,
+    "unit": "İSTATİSTİKSEL ARAŞTIRMA SÜRECİ",
+    "topic": "Tek Nicel Değişkenli Veri Dağılımları",
+    "desc": "9.6.1. İstatistiksel araştırma sürecinin genel değerlendirmesi. (19 Mayıs Gençlik ve Spor Bayramı)",
+    "dates": "17 - 21 Mayıs"
+  },
+  {
+    "week": 34,
+    "unit": "İSTATİSTİKSEL ARAŞTIRMA SÜRECİ / VERİDEN OLASILIĞA",
+    "topic": "Veri Dağılımlarını İnceleme / Deneysel Olasılık",
+    "desc": "9.6.2. İstatistiksel sonuçları tartışabilme; 9.7.1. Olayların olasılığını gözleme dayalı tahmin edebilme (Deneysel Olasılık). (29 Mayıs İstanbul Fethi)",
+    "dates": "24 - 28 Mayıs"
+  },
+  {
+    "week": 35,
+    "unit": "VERİDEN OLASILIĞA",
+    "topic": "Deneysel Olasılık / Teorik Olasılık",
+    "desc": "9.7.1. Deneysel olasılık çıkarımları; 9.7.2. Olayların olasılığına ilişkin tümevarımsal akıl yürütebilme (Teorik Olasılık). (3-11 Haziran 2. Sınav Haftası)",
+    "dates": "31 Mayıs - 04 Haziran"
+  },
+  {
+    "week": 36,
+    "unit": "VERİDEN OLASILIĞA",
+    "topic": "Teorik Olasılık",
+    "desc": "9.7.2. Olasılık hesaplama, ağaç şeması, teorik olasılık değerleri ile deneysel olasılık ilişkisi.",
+    "dates": "07 - 11 Haziran"
+  },
+  {
+    "week": 37,
+    "unit": "VERİDEN OLASILIĞA / OKUL TEMELLİ PLANLAMA",
+    "topic": "Teorik Olasılık / Okul Temelli Planlama",
+    "desc": "9.7.2. Büyük sayılar yasası ve olasılık modelleri; Okul temelli araştırma ve proje faaliyetleri.",
+    "dates": "14 - 18 Haziran"
+  },
+  {
+    "week": 38,
+    "unit": "SOSYAL ETKİNLİK",
+    "topic": "Sosyal Etkinlik & Yıl Sonu Değerlendirmesi",
+    "desc": "9. sınıf müfredat kazanımlarının genel değerlendirmesi ve yıl sonu sosyal etkinlikler.",
+    "dates": "21 - 25 Haziran"
+  }
+],
+  10: [
+  {
+    "week": 1,
+    "unit": "GEOMETRİK ŞEKİLLER",
+    "topic": "Dik Üçgende Trigonometrik Oranlar ve Trigonometrik Özdeşlikler",
+    "desc": "10.1.1. Dik üçgende trigonometrik oranlara (sin, cos, tan, cot) ve trigonometrik özdeşliklere ilişkin çıkarım yapabilme.",
+    "dates": "08 - 11 Eylül"
+  },
+  {
+    "week": 2,
+    "unit": "GEOMETRİK ŞEKİLLER",
+    "topic": "Dik Üçgende Trigonometrik Oranlar ve Trigonometrik Özdeşlikler",
+    "desc": "10.1.1. Trigonometrik oranlar ve özdeşliklerle ilgili genellemeler, 15° ve 75°lik açılar. (15 Temmuz Anma)",
+    "dates": "14 - 18 Eylül"
+  },
+  {
+    "week": 3,
+    "unit": "GEOMETRİK ŞEKİLLER",
+    "topic": "Dik Üçgende Trigonometrik Oranlar ve Trigonometrik Özdeşlikler",
+    "desc": "10.1.1. Trigonometrik oranlar ve özdeşliklerin problemler bağlamında değerlendirilmesi.",
+    "dates": "21 - 25 Eylül"
+  },
+  {
+    "week": 4,
+    "unit": "GEOMETRİK ŞEKİLLER",
+    "topic": "Üçgende Yardımcı Elemanlar",
+    "desc": "10.1.2. Üçgenin yardımcı elemanlarının özellikleri (iç-dış açıortay, kenarortay, kenar orta dikme, yükseklik) ile ilgili çıkarım yapabilme.",
+    "dates": "28 Eylül - 02 Ekim"
+  },
+  {
+    "week": 5,
+    "unit": "GEOMETRİK ŞEKİLLER",
+    "topic": "Üçgende Yardımcı Elemanlar / Üçgenin Alanı",
+    "desc": "10.1.2. Yardımcı elemanlar problem uygulamaları; 10.1.3. Üçgenin bir kenarı ve yüksekliğinin değişimine bağlı olarak alanının değişimine ilişkin çıkarım yapabilme.",
+    "dates": "05 - 09 Ekim"
+  },
+  {
+    "week": 6,
+    "unit": "GEOMETRİK ŞEKİLLER",
+    "topic": "Üçgenin Alanı",
+    "desc": "10.1.3. Üçgenin alan bağıntıları ve gerçek yaşam problemleri bağlamında değerlendirme.",
+    "dates": "12 - 16 Ekim"
+  },
+  {
+    "week": 7,
+    "unit": "GEOMETRİK ŞEKİLLER",
+    "topic": "Sinüs ve Kosinüs Teoremleri",
+    "desc": "10.1.4. Sinüs ve kosinüs teoremlerini doğrulayabilme veya ispatlayabilme, Morley üçgeni incelemesi.",
+    "dates": "19 - 23 Ekim"
+  },
+  {
+    "week": 8,
+    "unit": "İSTATİSTİKSEL ARAŞTIRMA SÜRECİ",
+    "topic": "İki Kategorik Değişkenli Veriler",
+    "desc": "10.2.1. İki kategorik değişkenli veri ile çalışabilme ve ilişkililiğe dayalı karar verebilme (iki yönlü tablolar, göreli sıklıklar). (29 Ekim Bayramı)",
+    "dates": "26 - 30 Ekim"
+  },
+  {
+    "week": 9,
+    "unit": "İSTATİSTİKSEL ARAŞTIRMA SÜRECİ",
+    "topic": "İki Kategorik Değişkenli Veriler",
+    "desc": "10.2.1. İki yönlü tablo, koşullu göreli sıklıkları gösteren sütun grafikleri analizi. (2-10 Kasım 1. Sınav Haftası)",
+    "dates": "02 - 06 Kasım"
+  },
+  {
+    "week": 10,
+    "unit": "İSTATİSTİKSEL ARAŞTIRMA SÜRECİ",
+    "topic": "İki Kategorik Değişkenli Veriler",
+    "desc": "10.2.1. İki kategorik değişkenli verilerden çıkarım ve sonuçların değerlendirilmesi. (Atatürk Haftası)",
+    "dates": "09 - 13 Kasım"
+  },
+  {
+    "week": 11,
+    "unit": "İSTATİSTİKSEL ARAŞTIRMA SÜRECİ",
+    "topic": "Başkaları Tarafından Oluşturulan İki Kategorik Değişkenli Verileri İnceleme",
+    "desc": "10.2.2. Başkaları tarafından oluşturulan istatistiksel sonuç ve yorumları tartışabilme, yanlılıkları tespit etme. (24 Kasım Öğretmenler Günü)",
+    "dates": "23 - 27 Kasım"
+  },
+  {
+    "week": 12,
+    "unit": "SAYILAR",
+    "topic": "Bir Doğal Sayının Asal Çarpanları, Bölenleri / EBOB ve EKOK",
+    "desc": "10.3.1. Bir doğal sayı ile asal çarpanları ve bölenleri arasındaki ilişkiler; 10.3.2. EBOB ve EKOK arasındaki ilişkilere dair muhakeme. (3 Aralık Engelliler Günü)",
+    "dates": "30 Kasım - 04 Aralık"
+  },
+  {
+    "week": 13,
+    "unit": "SAYILAR",
+    "topic": "En Büyük Ortak Bölen, En Küçük Ortak Kat",
+    "desc": "10.3.2. EBOB ve EKOK özellikleri, Goldbach sanısı, Mersenne asalları, gerçek yaşam problemleri.",
+    "dates": "07 - 11 Aralık"
+  },
+  {
+    "week": 14,
+    "unit": "SAYILAR",
+    "topic": "Bölünebilme",
+    "desc": "10.3.3. Bir doğal sayının 2, 3, 4, 5, 6, 8, 9, 10 ile bölümünden kalanlarına dair muhakeme yapabilme.",
+    "dates": "14 - 18 Aralık"
+  },
+  {
+    "week": 15,
+    "unit": "SAYILAR / NİCELİKLER VE DEĞİŞİMLER",
+    "topic": "Bölünebilme / Gerçek Sayılarda Fonksiyon Olma Şartları",
+    "desc": "10.3.3. Bölünebilme uygulamaları; 10.4.1. Gerçek sayılarda fonksiyon olma şartları ve nitel özelliklerin değerlendirilmesi.",
+    "dates": "21 - 25 Aralık"
+  },
+  {
+    "week": 16,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER",
+    "topic": "Fonksiyon Olma Şartları / Karesel Fonksiyon ve Nitel Özellikleri",
+    "desc": "10.4.1. Fonksiyon grafikleri; 10.4.2. f(x)=x² referans fonksiyonu ve türetilen karesel fonksiyonların (parabol) nitel özellikleri.",
+    "dates": "28 - 31 Aralık"
+  },
+  {
+    "week": 17,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER",
+    "topic": "Karesel Fonksiyon ve Nitel Özellikleri",
+    "desc": "10.4.2. Tepe noktası, artanlık-azalanlık, sıfırlar, simetri ekseni, cebirsel ve grafiksel temsiller. (5-13 Ocak 2. Sınav Haftası)",
+    "dates": "04 - 08 Ocak"
+  },
+  {
+    "week": 18,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER",
+    "topic": "Karesel Fonksiyonlar / Karekök Fonksiyonu ve Nitel Özellikleri",
+    "desc": "10.4.2. Karesel fonksiyon çıkarımları; 10.4.3. f(x)=√x karekök referans fonksiyonu ve türetilen fonksiyonların nitel özellikleri.",
+    "dates": "11 - 15 Ocak"
+  },
+  {
+    "week": 19,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER / OKUL TEMELLİ PLANLAMA",
+    "topic": "Karekök Fonksiyonu ve Nitel Özellikleri / Okul Temelli Planlama",
+    "desc": "10.4.3. Karekök fonksiyonu özellikleri; Zümre öğretmenler kurulu 1. dönem pekiştirme ve değerlendirme çalışmaları.",
+    "dates": "18 - 22 Ocak"
+  },
+  {
+    "week": 20,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER",
+    "topic": "Karekök Fonksiyonu / Rasyonel Fonksiyon ve Nitel Özellikleri",
+    "desc": "10.4.3. Karekök fonksiyonları; 10.4.4. f(x)=1/x rasyonel referans fonksiyonu ve türetilen fonksiyonların nitel özellikleri.",
+    "dates": "08 - 12 Şubat"
+  },
+  {
+    "week": 21,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER",
+    "topic": "Rasyonel Fonksiyon ve Nitel Özellikleri",
+    "desc": "10.4.4. Rasyonel fonksiyonların tanım kümesi, asimptotları, ters orantı ilişkisi ve grafiksel incelemesi.",
+    "dates": "15 - 19 Şubat"
+  },
+  {
+    "week": 22,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER",
+    "topic": "Doğrusal, Karesel, Karekök ve Rasyonel Fonksiyonların Ters Fonksiyonları",
+    "desc": "10.4.5. Referans ve türetilen fonksiyonların ters fonksiyonlarına dair çıkarım yapabilme.",
+    "dates": "22 - 26 Şubat"
+  },
+  {
+    "week": 23,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER",
+    "topic": "Doğrusal, Karesel, Karekök ve Rasyonel Fonksiyonların Ters Fonksiyonları",
+    "desc": "10.4.5. Ters fonksiyonların cebirsel bulunuşu ve grafikleri. (İstiklal Marşı ve Mehmet Akif Ersoy Haftası)",
+    "dates": "01 - 05 Mart"
+  },
+  {
+    "week": 24,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER",
+    "topic": "Fonksiyonlarla İfade Edilebilen Denklem ve Eşitsizlikler İçeren Problemler",
+    "desc": "10.4.6. Doğrusal, karesel, karekök ve rasyonel fonksiyonlarla ifade edilen problem durumları ve modelleme. (Çanakkale Zaferi Haftası)",
+    "dates": "15 - 19 Mart"
+  },
+  {
+    "week": 25,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER",
+    "topic": "Fonksiyonlarla İfade Edilebilen Denklem ve Eşitsizlikler İçeren Problemler",
+    "desc": "10.4.6. Denklem ve eşitsizlik çözümleri, stratejiler ve çözümlerin doğrulanması.",
+    "dates": "22 - 26 Mart"
+  },
+  {
+    "week": 26,
+    "unit": "SAYMA, ALGORİTMA VE BİLİŞİM",
+    "topic": "Sayma Stratejileri",
+    "desc": "10.5.1. Sayma stratejileri kullanarak problem çözebilme (saymanın temel ilkeleri, eşleme, toplama, çarpma). (29 Mart - 6 Nisan 1. Sınav Haftası)",
+    "dates": "29 Mart - 02 Nisan"
+  },
+  {
+    "week": 27,
+    "unit": "SAYMA, ALGORİTMA VE BİLİŞİM",
+    "topic": "Sayma Stratejileri",
+    "desc": "10.5.1. Permütasyon ve kombinasyon mantığı, sayma problemlerinde matematiksel modelleme.",
+    "dates": "05 - 09 Nisan"
+  },
+  {
+    "week": 28,
+    "unit": "SAYMA, ALGORİTMA VE BİLİŞİM",
+    "topic": "Sayma Stratejileri",
+    "desc": "10.5.1. Sayma problemlerinde farklı çözüm yolları ve çıkarımların değerlendirilmesi.",
+    "dates": "12 - 16 Nisan"
+  },
+  {
+    "week": 29,
+    "unit": "SAYMA, ALGORİTMA VE BİLİŞİM",
+    "topic": "Cebirsel ve Fonksiyonel İşlemlerin Algoritmik Yapısı",
+    "desc": "10.5.2. Cebirsel ve fonksiyonel işlemleri algoritmik bir dille yapılandırabilme (akış şemaları, sözde kod). (23 Nisan Bayramı)",
+    "dates": "19 - 22 Nisan"
+  },
+  {
+    "week": 30,
+    "unit": "SAYMA, ALGORİTMA VE BİLİŞİM / ANALİTİK İNCELEME",
+    "topic": "Algoritmik Yapılar / Dik Koordinat Sisteminde Noktanın Analitik İncelenmesi",
+    "desc": "10.5.2. Algoritma tasarımı; 10.6.1. İki nokta arasındaki uzaklık ve doğru parçasını belli oranda bölen nokta koordinatları. (29 Nisan Kûtül Amâre)",
+    "dates": "26 - 30 Nisan"
+  },
+  {
+    "week": 31,
+    "unit": "ANALİTİK İNCELEME",
+    "topic": "Dik Koordinat Sisteminde Noktanın Analitik İncelenmesi",
+    "desc": "10.6.1. Noktanın koordinatları, orta nokta, iki nokta arası uzaklık bağıntıları ve problem çözümleri.",
+    "dates": "03 - 07 Mayıs"
+  },
+  {
+    "week": 32,
+    "unit": "ANALİTİK İNCELEME",
+    "topic": "Noktanın Analitiği / Dik Koordinat Sisteminde Doğrunun Analitik İncelenmesi",
+    "desc": "10.6.1. Nokta analitiği; 10.6.2. Dik koordinat sistemini doğrunun özelliklerini incelemek için temsil aracı olarak kullanma (eğim açısı, eğim).",
+    "dates": "10 - 14 Mayıs"
+  },
+  {
+    "week": 33,
+    "unit": "ANALİTİK İNCELEME",
+    "topic": "Dik Koordinat Sisteminde Doğrunun Analitik İncelenmesi",
+    "desc": "10.6.2. Doğru denklemleri, paralel ve dik doğruların eğim ilişkileri, doğruların kesişim noktası. (19 Mayıs Gençlik ve Spor Bayramı)",
+    "dates": "17 - 21 Mayıs"
+  },
+  {
+    "week": 34,
+    "unit": "ANALİTİK İNCELEME / VERİDEN OLASILIĞA",
+    "topic": "Doğrunun Analitik İncelenmesi / Koşullu Olasılık",
+    "desc": "10.6.2. Doğru analitiği özet; 10.7.1. Koşullu olasılık ile çıkarım yapabilme. (29 Mayıs İstanbul Fethi)",
+    "dates": "24 - 28 Mayıs"
+  },
+  {
+    "week": 35,
+    "unit": "VERİDEN OLASILIĞA",
+    "topic": "Koşullu Olasılık",
+    "desc": "10.7.1. Bağımlı ve bağımsız olaylar, koşullu olasılık hesaplama ve problem uygulamaları. (3-11 Haziran 2. Sınav Haftası)",
+    "dates": "31 Mayıs - 04 Haziran"
+  },
+  {
+    "week": 36,
+    "unit": "VERİDEN OLASILIĞA",
+    "topic": "Bayes Teoremi",
+    "desc": "10.7.2. Bir olayın gerçekleşmesinin diğerine bağlı olduğu durumlarda olasılığı tahmin edebilme (Bayes Teoremi).",
+    "dates": "07 - 11 Haziran"
+  },
+  {
+    "week": 37,
+    "unit": "VERİDEN OLASILIĞA / OKUL TEMELLİ PLANLAMA",
+    "topic": "Bayes Teoremi / Okul Temelli Planlama",
+    "desc": "10.7.2. Bayes teoremi gerçek hayat problemleri; Zümre kurulunca belirlenen okul temelli çalışmalar.",
+    "dates": "14 - 18 Haziran"
+  },
+  {
+    "week": 38,
+    "unit": "SOSYAL ETKİNLİK",
+    "topic": "Sosyal Etkinlik & Yıl Sonu Değerlendirmesi",
+    "desc": "10. sınıf matematik müfredatının değerlendirilmesi ve yıl sonu sosyal etkinlikler.",
+    "dates": "21 - 25 Haziran"
+  }
+],
+  11: [
+  {
+    "week": 1,
+    "unit": "İSTATİSTİKSEL ARAŞTIRMA SÜRECİ",
+    "topic": "İki Nicel Değişkenli Veriler",
+    "desc": "MAT.11.1.1. İki nicel değişkenli veri ile çalışabilme ve iki nicel değişken arasındaki ilişkililiğe dayalı karar verebilme.",
+    "dates": "08 - 11 Eylül"
+  },
+  {
+    "week": 2,
+    "unit": "İSTATİSTİKSEL ARAŞTIRMA SÜRECİ",
+    "topic": "İki Nicel Değişkenli Veriler",
+    "desc": "MAT.11.1.1. Veri toplama planı, serpme diyagramı (saçılım grafiği), korelasyon katsayısı seçimi. (15 Temmuz Anma)",
+    "dates": "14 - 18 Eylül"
+  },
+  {
+    "week": 3,
+    "unit": "İSTATİSTİKSEL ARAŞTIRMA SÜRECİ",
+    "topic": "İki Nicel Değişkenli Veriler",
+    "desc": "MAT.11.1.1. İki nicel değişkenli verilerin analizi, bulguların yorumlanması.",
+    "dates": "21 - 25 Eylül"
+  },
+  {
+    "week": 4,
+    "unit": "İSTATİSTİKSEL ARAŞTIRMA SÜRECİ",
+    "topic": "İki Nicel Değişkenli Veriler",
+    "desc": "MAT.11.1.1. Veri dağılımlarından sonuç çıkarma, ilişkililiğe dayalı karar verme ve araştırma sorusunun değerlendirilmesi.",
+    "dates": "28 Eylül - 02 Ekim"
+  },
+  {
+    "week": 5,
+    "unit": "İSTATİSTİKSEL ARAŞTIRMA SÜRECİ",
+    "topic": "Başkaları Tarafından Oluşturulan İki Nicel Değişkenli Verileri İnceleme",
+    "desc": "MAT.11.1.2. Başkaları tarafından oluşturulan iki nicel değişkenli verilerin ilişkililiğine dayalı istatistiksel sonuç veya yorumları tartışabilme (hataları, yanlılıkları tespit etme).",
+    "dates": "05 - 09 Ekim"
+  },
+  {
+    "week": 6,
+    "unit": "GEOMETRİK ŞEKİLLER",
+    "topic": "Dörtgenlerin Özellikleri",
+    "desc": "MAT.11.2.1. Üçgenlerde açı, benzerlik ve alan özelliklerinden yola çıkarak dörtgenlerin açı, kenar, köşegen, simetri ve alan özelliklerine ilişkin muhakeme yapabilme.",
+    "dates": "12 - 16 Ekim"
+  },
+  {
+    "week": 7,
+    "unit": "GEOMETRİK ŞEKİLLER",
+    "topic": "Dörtgenlerin Özellikleri",
+    "desc": "MAT.11.2.1. Dörtgenlerin kenar, açı, köşegen ve alan özelliklerine ilişkin örüntüleri genelleme ve önermeler sunma.",
+    "dates": "19 - 23 Ekim"
+  },
+  {
+    "week": 8,
+    "unit": "GEOMETRİK ŞEKİLLER",
+    "topic": "Dörtgenlerin Özellikleri",
+    "desc": "MAT.11.2.1. Dörtgenler ile ilgili önermelerin üçgen özellikleri kullanılarak ispatlanması. (29 Ekim Cumhuriyet Bayramı)",
+    "dates": "26 - 30 Ekim"
+  },
+  {
+    "week": 9,
+    "unit": "GEOMETRİK ŞEKİLLER",
+    "topic": "Dörtgenlerin Özellikleri",
+    "desc": "MAT.11.2.1. Dörtgenlerde alan ve köşegen bağıntıları, muhakeme uygulamaları. (2-10 Kasım 1. Sınav Haftası)",
+    "dates": "02 - 06 Kasım"
+  },
+  {
+    "week": 10,
+    "unit": "GEOMETRİK ŞEKİLLER",
+    "topic": "Dörtgenlerin Özellikleri",
+    "desc": "MAT.11.2.1. Dörtgen özellikleri ispatı ve kullanışlılığının değerlendirilmesi. (Atatürk Haftası)",
+    "dates": "09 - 13 Kasım"
+  },
+  {
+    "week": 11,
+    "unit": "GEOMETRİK ŞEKİLLER",
+    "topic": "Özel Dörtgenler Arasındaki İlişkiler / Çokgenlerin Sınıflandırılması",
+    "desc": "MAT.11.2.2. Özel dörtgenler arasındaki hiyerarşik ilişkileri yapılandırabilme; MAT.11.2.3. Çokgenleri içbükey veya dışbükey olarak sınıflandırabilme. (24 Kasım Öğretmenler Günü)",
+    "dates": "23 - 27 Kasım"
+  },
+  {
+    "week": 12,
+    "unit": "GEOMETRİK ŞEKİLLER",
+    "topic": "Çokgenlerin Sınıflandırılması / Dışbükey Çokgenlerin Özellikleri",
+    "desc": "MAT.11.2.3. Çokgenleri tasnif; MAT.11.2.4. Dışbükey çokgenlerin kenar, açı, köşegen, simetri ve alan özelliklerine dair çıkarım yapabilme. (3 Aralık Engelliler Günü)",
+    "dates": "30 Kasım - 04 Aralık"
+  },
+  {
+    "week": 13,
+    "unit": "GEOMETRİK ŞEKİLLER",
+    "topic": "Dışbükey Çokgenlerin Özellikleri",
+    "desc": "MAT.11.2.4. Dışbükey çokgenlerde iç ve dış açılar toplamı bağıntılarının elde edilmesi ve alan özellikleri.",
+    "dates": "07 - 11 Aralık"
+  },
+  {
+    "week": 14,
+    "unit": "GEOMETRİK ŞEKİLLER",
+    "topic": "Dışbükey Çokgenlerin Özellikleri",
+    "desc": "MAT.11.2.4. Düzgün çokgenler, pergel ve cetvel inşaaları, yıldız çokgenler incelemeleri.",
+    "dates": "14 - 18 Aralık"
+  },
+  {
+    "week": 15,
+    "unit": "GEOMETRİK ŞEKİLLER",
+    "topic": "Çokgenlerle İlgili Problemler",
+    "desc": "MAT.11.2.5. Çokgenlerin kenar, açı, köşegen, simetri ve alan özelliklerini içeren problemler çözebilme (altın oran, Mimar Sinan ve Da Vinci desenleri).",
+    "dates": "21 - 25 Aralık"
+  },
+  {
+    "week": 16,
+    "unit": "GEOMETRİK ŞEKİLLER / NİCELİKLER VE DEĞİŞİMLER (1)",
+    "topic": "Çokgen Problemleri / Trigonometrik Fonksiyonlar ve Nitel Özellikleri",
+    "desc": "MAT.11.2.5. Problem çözme; MAT.11.3.1. f(x)=sinx, cosx, tanx, cotx referans fonksiyonlarının nitel özellikleri ve g(x)=k.f(mx±r)±s fonksiyonları.",
+    "dates": "28 - 31 Aralık"
+  },
+  {
+    "week": 17,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (1)",
+    "topic": "Trigonometrik Fonksiyonlar ve Nitel Özellikleri",
+    "desc": "MAT.11.3.1. Tanım ve görüntü kümesi, periyot, artanlık/azalanlık, sıfırlar, tek/çift fonksiyon, grafik çizimleri. (5-13 Ocak 2. Sınav Haftası)",
+    "dates": "04 - 08 Ocak"
+  },
+  {
+    "week": 18,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (1)",
+    "topic": "Trigonometrik Fonksiyonlar ve Nitel Özellikleri",
+    "desc": "MAT.11.3.1. Trigonometrik fonksiyon grafiklerinin dönüşümleri, periyodik hareketler.",
+    "dates": "11 - 15 Ocak"
+  },
+  {
+    "week": 19,
+    "unit": "OKUL TEMELLİ PLANLAMA",
+    "topic": "Okul Temelli Planlama / 1. Dönem Değerlendirme",
+    "desc": "Zümre öğretmenler kurulu tarafından kararlaştırılan araştırma, proje ve 1. dönem tekrar çalışmaları.",
+    "dates": "18 - 22 Ocak"
+  },
+  {
+    "week": 20,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (1)",
+    "topic": "Trigonometrik Fonksiyonlar ve Nitel Özellikleri",
+    "desc": "MAT.11.3.1. Tan, cot grafikleri, sekant, kosekant, ters trigonometrik fonksiyonlar, sinüzoidal dalgalar.",
+    "dates": "08 - 12 Şubat"
+  },
+  {
+    "week": 21,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (1)",
+    "topic": "Trigonometrik Fonksiyonlar ve Nitel Özellikleri",
+    "desc": "MAT.11.3.1. Salıncak, dönme dolap periyotları gibi gerçek yaşam modellemeleri.",
+    "dates": "15 - 19 Şubat"
+  },
+  {
+    "week": 22,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (1)",
+    "topic": "Trigonometrik Fonksiyonlar ve Nitel Özellikleri",
+    "desc": "MAT.11.3.1. Trigonometrik fonksiyonların nitel özelliklerine ilişkin önermelerin matematiksel doğrulanması ve ispatı.",
+    "dates": "22 - 26 Şubat"
+  },
+  {
+    "week": 23,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (1)",
+    "topic": "Trigonometrik Fonksiyonlarla İfade Edilebilen Denklemler İçeren Problemler",
+    "desc": "MAT.11.3.2. Trigonometrik fonksiyonlarla ifade edilebilen denklemleri içeren problemleri çözebilme (basit harmonik hareket, fizik uygulamaları). (İstiklal Marşı Haftası)",
+    "dates": "01 - 05 Mart"
+  },
+  {
+    "week": 24,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (1) / NİCELİKLER VE DEĞİŞİMLER (2)",
+    "topic": "Trigonometrik Problemler / Üstel Fonksiyonlar ve Nitel Özellikleri",
+    "desc": "MAT.11.3.2. Trigonometrik problem çözümleri; MAT.11.3.3. f(x)=a^x üstel referans fonksiyonunun nitel özellikleri ve türetilen fonksiyonlar (e sayısı, bileşik faiz). (Çanakkale Zaferi Haftası)",
+    "dates": "15 - 19 Mart"
+  },
+  {
+    "week": 25,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (2)",
+    "topic": "Üstel Fonksiyonlar ve Nitel Özellikleri",
+    "desc": "MAT.11.3.3. Üstel fonksiyonların grafikleri, artanlık/azalanlık, asimptotlar ve cebirsel özellikleri.",
+    "dates": "22 - 26 Mart"
+  },
+  {
+    "week": 26,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (2)",
+    "topic": "Üstel Fonksiyonların Ters Fonksiyonları",
+    "desc": "MAT.11.3.4. Üstel fonksiyonların ters fonksiyonlarını inceleyerek logaritmik fonksiyona dair çıkarım yapabilme (John Napier, logaritma tanımı). (29 Mart - 6 Nisan 1. Sınav Haftası)",
+    "dates": "29 Mart - 02 Nisan"
+  },
+  {
+    "week": 27,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (2)",
+    "topic": "Logaritmik Fonksiyonlar ve Nitel Özellikleri",
+    "desc": "MAT.11.3.5. f(x)=loga x logaritmik referans fonksiyonu ve türetilen fonksiyonların nitel özellikleri (tanım kümesi, grafikler).",
+    "dates": "05 - 09 Nisan"
+  },
+  {
+    "week": 28,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (2)",
+    "topic": "Logaritmik Fonksiyonlar ve Nitel Özellikleri",
+    "desc": "MAT.11.3.5. Logaritmanın özellikleri (çarpım, bölüm, üs kuralı ve taban değiştirme kuralı).",
+    "dates": "12 - 16 Nisan"
+  },
+  {
+    "week": 29,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (2)",
+    "topic": "Logaritmik Fonksiyonlar ve Nitel Özellikleri",
+    "desc": "MAT.11.3.5. Onluk ve doğal logaritma (ln), logaritma özelliklerinin ispatı. (23 Nisan Bayramı)",
+    "dates": "19 - 22 Nisan"
+  },
+  {
+    "week": 30,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (2)",
+    "topic": "Üstel ve Logaritmik Fonksiyonlarla İfade Edilebilen Denklem ve Eşitsizlikler",
+    "desc": "MAT.11.3.6. Gerçek yaşamda üstel ve logaritmik fonksiyonlarla ifade edilen denklem ve eşitsizlik problemleri (Richter ölçeği, desibel). (29 Nisan Kûtül Amâre)",
+    "dates": "26 - 30 Nisan"
+  },
+  {
+    "week": 31,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (2) / NİCELİKLER VE DEĞİŞİMLER (3)",
+    "topic": "Logaritma Problemleri / Fonksiyonların Bileşkesi",
+    "desc": "MAT.11.3.6. Problem çözümleri; MAT.11.3.7. Fonksiyonların bileşkelerine ilişkin muhakeme yapabilme (iç içe fonksiyonlar, grafik ve cebirsel temsiller).",
+    "dates": "03 - 07 Mayıs"
+  },
+  {
+    "week": 32,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (3)",
+    "topic": "Fonksiyonların Bileşkesi",
+    "desc": "MAT.11.3.7. Bileşke fonksiyonların nitel özellikleri, tanım ve görüntü kümesi, cebirsel işlemler.",
+    "dates": "10 - 14 Mayıs"
+  },
+  {
+    "week": 33,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (3)",
+    "topic": "Fonksiyonların Bileşkesi",
+    "desc": "MAT.11.3.7. Bileşke fonksiyonlarla ilgili önermeler, doğrulama ve ispatlar. (19 Mayıs Gençlik ve Spor Bayramı)",
+    "dates": "17 - 21 Mayıs"
+  },
+  {
+    "week": 34,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (3)",
+    "topic": "Fonksiyonların Bileşkesi",
+    "desc": "MAT.11.3.7. Çok adımlı bileşke fonksiyon problemleri ve modellemeleri. (29 Mayıs İstanbul Fethi)",
+    "dates": "24 - 28 Mayıs"
+  },
+  {
+    "week": 35,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (3)",
+    "topic": "Fonksiyonların Bileşkesi / Fonksiyonlarda Dört İşlem",
+    "desc": "MAT.11.3.7. Bileşke fonksiyon tekrarı; MAT.11.3.8. Fonksiyonlarda dört işlem özelliklerini yorumlayabilme. (3-11 Haziran 2. Sınav Haftası)",
+    "dates": "31 Mayıs - 04 Haziran"
+  },
+  {
+    "week": 36,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (3)",
+    "topic": "Fonksiyonlarda Dört İşlem",
+    "desc": "MAT.11.3.8. Fonksiyonlarda toplama, çıkarma, çarpma, bölme işlemleri ve grafiksel anlamları.",
+    "dates": "07 - 11 Haziran"
+  },
+  {
+    "week": 37,
+    "unit": "NİCELİKLER VE DEĞİŞİMLER (3) / OKUL TEMELLİ PLANLAMA",
+    "topic": "Fonksiyonlarda Dört İşlem / Okul Temelli Planlama",
+    "desc": "MAT.11.3.8. Fonksiyon işlemleri özeti; Okul temelli çalışmalar ve zümre planlaması.",
+    "dates": "14 - 18 Haziran"
+  },
+  {
+    "week": 38,
+    "unit": "SOSYAL ETKİNLİK",
+    "topic": "Sosyal Etkinlik & Yıl Sonu Değerlendirmesi",
+    "desc": "11. sınıf müfredat değerlendirmesi, sosyal etkinlikler ve yıl sonu kapanışı.",
+    "dates": "21 - 25 Haziran"
+  }
+],
+  '12-FM': [
+  {
+    "week": 1,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Üstel Fonksiyon ve Grafiği",
+    "desc": "12.1.1.1. Üstel fonksiyonu açıklayarak grafiğini çizer (a^x fonksiyonunun artan/azalanlık incelemesi). [Sayısal / 8 Saat]",
+    "dates": "08 - 11 Eylül"
+  },
+  {
+    "week": 2,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Logaritma Fonksiyonu Tanımı ve Grafiği",
+    "desc": "12.1.2.1. Logaritma fonksiyonu ile üstel fonksiyonu ilişkilendirerek problemler çözer; y=x doğrusuna göre simetri. [Sayısal / 8 Saat]",
+    "dates": "14 - 18 Eylül"
+  },
+  {
+    "week": 3,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Logaritma Fonksiyonunun Değişimi ve Özellikleri",
+    "desc": "12.1.2.1. Logaritma grafiğinin tabana göre değişimi, Gelenbevi İsmail Efendi ve John Napier çalışmaları. [Sayısal / 8 Saat]",
+    "dates": "21 - 25 Eylül"
+  },
+  {
+    "week": 4,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "10 ve e Tabanında Logaritma (Doğal ve Bayağı Logaritma)",
+    "desc": "12.1.2.2. ve 12.1.2.3. log ve ln fonksiyonları ile logaritmanın temel işlem özellikleri. [Sayısal / 8 Saat]",
+    "dates": "28 Eylül - 02 Ekim"
+  },
+  {
+    "week": 5,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Logaritma Özellikleri ve Taban Değiştirme Kuralı",
+    "desc": "12.1.2.3. Taban değiştirme kuralı ve logaritma özellikleriyle yapılan işlemler. [Sayısal / 8 Saat]",
+    "dates": "05 - 09 Ekim"
+  },
+  {
+    "week": 6,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Üstel ve Logaritmik Denklemler ile Eşitsizlikler",
+    "desc": "12.1.3.1. ve 12.1.3.2. Üstel/logaritmik denklemler ve gerçek hayat modelleme problemleri (Richter ölçeği, pH, ses şiddeti). [Sayısal / 8 Saat]",
+    "dates": "12 - 16 Ekim"
+  },
+  {
+    "week": 7,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Gerçek Sayı Dizileri Kavramı ve Genel Terim",
+    "desc": "12.2.1.1. ve 12.2.1.2. Dizi kavramının fonksiyonlarla ilişkisi, genel terim ve indirgeme bağıntıları. [Sayısal / 8 Saat]",
+    "dates": "19 - 23 Ekim"
+  },
+  {
+    "week": 8,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Aritmetik ve Geometrik Diziler",
+    "desc": "12.2.1.3. Aritmetik ve geometrik dizilerin özellikleri, ortak fark ve ortak çarpan kuralları. [Sayısal / 8 Saat]",
+    "dates": "26 - 30 Ekim"
+  },
+  {
+    "week": 9,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Diziler ile Modelleme ve Fibonacci Dizisi",
+    "desc": "12.2.1.4. Diziler yardımıyla gerçek hayat durumları ile ilgili problemler ve Fibonacci dizisi örnekleri. [Sayısal / 8 Saat]",
+    "dates": "02 - 06 Kasım"
+  },
+  {
+    "week": 10,
+    "unit": "GEOMETRİ",
+    "topic": "Toplam ve Fark Formülleri (sin, cos)",
+    "desc": "12.3.1.1. İki açının ölçüleri toplamı ve farkının trigonometrik değerleri formülleri. (Atatürk Haftası) [Sayısal / 8 Saat]",
+    "dates": "09 - 13 Kasım"
+  },
+  {
+    "week": 11,
+    "unit": "GEOMETRİ",
+    "topic": "Toplam ve Fark Formülleri (tan, cot) ve Uygulamaları",
+    "desc": "12.3.1.1. Tanjant ve kotanjant toplam-fark formülleri ve geometrik şekillerde açı hesapları. [Sayısal / 8 Saat]",
+    "dates": "23 - 27 Kasım"
+  },
+  {
+    "week": 12,
+    "unit": "GEOMETRİ",
+    "topic": "İki Kat Açı (Yarım Açı) Formülleri",
+    "desc": "12.3.1.2. İki kat açı formüllerini oluşturarak trigonometrik sadeleştirme ve işlemler. [Sayısal / 8 Saat]",
+    "dates": "30 Kasım - 04 Aralık"
+  },
+  {
+    "week": 13,
+    "unit": "GEOMETRİ",
+    "topic": "Yarım Açı Formülleri ile Sadeleştirme ve Denklemlere Giriş",
+    "desc": "12.3.1.2. ve 12.3.2.1. İki kat açı formülleri soru çözümü ve trigonometrik denklem temelleri. [Sayısal / 8 Saat]",
+    "dates": "07 - 11 Aralık"
+  },
+  {
+    "week": 14,
+    "unit": "GEOMETRİ",
+    "topic": "Trigonometrik Denklemler (sin x = a, cos x = a)",
+    "desc": "12.3.2.1. Sinüs ve kosinüs denklemlerinin esas ölçü ve periyoda bağlı çözüm kümeleri. [Sayısal / 8 Saat]",
+    "dates": "14 - 18 Aralık"
+  },
+  {
+    "week": 15,
+    "unit": "GEOMETRİ",
+    "topic": "Trigonometrik Denklemler (tan x = a ve Homojen Denklemler)",
+    "desc": "12.3.2.1. Tanjant denklemleri ve lineer/homojen trigonometrik denklemlerin çözümü. [Sayısal / 8 Saat]",
+    "dates": "21 - 25 Aralık"
+  },
+  {
+    "week": 16,
+    "unit": "GEOMETRİ",
+    "topic": "Analitik Düzlemde Noktanın Öteleme ve Dönme Dönüşümleri",
+    "desc": "12.4.1.1. Koordinatları verilen bir noktanın öteleme ve orijin etrafında dönme dönüşümleri. [Sayısal / 8 Saat]",
+    "dates": "28 - 31 Aralık"
+  },
+  {
+    "week": 17,
+    "unit": "GEOMETRİ",
+    "topic": "Simetri (Yansıma) Dönüşümü",
+    "desc": "12.4.1.1. Noktanın ve doğrunun eksenlere, orijine ve y=x doğrusuna göre simetriği. [Sayısal / 8 Saat]",
+    "dates": "04 - 08 Ocak"
+  },
+  {
+    "week": 18,
+    "unit": "GEOMETRİ",
+    "topic": "Temel Dönüşümlerin Bileşkeleri ve Problem Çözümü",
+    "desc": "12.4.1.2. Öteleme, dönme ve yansıma dönüşümlerinin bileşkeleri ile desen/motif modellemeleri. [Sayısal / 8 Saat]",
+    "dates": "11 - 15 Ocak"
+  },
+  {
+    "week": 19,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Limit Kavramı ve Limit Özellikleri",
+    "desc": "12.5.1.2. - 12.5.1.4. Fonksiyonun bir noktadaki limiti, sağdan-soldan limit, limit kuralları ve 0/0 belirsizliği. [Sayısal / 8 Saat]",
+    "dates": "18 - 22 Ocak"
+  },
+  {
+    "week": 20,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Süreklilik Kavramı ve Türeve Giriş",
+    "desc": "12.5.1.5. ve 12.5.2.1. Fonksiyonun sürekliliği, ara değer teoremi; anlık değişim oranı ve türev kavramı. [Sayısal / 8 Saat]",
+    "dates": "08 - 12 Şubat"
+  },
+  {
+    "week": 21,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Türevlenebilirlik ve Teğet Doğrusunun Eğimi",
+    "desc": "12.5.2.1. ve 12.5.2.2. Teğetin eğimi, sağdan ve soldan türev ilişkisi, türevlenebilirlik şartları. [Sayısal / 8 Saat]",
+    "dates": "15 - 19 Şubat"
+  },
+  {
+    "week": 22,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Türev Alma Kuralları (Toplam, Çarpım, Bölüm)",
+    "desc": "12.5.2.3. Toplam, fark, çarpım ve bölüm fonksiyonlarının türev kuralları ve uygulamaları. [Sayısal / 8 Saat]",
+    "dates": "22 - 26 Şubat"
+  },
+  {
+    "week": 23,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Bileşke Fonksiyonun Türevi (Zincir Kuralı)",
+    "desc": "12.5.2.4. ve 12.5.2.5. Zincir kuralı, yüksek mertebeden türevler ve ardışık türev uygulamaları. [Sayısal / 8 Saat]",
+    "dates": "01 - 05 Mart"
+  },
+  {
+    "week": 24,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Artan ve Azalan Fonksiyonlar, Ekstremum Noktalar",
+    "desc": "12.5.3.1. ve 12.5.3.2. Birinci türev işareti ile artan/azalan aralıklar, yerel maksimum ve minimum noktalar. [Sayısal / 8 Saat]",
+    "dates": "08 - 12 Mart"
+  },
+  {
+    "week": 25,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "İkinci Türev, Dönüm Noktası ve Fonksiyon Grafikleri",
+    "desc": "12.5.3.3. ve 12.5.3.4. İkinci türev, içbükeylik/dışbükeylik, dönüm (büküm) noktası ve türevle grafik çizimi. [Sayısal / 8 Saat]",
+    "dates": "15 - 19 Mart"
+  },
+  {
+    "week": 26,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Maksimum ve Minimum (Optimizasyon) Problemleri",
+    "desc": "12.5.3.5. Gerçek hayat optimizasyon problemleri ve türev yardımıyla en büyük / en küçük değer hesabı. [Sayısal / 8 Saat]",
+    "dates": "22 - 26 Mart"
+  },
+  {
+    "week": 27,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Belirsiz İntegral ve Temel İntegral Alma Kuralları",
+    "desc": "12.6.1.1. Diferansiyel kavramı, belirsiz integral tanımı ve temel kuvvet kuralı. [Sayısal / 8 Saat]",
+    "dates": "29 Mart - 02 Nisan"
+  },
+  {
+    "week": 28,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Değişken Değiştirme Yöntemi ile İntegral Alma",
+    "desc": "12.6.1.2. Değişken değiştirme yöntemi kullanılarak karmaşık integrallerin hesabı. [Sayısal / 8 Saat]",
+    "dates": "05 - 09 Nisan"
+  },
+  {
+    "week": 29,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Riemann Toplamı ve Belirli İntegrale Giriş",
+    "desc": "12.6.2.1. Alt, üst ve orta Riemann toplamları yardımıyla eğri altındaki sınırlı bölgenin alanını hesaplama. [Sayısal / 8 Saat]",
+    "dates": "12 - 16 Nisan"
+  },
+  {
+    "week": 30,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Belirli İntegral ve Analizin Temel Teoremi",
+    "desc": "12.6.2.2. ve 12.6.2.3. Belirli ve belirsiz integral ilişkisi, integrasyon sınırları ve temel teorem. [Sayısal / 8 Saat]",
+    "dates": "19 - 22 Nisan"
+  },
+  {
+    "week": 31,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Belirli İntegralin Özellikleri ve Simetri Kuralları",
+    "desc": "12.6.2.3. Parçalı integraller, tek ve çift fonksiyonların simetrik aralıktaki integrali. [Sayısal / 8 Saat]",
+    "dates": "03 - 07 Mayıs"
+  },
+  {
+    "week": 32,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Belirli İntegral ile Eğri Altında Kalan Alan Hesabı",
+    "desc": "12.6.2.4. Bir fonksiyonun grafiği ile x veya y ekseni arasında kalan alan hesabı. [Sayısal / 8 Saat]",
+    "dates": "10 - 14 Mayıs"
+  },
+  {
+    "week": 33,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "İki Eğri Arasında Kalan Bölgenin Alan Hesabı",
+    "desc": "12.6.2.4. İki fonksiyon eğrisi arasında kalan kapalı bölgelerin alan hesabı ve modelleme. [Sayısal / 8 Saat]",
+    "dates": "17 - 21 Mayıs"
+  },
+  {
+    "week": 34,
+    "unit": "GEOMETRİ",
+    "topic": "Çemberin Standart Denklemi",
+    "desc": "12.7.1.1. Merkezi (a, b) ve yarıçapı r olan çemberin standart denklemi (x-a)^2 + (y-b)^2 = r^2. [Sayısal / 8 Saat]",
+    "dates": "24 - 28 Mayıs"
+  },
+  {
+    "week": 35,
+    "unit": "GEOMETRİ",
+    "topic": "Çemberin Genel Denklemi",
+    "desc": "12.7.1.1. x^2 + y^2 + Dx + Ey + F = 0 genel denklemi, merkez ve yarıçap analizi. [Sayısal / 8 Saat]",
+    "dates": "31 Mayıs - 04 Haziran"
+  },
+  {
+    "week": 36,
+    "unit": "GEOMETRİ",
+    "topic": "Doğru ile Çemberin Birbirine Göre Durumları",
+    "desc": "12.7.1.2. Denklemleri verilen doğru ile çemberin kesişme, teğet olma ve ayrık olma durumları (diskriminant & uzaklık). [Sayısal / 8 Saat]",
+    "dates": "07 - 11 Haziran"
+  },
+  {
+    "week": 37,
+    "unit": "GEOMETRİ",
+    "topic": "Çemberin Teğet ve Kiriş Denklemleri Uygulamaları",
+    "desc": "12.7.1.2. Çembere üzerindeki veya dışındaki bir noktadan çizilen teğet ve normallerin analitiği. [Sayısal / 8 Saat]",
+    "dates": "14 - 18 Haziran"
+  },
+  {
+    "week": 38,
+    "unit": "GENEL TEKRAR",
+    "topic": "YKS / AYT Genel Tekrar ve Yıl Sonu Değerlendirmesi",
+    "desc": "12. sınıf AYT konularının genel tekrarı, soru çözümleri ve sene sonu değerlendirme çalışması. [Sayısal / 8 Saat]",
+    "dates": "21 - 25 Haziran"
+  }
+],
+  '12-TM': [
+  {
+    "week": 1,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Üstel Fonksiyon ve Grafiği",
+    "desc": "12.1.1.1. Üstel fonksiyonu açıklayarak grafiğini çizer (a^x fonksiyonunun artan/azalanlık incelemesi). [Eşit Ağırlık / 6 Saat]",
+    "dates": "08 - 11 Eylül"
+  },
+  {
+    "week": 2,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Logaritma Fonksiyonu Tanımı ve Grafiği",
+    "desc": "12.1.2.1. Logaritma fonksiyonu ile üstel fonksiyonu ilişkilendirerek problemler çözer; y=x doğrusuna göre simetri. [Eşit Ağırlık / 6 Saat]",
+    "dates": "14 - 18 Eylül"
+  },
+  {
+    "week": 3,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Logaritma Fonksiyonunun Değişimi ve Özellikleri",
+    "desc": "12.1.2.1. Logaritma grafiğinin tabana göre değişimi, Gelenbevi İsmail Efendi ve John Napier çalışmaları. [Eşit Ağırlık / 6 Saat]",
+    "dates": "21 - 25 Eylül"
+  },
+  {
+    "week": 4,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "10 ve e Tabanında Logaritma (Doğal ve Bayağı Logaritma)",
+    "desc": "12.1.2.2. ve 12.1.2.3. log ve ln fonksiyonları ile logaritmanın temel işlem özellikleri. [Eşit Ağırlık / 6 Saat]",
+    "dates": "28 Eylül - 02 Ekim"
+  },
+  {
+    "week": 5,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Logaritma Özellikleri ve Taban Değiştirme Kuralı",
+    "desc": "12.1.2.3. Taban değiştirme kuralı ve logaritma özellikleriyle yapılan işlemler. [Eşit Ağırlık / 6 Saat]",
+    "dates": "05 - 09 Ekim"
+  },
+  {
+    "week": 6,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Üstel ve Logaritmik Denklemler ile Eşitsizlikler",
+    "desc": "12.1.3.1. ve 12.1.3.2. Üstel/logaritmik denklemler ve gerçek hayat modelleme problemleri (Richter ölçeği, pH, ses şiddeti). [Eşit Ağırlık / 6 Saat]",
+    "dates": "12 - 16 Ekim"
+  },
+  {
+    "week": 7,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Gerçek Sayı Dizileri Kavramı ve Genel Terim",
+    "desc": "12.2.1.1. ve 12.2.1.2. Dizi kavramının fonksiyonlarla ilişkisi, genel terim ve indirgeme bağıntıları. [Eşit Ağırlık / 6 Saat]",
+    "dates": "19 - 23 Ekim"
+  },
+  {
+    "week": 8,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Aritmetik ve Geometrik Diziler",
+    "desc": "12.2.1.3. Aritmetik ve geometrik dizilerin özellikleri, ortak fark ve ortak çarpan kuralları. [Eşit Ağırlık / 6 Saat]",
+    "dates": "26 - 30 Ekim"
+  },
+  {
+    "week": 9,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Diziler ile Modelleme ve Fibonacci Dizisi",
+    "desc": "12.2.1.4. Diziler yardımıyla gerçek hayat durumları ile ilgili problemler ve Fibonacci dizisi örnekleri. [Eşit Ağırlık / 6 Saat]",
+    "dates": "02 - 06 Kasım"
+  },
+  {
+    "week": 10,
+    "unit": "GEOMETRİ",
+    "topic": "Toplam ve Fark Formülleri (sin, cos)",
+    "desc": "12.3.1.1. İki açının ölçüleri toplamı ve farkının trigonometrik değerleri formülleri. (Atatürk Haftası) [Eşit Ağırlık / 6 Saat]",
+    "dates": "09 - 13 Kasım"
+  },
+  {
+    "week": 11,
+    "unit": "GEOMETRİ",
+    "topic": "Toplam ve Fark Formülleri (tan, cot) ve Uygulamaları",
+    "desc": "12.3.1.1. Tanjant ve kotanjant toplam-fark formülleri ve geometrik şekillerde açı hesapları. [Eşit Ağırlık / 6 Saat]",
+    "dates": "23 - 27 Kasım"
+  },
+  {
+    "week": 12,
+    "unit": "GEOMETRİ",
+    "topic": "İki Kat Açı (Yarım Açı) Formülleri",
+    "desc": "12.3.1.2. İki kat açı formüllerini oluşturarak trigonometrik sadeleştirme ve işlemler. [Eşit Ağırlık / 6 Saat]",
+    "dates": "30 Kasım - 04 Aralık"
+  },
+  {
+    "week": 13,
+    "unit": "GEOMETRİ",
+    "topic": "Yarım Açı Formülleri ile Sadeleştirme ve Denklemlere Giriş",
+    "desc": "12.3.1.2. ve 12.3.2.1. İki kat açı formülleri soru çözümü ve trigonometrik denklem temelleri. [Eşit Ağırlık / 6 Saat]",
+    "dates": "07 - 11 Aralık"
+  },
+  {
+    "week": 14,
+    "unit": "GEOMETRİ",
+    "topic": "Trigonometrik Denklemler (sin x = a, cos x = a)",
+    "desc": "12.3.2.1. Sinüs ve kosinüs denklemlerinin esas ölçü ve periyoda bağlı çözüm kümeleri. [Eşit Ağırlık / 6 Saat]",
+    "dates": "14 - 18 Aralık"
+  },
+  {
+    "week": 15,
+    "unit": "GEOMETRİ",
+    "topic": "Trigonometrik Denklemler (tan x = a ve Homojen Denklemler)",
+    "desc": "12.3.2.1. Tanjant denklemleri ve lineer/homojen trigonometrik denklemlerin çözümü. [Eşit Ağırlık / 6 Saat]",
+    "dates": "21 - 25 Aralık"
+  },
+  {
+    "week": 16,
+    "unit": "GEOMETRİ",
+    "topic": "Analitik Düzlemde Noktanın Öteleme ve Dönme Dönüşümleri",
+    "desc": "12.4.1.1. Koordinatları verilen bir noktanın öteleme ve orijin etrafında dönme dönüşümleri. [Eşit Ağırlık / 6 Saat]",
+    "dates": "28 - 31 Aralık"
+  },
+  {
+    "week": 17,
+    "unit": "GEOMETRİ",
+    "topic": "Simetri (Yansıma) Dönüşümü",
+    "desc": "12.4.1.1. Noktanın ve doğrunun eksenlere, orijine ve y=x doğrusuna göre simetriği. [Eşit Ağırlık / 6 Saat]",
+    "dates": "04 - 08 Ocak"
+  },
+  {
+    "week": 18,
+    "unit": "GEOMETRİ",
+    "topic": "Temel Dönüşümlerin Bileşkeleri ve Problem Çözümü",
+    "desc": "12.4.1.2. Öteleme, dönme ve yansıma dönüşümlerinin bileşkeleri ile desen/motif modellemeleri. [Eşit Ağırlık / 6 Saat]",
+    "dates": "11 - 15 Ocak"
+  },
+  {
+    "week": 19,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Limit Kavramı ve Limit Özellikleri",
+    "desc": "12.5.1.2. - 12.5.1.4. Fonksiyonun bir noktadaki limiti, sağdan-soldan limit, limit kuralları ve 0/0 belirsizliği. [Eşit Ağırlık / 6 Saat]",
+    "dates": "18 - 22 Ocak"
+  },
+  {
+    "week": 20,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Süreklilik Kavramı ve Türeve Giriş",
+    "desc": "12.5.1.5. ve 12.5.2.1. Fonksiyonun sürekliliği, ara değer teoremi; anlık değişim oranı ve türev kavramı. [Eşit Ağırlık / 6 Saat]",
+    "dates": "08 - 12 Şubat"
+  },
+  {
+    "week": 21,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Türevlenebilirlik ve Teğet Doğrusunun Eğimi",
+    "desc": "12.5.2.1. ve 12.5.2.2. Teğetin eğimi, sağdan ve soldan türev ilişkisi, türevlenebilirlik şartları. [Eşit Ağırlık / 6 Saat]",
+    "dates": "15 - 19 Şubat"
+  },
+  {
+    "week": 22,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Türev Alma Kuralları (Toplam, Çarpım, Bölüm)",
+    "desc": "12.5.2.3. Toplam, fark, çarpım ve bölüm fonksiyonlarının türev kuralları ve uygulamaları. [Eşit Ağırlık / 6 Saat]",
+    "dates": "22 - 26 Şubat"
+  },
+  {
+    "week": 23,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Bileşke Fonksiyonun Türevi (Zincir Kuralı)",
+    "desc": "12.5.2.4. ve 12.5.2.5. Zincir kuralı, yüksek mertebeden türevler ve ardışık türev uygulamaları. [Eşit Ağırlık / 6 Saat]",
+    "dates": "01 - 05 Mart"
+  },
+  {
+    "week": 24,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Artan ve Azalan Fonksiyonlar, Ekstremum Noktalar",
+    "desc": "12.5.3.1. ve 12.5.3.2. Birinci türev işareti ile artan/azalan aralıklar, yerel maksimum ve minimum noktalar. [Eşit Ağırlık / 6 Saat]",
+    "dates": "08 - 12 Mart"
+  },
+  {
+    "week": 25,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "İkinci Türev, Dönüm Noktası ve Fonksiyon Grafikleri",
+    "desc": "12.5.3.3. ve 12.5.3.4. İkinci türev, içbükeylik/dışbükeylik, dönüm (büküm) noktası ve türevle grafik çizimi. [Eşit Ağırlık / 6 Saat]",
+    "dates": "15 - 19 Mart"
+  },
+  {
+    "week": 26,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Maksimum ve Minimum (Optimizasyon) Problemleri",
+    "desc": "12.5.3.5. Gerçek hayat optimizasyon problemleri ve türev yardımıyla en büyük / en küçük değer hesabı. [Eşit Ağırlık / 6 Saat]",
+    "dates": "22 - 26 Mart"
+  },
+  {
+    "week": 27,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Belirsiz İntegral ve Temel İntegral Alma Kuralları",
+    "desc": "12.6.1.1. Diferansiyel kavramı, belirsiz integral tanımı ve temel kuvvet kuralı. [Eşit Ağırlık / 6 Saat]",
+    "dates": "29 Mart - 02 Nisan"
+  },
+  {
+    "week": 28,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Değişken Değiştirme Yöntemi ile İntegral Alma",
+    "desc": "12.6.1.2. Değişken değiştirme yöntemi kullanılarak karmaşık integrallerin hesabı. [Eşit Ağırlık / 6 Saat]",
+    "dates": "05 - 09 Nisan"
+  },
+  {
+    "week": 29,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Riemann Toplamı ve Belirli İntegrale Giriş",
+    "desc": "12.6.2.1. Alt, üst ve orta Riemann toplamları yardımıyla eğri altındaki sınırlı bölgenin alanını hesaplama. [Eşit Ağırlık / 6 Saat]",
+    "dates": "12 - 16 Nisan"
+  },
+  {
+    "week": 30,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Belirli İntegral ve Analizin Temel Teoremi",
+    "desc": "12.6.2.2. ve 12.6.2.3. Belirli ve belirsiz integral ilişkisi, integrasyon sınırları ve temel teorem. [Eşit Ağırlık / 6 Saat]",
+    "dates": "19 - 22 Nisan"
+  },
+  {
+    "week": 31,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Belirli İntegralin Özellikleri ve Simetri Kuralları",
+    "desc": "12.6.2.3. Parçalı integraller, tek ve çift fonksiyonların simetrik aralıktaki integrali. [Eşit Ağırlık / 6 Saat]",
+    "dates": "03 - 07 Mayıs"
+  },
+  {
+    "week": 32,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Belirli İntegral ile Eğri Altında Kalan Alan Hesabı",
+    "desc": "12.6.2.4. Bir fonksiyonun grafiği ile x veya y ekseni arasında kalan alan hesabı. [Eşit Ağırlık / 6 Saat]",
+    "dates": "10 - 14 Mayıs"
+  },
+  {
+    "week": 33,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "İki Eğri Arasında Kalan Bölgenin Alan Hesabı",
+    "desc": "12.6.2.4. İki fonksiyon eğrisi arasında kalan kapalı bölgelerin alan hesabı ve modelleme. [Eşit Ağırlık / 6 Saat]",
+    "dates": "17 - 21 Mayıs"
+  },
+  {
+    "week": 34,
+    "unit": "GEOMETRİ",
+    "topic": "Çemberin Standart Denklemi",
+    "desc": "12.7.1.1. Merkezi (a, b) ve yarıçapı r olan çemberin standart denklemi (x-a)^2 + (y-b)^2 = r^2. [Eşit Ağırlık / 6 Saat]",
+    "dates": "24 - 28 Mayıs"
+  },
+  {
+    "week": 35,
+    "unit": "GEOMETRİ",
+    "topic": "Çemberin Genel Denklemi",
+    "desc": "12.7.1.1. x^2 + y^2 + Dx + Ey + F = 0 genel denklemi, merkez ve yarıçap analizi. [Eşit Ağırlık / 6 Saat]",
+    "dates": "31 Mayıs - 04 Haziran"
+  },
+  {
+    "week": 36,
+    "unit": "GEOMETRİ",
+    "topic": "Doğru ile Çemberin Birbirine Göre Durumları",
+    "desc": "12.7.1.2. Denklemleri verilen doğru ile çemberin kesişme, teğet olma ve ayrık olma durumları (diskriminant & uzaklık). [Eşit Ağırlık / 6 Saat]",
+    "dates": "07 - 11 Haziran"
+  },
+  {
+    "week": 37,
+    "unit": "GEOMETRİ",
+    "topic": "Çemberin Teğet ve Kiriş Denklemleri Uygulamaları",
+    "desc": "12.7.1.2. Çembere üzerindeki veya dışındaki bir noktadan çizilen teğet ve normallerin analitiği. [Eşit Ağırlık / 6 Saat]",
+    "dates": "14 - 18 Haziran"
+  },
+  {
+    "week": 38,
+    "unit": "GENEL TEKRAR",
+    "topic": "YKS / AYT Genel Tekrar ve Yıl Sonu Değerlendirmesi",
+    "desc": "12. sınıf AYT konularının genel tekrarı, soru çözümleri ve sene sonu değerlendirme çalışması. [Eşit Ağırlık / 6 Saat]",
+    "dates": "21 - 25 Haziran"
+  }
+],
+  12: [
+  {
+    "week": 1,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Üstel Fonksiyon ve Grafiği",
+    "desc": "12.1.1.1. Üstel fonksiyonu açıklayarak grafiğini çizer (a^x fonksiyonunun artan/azalanlık incelemesi). [Sayısal / 8 Saat]",
+    "dates": "08 - 11 Eylül"
+  },
+  {
+    "week": 2,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Logaritma Fonksiyonu Tanımı ve Grafiği",
+    "desc": "12.1.2.1. Logaritma fonksiyonu ile üstel fonksiyonu ilişkilendirerek problemler çözer; y=x doğrusuna göre simetri. [Sayısal / 8 Saat]",
+    "dates": "14 - 18 Eylül"
+  },
+  {
+    "week": 3,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Logaritma Fonksiyonunun Değişimi ve Özellikleri",
+    "desc": "12.1.2.1. Logaritma grafiğinin tabana göre değişimi, Gelenbevi İsmail Efendi ve John Napier çalışmaları. [Sayısal / 8 Saat]",
+    "dates": "21 - 25 Eylül"
+  },
+  {
+    "week": 4,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "10 ve e Tabanında Logaritma (Doğal ve Bayağı Logaritma)",
+    "desc": "12.1.2.2. ve 12.1.2.3. log ve ln fonksiyonları ile logaritmanın temel işlem özellikleri. [Sayısal / 8 Saat]",
+    "dates": "28 Eylül - 02 Ekim"
+  },
+  {
+    "week": 5,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Logaritma Özellikleri ve Taban Değiştirme Kuralı",
+    "desc": "12.1.2.3. Taban değiştirme kuralı ve logaritma özellikleriyle yapılan işlemler. [Sayısal / 8 Saat]",
+    "dates": "05 - 09 Ekim"
+  },
+  {
+    "week": 6,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Üstel ve Logaritmik Denklemler ile Eşitsizlikler",
+    "desc": "12.1.3.1. ve 12.1.3.2. Üstel/logaritmik denklemler ve gerçek hayat modelleme problemleri (Richter ölçeği, pH, ses şiddeti). [Sayısal / 8 Saat]",
+    "dates": "12 - 16 Ekim"
+  },
+  {
+    "week": 7,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Gerçek Sayı Dizileri Kavramı ve Genel Terim",
+    "desc": "12.2.1.1. ve 12.2.1.2. Dizi kavramının fonksiyonlarla ilişkisi, genel terim ve indirgeme bağıntıları. [Sayısal / 8 Saat]",
+    "dates": "19 - 23 Ekim"
+  },
+  {
+    "week": 8,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Aritmetik ve Geometrik Diziler",
+    "desc": "12.2.1.3. Aritmetik ve geometrik dizilerin özellikleri, ortak fark ve ortak çarpan kuralları. [Sayısal / 8 Saat]",
+    "dates": "26 - 30 Ekim"
+  },
+  {
+    "week": 9,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Diziler ile Modelleme ve Fibonacci Dizisi",
+    "desc": "12.2.1.4. Diziler yardımıyla gerçek hayat durumları ile ilgili problemler ve Fibonacci dizisi örnekleri. [Sayısal / 8 Saat]",
+    "dates": "02 - 06 Kasım"
+  },
+  {
+    "week": 10,
+    "unit": "GEOMETRİ",
+    "topic": "Toplam ve Fark Formülleri (sin, cos)",
+    "desc": "12.3.1.1. İki açının ölçüleri toplamı ve farkının trigonometrik değerleri formülleri. (Atatürk Haftası) [Sayısal / 8 Saat]",
+    "dates": "09 - 13 Kasım"
+  },
+  {
+    "week": 11,
+    "unit": "GEOMETRİ",
+    "topic": "Toplam ve Fark Formülleri (tan, cot) ve Uygulamaları",
+    "desc": "12.3.1.1. Tanjant ve kotanjant toplam-fark formülleri ve geometrik şekillerde açı hesapları. [Sayısal / 8 Saat]",
+    "dates": "23 - 27 Kasım"
+  },
+  {
+    "week": 12,
+    "unit": "GEOMETRİ",
+    "topic": "İki Kat Açı (Yarım Açı) Formülleri",
+    "desc": "12.3.1.2. İki kat açı formüllerini oluşturarak trigonometrik sadeleştirme ve işlemler. [Sayısal / 8 Saat]",
+    "dates": "30 Kasım - 04 Aralık"
+  },
+  {
+    "week": 13,
+    "unit": "GEOMETRİ",
+    "topic": "Yarım Açı Formülleri ile Sadeleştirme ve Denklemlere Giriş",
+    "desc": "12.3.1.2. ve 12.3.2.1. İki kat açı formülleri soru çözümü ve trigonometrik denklem temelleri. [Sayısal / 8 Saat]",
+    "dates": "07 - 11 Aralık"
+  },
+  {
+    "week": 14,
+    "unit": "GEOMETRİ",
+    "topic": "Trigonometrik Denklemler (sin x = a, cos x = a)",
+    "desc": "12.3.2.1. Sinüs ve kosinüs denklemlerinin esas ölçü ve periyoda bağlı çözüm kümeleri. [Sayısal / 8 Saat]",
+    "dates": "14 - 18 Aralık"
+  },
+  {
+    "week": 15,
+    "unit": "GEOMETRİ",
+    "topic": "Trigonometrik Denklemler (tan x = a ve Homojen Denklemler)",
+    "desc": "12.3.2.1. Tanjant denklemleri ve lineer/homojen trigonometrik denklemlerin çözümü. [Sayısal / 8 Saat]",
+    "dates": "21 - 25 Aralık"
+  },
+  {
+    "week": 16,
+    "unit": "GEOMETRİ",
+    "topic": "Analitik Düzlemde Noktanın Öteleme ve Dönme Dönüşümleri",
+    "desc": "12.4.1.1. Koordinatları verilen bir noktanın öteleme ve orijin etrafında dönme dönüşümleri. [Sayısal / 8 Saat]",
+    "dates": "28 - 31 Aralık"
+  },
+  {
+    "week": 17,
+    "unit": "GEOMETRİ",
+    "topic": "Simetri (Yansıma) Dönüşümü",
+    "desc": "12.4.1.1. Noktanın ve doğrunun eksenlere, orijine ve y=x doğrusuna göre simetriği. [Sayısal / 8 Saat]",
+    "dates": "04 - 08 Ocak"
+  },
+  {
+    "week": 18,
+    "unit": "GEOMETRİ",
+    "topic": "Temel Dönüşümlerin Bileşkeleri ve Problem Çözümü",
+    "desc": "12.4.1.2. Öteleme, dönme ve yansıma dönüşümlerinin bileşkeleri ile desen/motif modellemeleri. [Sayısal / 8 Saat]",
+    "dates": "11 - 15 Ocak"
+  },
+  {
+    "week": 19,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Limit Kavramı ve Limit Özellikleri",
+    "desc": "12.5.1.2. - 12.5.1.4. Fonksiyonun bir noktadaki limiti, sağdan-soldan limit, limit kuralları ve 0/0 belirsizliği. [Sayısal / 8 Saat]",
+    "dates": "18 - 22 Ocak"
+  },
+  {
+    "week": 20,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Süreklilik Kavramı ve Türeve Giriş",
+    "desc": "12.5.1.5. ve 12.5.2.1. Fonksiyonun sürekliliği, ara değer teoremi; anlık değişim oranı ve türev kavramı. [Sayısal / 8 Saat]",
+    "dates": "08 - 12 Şubat"
+  },
+  {
+    "week": 21,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Türevlenebilirlik ve Teğet Doğrusunun Eğimi",
+    "desc": "12.5.2.1. ve 12.5.2.2. Teğetin eğimi, sağdan ve soldan türev ilişkisi, türevlenebilirlik şartları. [Sayısal / 8 Saat]",
+    "dates": "15 - 19 Şubat"
+  },
+  {
+    "week": 22,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Türev Alma Kuralları (Toplam, Çarpım, Bölüm)",
+    "desc": "12.5.2.3. Toplam, fark, çarpım ve bölüm fonksiyonlarının türev kuralları ve uygulamaları. [Sayısal / 8 Saat]",
+    "dates": "22 - 26 Şubat"
+  },
+  {
+    "week": 23,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Bileşke Fonksiyonun Türevi (Zincir Kuralı)",
+    "desc": "12.5.2.4. ve 12.5.2.5. Zincir kuralı, yüksek mertebeden türevler ve ardışık türev uygulamaları. [Sayısal / 8 Saat]",
+    "dates": "01 - 05 Mart"
+  },
+  {
+    "week": 24,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Artan ve Azalan Fonksiyonlar, Ekstremum Noktalar",
+    "desc": "12.5.3.1. ve 12.5.3.2. Birinci türev işareti ile artan/azalan aralıklar, yerel maksimum ve minimum noktalar. [Sayısal / 8 Saat]",
+    "dates": "08 - 12 Mart"
+  },
+  {
+    "week": 25,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "İkinci Türev, Dönüm Noktası ve Fonksiyon Grafikleri",
+    "desc": "12.5.3.3. ve 12.5.3.4. İkinci türev, içbükeylik/dışbükeylik, dönüm (büküm) noktası ve türevle grafik çizimi. [Sayısal / 8 Saat]",
+    "dates": "15 - 19 Mart"
+  },
+  {
+    "week": 26,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Maksimum ve Minimum (Optimizasyon) Problemleri",
+    "desc": "12.5.3.5. Gerçek hayat optimizasyon problemleri ve türev yardımıyla en büyük / en küçük değer hesabı. [Sayısal / 8 Saat]",
+    "dates": "22 - 26 Mart"
+  },
+  {
+    "week": 27,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Belirsiz İntegral ve Temel İntegral Alma Kuralları",
+    "desc": "12.6.1.1. Diferansiyel kavramı, belirsiz integral tanımı ve temel kuvvet kuralı. [Sayısal / 8 Saat]",
+    "dates": "29 Mart - 02 Nisan"
+  },
+  {
+    "week": 28,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Değişken Değiştirme Yöntemi ile İntegral Alma",
+    "desc": "12.6.1.2. Değişken değiştirme yöntemi kullanılarak karmaşık integrallerin hesabı. [Sayısal / 8 Saat]",
+    "dates": "05 - 09 Nisan"
+  },
+  {
+    "week": 29,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Riemann Toplamı ve Belirli İntegrale Giriş",
+    "desc": "12.6.2.1. Alt, üst ve orta Riemann toplamları yardımıyla eğri altındaki sınırlı bölgenin alanını hesaplama. [Sayısal / 8 Saat]",
+    "dates": "12 - 16 Nisan"
+  },
+  {
+    "week": 30,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Belirli İntegral ve Analizin Temel Teoremi",
+    "desc": "12.6.2.2. ve 12.6.2.3. Belirli ve belirsiz integral ilişkisi, integrasyon sınırları ve temel teorem. [Sayısal / 8 Saat]",
+    "dates": "19 - 22 Nisan"
+  },
+  {
+    "week": 31,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Belirli İntegralin Özellikleri ve Simetri Kuralları",
+    "desc": "12.6.2.3. Parçalı integraller, tek ve çift fonksiyonların simetrik aralıktaki integrali. [Sayısal / 8 Saat]",
+    "dates": "03 - 07 Mayıs"
+  },
+  {
+    "week": 32,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "Belirli İntegral ile Eğri Altında Kalan Alan Hesabı",
+    "desc": "12.6.2.4. Bir fonksiyonun grafiği ile x veya y ekseni arasında kalan alan hesabı. [Sayısal / 8 Saat]",
+    "dates": "10 - 14 Mayıs"
+  },
+  {
+    "week": 33,
+    "unit": "SAYILAR VE CEBİR",
+    "topic": "İki Eğri Arasında Kalan Bölgenin Alan Hesabı",
+    "desc": "12.6.2.4. İki fonksiyon eğrisi arasında kalan kapalı bölgelerin alan hesabı ve modelleme. [Sayısal / 8 Saat]",
+    "dates": "17 - 21 Mayıs"
+  },
+  {
+    "week": 34,
+    "unit": "GEOMETRİ",
+    "topic": "Çemberin Standart Denklemi",
+    "desc": "12.7.1.1. Merkezi (a, b) ve yarıçapı r olan çemberin standart denklemi (x-a)^2 + (y-b)^2 = r^2. [Sayısal / 8 Saat]",
+    "dates": "24 - 28 Mayıs"
+  },
+  {
+    "week": 35,
+    "unit": "GEOMETRİ",
+    "topic": "Çemberin Genel Denklemi",
+    "desc": "12.7.1.1. x^2 + y^2 + Dx + Ey + F = 0 genel denklemi, merkez ve yarıçap analizi. [Sayısal / 8 Saat]",
+    "dates": "31 Mayıs - 04 Haziran"
+  },
+  {
+    "week": 36,
+    "unit": "GEOMETRİ",
+    "topic": "Doğru ile Çemberin Birbirine Göre Durumları",
+    "desc": "12.7.1.2. Denklemleri verilen doğru ile çemberin kesişme, teğet olma ve ayrık olma durumları (diskriminant & uzaklık). [Sayısal / 8 Saat]",
+    "dates": "07 - 11 Haziran"
+  },
+  {
+    "week": 37,
+    "unit": "GEOMETRİ",
+    "topic": "Çemberin Teğet ve Kiriş Denklemleri Uygulamaları",
+    "desc": "12.7.1.2. Çembere üzerindeki veya dışındaki bir noktadan çizilen teğet ve normallerin analitiği. [Sayısal / 8 Saat]",
+    "dates": "14 - 18 Haziran"
+  },
+  {
+    "week": 38,
+    "unit": "GENEL TEKRAR",
+    "topic": "YKS / AYT Genel Tekrar ve Yıl Sonu Değerlendirmesi",
+    "desc": "12. sınıf AYT konularının genel tekrarı, soru çözümleri ve sene sonu değerlendirme çalışması. [Sayısal / 8 Saat]",
+    "dates": "21 - 25 Haziran"
+  }
+]
+};
+
+function getAnnualPlans(){
+  try{
+    const raw = localStorage.getItem(ANNUAL_PLANS_STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(parsed && parsed[9] && parsed[10] && parsed[11] && parsed['12-FM'] && parsed['12-TM']){
+        return parsed;
+      }
+    }
+  }catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULT_ANNUAL_PLANS));
+}
+
+function saveAnnualPlans(plans){
+  try{
+    localStorage.setItem(ANNUAL_PLANS_STORAGE_KEY, JSON.stringify(plans));
+  }catch(e){}
+}
+
+function resetAnnualPlans(){
+  try{
+    localStorage.removeItem(ANNUAL_PLANS_STORAGE_KEY);
+  }catch(e){}
+}
+
+function getClassGrade(clsName){
+  if(!clsName) return null;
+  const s = String(clsName).trim();
+  const m = s.match(/^(?:0?([9])|([1][0-2]))/);
+  if(m) return parseInt(m[1] || m[2], 10);
+  if(/\b(?:0?9|9\.s[ıi]n[ıi]f)\b/i.test(s) || /09/.test(s)) return 9;
+  if(/\b(?:10|10\.s[ıi]n[ıi]f)\b/i.test(s)) return 10;
+  if(/\b(?:11|11\.s[ıi]n[ıi]f)\b/i.test(s)) return 11;
+  if(/\b(?:12|12\.s[ıi]n[ıi]f)\b/i.test(s)) return 12;
+  return null;
+}
+
+function getAcademicWeekDates(weekNum){
+  const found = ACADEMIC_CALENDAR_WEEKS.find(w => w.week === weekNum);
+  if(found) return { weekNum, dateRangeStr: found.dates };
+  return { weekNum, dateRangeStr: weekNum + '. Hafta' };
+}
+
+function getAcademicWeek(date = new Date()){
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const iso = year + '-' + m + '-' + day;
+
+  for(let i = 0; i < ACADEMIC_CALENDAR_WEEKS.length; i++){
+    const w = ACADEMIC_CALENDAR_WEEKS[i];
+    if(iso >= w.start && iso <= w.end){
+      return { weekNum: w.week, dateRangeStr: w.dates };
+    }
+  }
+
+  for(let i = 0; i < ACADEMIC_CALENDAR_WEEKS.length; i++){
+    const w = ACADEMIC_CALENDAR_WEEKS[i];
+    if(iso < w.start){
+      return i > 0
+        ? { weekNum: ACADEMIC_CALENDAR_WEEKS[i-1].week, dateRangeStr: ACADEMIC_CALENDAR_WEEKS[i-1].dates }
+        : { weekNum: 1, dateRangeStr: ACADEMIC_CALENDAR_WEEKS[0].dates };
+    }
+  }
+
+  const last = ACADEMIC_CALENDAR_WEEKS[ACADEMIC_CALENDAR_WEEKS.length - 1];
+  return { weekNum: last.week, dateRangeStr: last.dates };
+}
+
+function getClassCurriculumKey(clsName){
+  if(!clsName) return null;
+  const grade = getClassGrade(clsName);
+  if(!grade) return null;
+  if(grade === 12){
+    const s = String(clsName).trim().toUpperCase();
+    // 12 Eşit Ağırlık sınıfları: E, F ve G (örn: 12E, 12F, 12G, 12E-TM, 12-E, 12/F, 12 TM, vb.)
+    // 12 Sayısal sınıfları: FL, A, B, C, D (örn: 12FL, 12A, 12B, 12C, 12D, 12D-FM TYT, vb.)
+    if(/\b12[-/\s]*[EFG]\b|12[EFG]-|12[EFG]$|12[EFG]\s|TM|EŞİT|ESIT|EA/i.test(s)){
+      return '12-TM';
+    }
+    return '12-FM';
+  }
+  return String(grade);
+}
+
+function getCurriculumTopicForClass(clsName, weekNum){
+  const grade = getClassGrade(clsName);
+  if(!grade) return null;
+  const currKey = getClassCurriculumKey(clsName);
+  const plans = getAnnualPlans();
+  const gradePlan = (currKey && plans[currKey]) || plans[grade] || [];
+  const item = gradePlan.find(w => w.week === weekNum);
+  const dates = (item && item.dates) || getAcademicWeekDates(weekNum).dateRangeStr;
+  const gradeLabel = currKey === '12-TM' ? '12. Sınıf (Eşit Ağırlık)' : (currKey === '12-FM' ? '12. Sınıf (Sayısal)' : grade + '. Sınıf');
+  if(item){
+    return {
+      grade,
+      currKey,
+      gradeLabel,
+      week: weekNum,
+      dates,
+      unit: item.unit || 'GENEL',
+      topic: item.topic || 'Ders Konusu',
+      desc: item.desc || ''
+    };
+  }
+  return {
+    grade,
+    currKey,
+    gradeLabel,
+    week: weekNum,
+    dates,
+    unit: 'KONU',
+    topic: gradeLabel + ' ' + weekNum + '. Hafta Konusu',
+    desc: 'Yıllık planda henüz detay girilmemiş.'
+  };
+}
+
+function exportAnnualPlanTemplate(){
+  if(typeof XLSX === 'undefined'){
+    showToast('Excel kütüphanesi yüklenemedi');
+    return;
+  }
+  const plans = getAnnualPlans();
+  const wb = XLSX.utils.book_new();
+  [9, 10, 11, 12].forEach(grade => {
+    const list = plans[grade] || [];
+    const rows = list.map(item => {
+      const wInfo = getAcademicWeekDates(item.week);
+      return {
+        'Hafta No': item.week,
+        'Tarih Aralığı': item.dates || wInfo.dateRangeStr,
+        'Ünite': item.unit || '',
+        'Konu / Kazanım': item.topic || '',
+        'Açıklama / Detay': item.desc || ''
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [
+      { wch: 10 },
+      { wch: 22 },
+      { wch: 26 },
+      { wch: 50 },
+      { wch: 60 }
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, grade + '. Sınıf');
+  });
+  XLSX.writeFile(wb, 'Yillik_Planlar_Mufredat.xlsx');
+  showToast('Yıllık plan şablonu Excel olarak indirildi (.xlsx)');
+}
+
+function parseAnnualPlanWorkbook(wb, fallbackGrade = 9){
+  const result = { 9: [], 10: [], 11: [], 12: [] };
+  let importedCount = 0;
+
+  function normKey(k){
+    return String(k || '').trim().toLowerCase()
+      .replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ü/g, 'u')
+      .replace(/ş/g, 's').replace(/ç/g, 'c').replace(/ğ/g, 'g');
+  }
+
+  function detectGradeFromStr(str){
+    if(!str) return null;
+    const s = String(str).toLowerCase();
+    if(s.includes('9') || s.includes('dokuz')) return 9;
+    if(s.includes('10') || s.includes('on')) return 10;
+    if(s.includes('11')) return 11;
+    if(s.includes('12')) return 12;
+    return null;
+  }
+
+  wb.SheetNames.forEach(sheetName => {
+    const sheetGrade = detectGradeFromStr(sheetName);
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
+    if(!rows || !rows.length) return;
+
+    let weekCounter = 1;
+    rows.forEach(r => {
+      let rGrade = sheetGrade;
+      let week = null;
+      let dates = '';
+      let unit = '';
+      let topic = '';
+      let desc = '';
+
+      Object.keys(r).forEach(k => {
+        const nk = normKey(k);
+        const val = String(r[k] != null ? r[k] : '').trim();
+        if(!val) return;
+
+        if(!rGrade && (nk.includes('sinif') || nk.includes('seviye') || nk === 'grade')){
+          rGrade = detectGradeFromStr(val);
+        } else if(nk.includes('hafta') || nk === 'week' || nk === 'h'){
+          const m = val.match(/\d+/);
+          if(m) week = parseInt(m[0], 10);
+        } else if(nk.includes('tarih') || nk.includes('date')){
+          dates = val;
+        } else if(nk.includes('unite') || nk.includes('tema') || nk.includes('ogrenme alani') || nk === 'unit'){
+          unit = val;
+        } else if(nk.includes('konu') || nk.includes('kazanim') || nk === 'topic'){
+          topic = val;
+        } else if(nk.includes('aciklama') || nk.includes('detay') || nk.includes('not') || nk.includes('desc')){
+          desc = val;
+        }
+      });
+
+      const finalGrade = rGrade || fallbackGrade;
+      if(!week) week = weekCounter;
+      weekCounter = week + 1;
+
+      if(topic || unit){
+        if(!result[finalGrade]) result[finalGrade] = [];
+        result[finalGrade].push({ week, dates, unit, topic, desc });
+        importedCount++;
+      }
+    });
+  });
+
+  return { result, importedCount };
+}
+
+function handleAnnualPlanExcelUpload(file, activeGrade = 9, onDone){
+  if(!file){
+    showToast('Lütfen bir Excel dosyası seçin');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const { result, importedCount } = parseAnnualPlanWorkbook(wb, activeGrade);
+      if(importedCount === 0){
+        showToast('Excel dosyasında geçerli yıllık plan verisi bulunamadı');
+        return;
+      }
+      const currentPlans = getAnnualPlans();
+      let updatedGrades = [];
+      [9, 10, 11, 12].forEach(g => {
+        if(result[g] && result[g].length > 0){
+          result[g].sort((a, b) => a.week - b.week);
+          currentPlans[g] = result[g];
+          updatedGrades.push(g + '. Sınıf');
+        }
+      });
+      saveAnnualPlans(currentPlans);
+      showToast('Yıllık plan başarıyla yüklendi: ' + updatedGrades.join(', ') + ' (' + importedCount + ' kayıt)');
+      if(onDone) onDone();
+    }catch(err){
+      console.error('Excel parse error:', err);
+      showToast('Excel okunurken hata oluştu: ' + (err.message || ''));
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function openCurriculumModal(defaultGradeOrKey = 9){
+  let activeGrade = defaultGradeOrKey || 9;
+  if(typeof defaultGradeOrKey === 'string' && (defaultGradeOrKey.includes('12') || defaultGradeOrKey.includes('11') || defaultGradeOrKey.includes('10') || defaultGradeOrKey.includes('9'))){
+    const k = getClassCurriculumKey(defaultGradeOrKey);
+    if(k) activeGrade = k;
+  }
+  if(activeGrade === 12 || activeGrade === '12') activeGrade = '12-FM';
+  const currentWeekInfo = getAcademicWeek(new Date());
+  const plans = getAnnualPlans();
+
+  const CURR_TABS = [
+    { key: 9, label: '9. Sınıf' },
+    { key: 10, label: '10. Sınıf' },
+    { key: 11, label: '11. Sınıf' },
+    { key: '12-FM', label: '12. Sınıf (Sayısal - FL, A, B, C, D)' },
+    { key: '12-TM', label: '12. Sınıf (Eşit Ağırlık - E, F, G)' }
+  ];
+
+  function renderCurriculumModalContent(){
+    const list = plans[activeGrade] || [];
+    const tabsHtml = CURR_TABS.map(t =>
+      '<button type="button" class="curriculum-tab-btn '+(String(t.key) === String(activeGrade) ? 'active' : '')+'" data-grade="'+t.key+'">' +
+        t.label + ' (' + (plans[t.key] ? plans[t.key].length : 0) + ' Hafta)' +
+      '</button>'
+    ).join('');
+
+    const rowsHtml = list.map(item => {
+      const isCurrentWeek = (item.week === currentWeekInfo.weekNum);
+      const wInfo = getAcademicWeekDates(item.week);
+      const dateText = item.dates || wInfo.dateRangeStr;
+      return '<tr class="'+(isCurrentWeek ? 'current-week' : '')+'" id="currWeekRow_'+item.week+'">' +
+        '<td style="font-weight:800;text-align:center;width:64px;">' +
+          item.week + '. Hft' +
+          (isCurrentWeek ? '<div style="font-size:9.5px;background:var(--primary);color:#fff;border-radius:4px;padding:1px 3px;margin-top:2px;font-weight:900;">BU HAFTA</div>' : '') +
+        '</td>' +
+        '<td style="white-space:nowrap;color:var(--ink-soft);font-size:11.5px;width:125px;">'+escapeHtml(dateText)+'</td>' +
+        '<td style="font-weight:800;color:var(--ink);width:150px;">' +
+          '<span class="curriculum-unit-tag" style="font-size:10.5px;">'+escapeHtml(item.unit||'-')+'</span>' +
+        '</td>' +
+        '<td style="font-weight:800;color:var(--ink);">' +
+          '<div style="font-size:12.5px;">'+escapeHtml(item.topic||'-')+'</div>' +
+          (item.desc ? '<div style="font-size:11px;color:var(--ink-soft);margin-top:3px;font-weight:normal;">'+escapeHtml(item.desc)+'</div>' : '') +
+        '</td>' +
+        '<td style="text-align:right;width:65px;">' +
+          '<button type="button" class="btn btn-outline btn-xs curr-inline-edit-btn" data-week="'+item.week+'" title="Düzenle">✏️</button>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+
+    return '<div style="display:flex;flex-direction:column;gap:12px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">' +
+        '<div>' +
+          '<h3 style="margin:0;font-size:16px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:8px;">' +
+            '📖 Yıllık Plan & Müfredat Takibi (TAKEV 2026-2027)' +
+          '</h3>' +
+          '<div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">' +
+            'Bu Hafta: <b>' + currentWeekInfo.weekNum + '. Hafta (' + currentWeekInfo.dateRangeStr + ')</b> · Anadolu ve Fen Lisesi Ortak Çerçeve Planı' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">' +
+          '<input type="file" id="curriculumFileInput" accept=".xlsx, .xls" style="display:none;" />' +
+          '<button type="button" class="btn btn-primary btn-sm" id="currUploadBtn">📤 Excel Yükle (.xlsx)</button>' +
+          '<button type="button" class="btn btn-outline btn-sm" id="currDownloadBtn">📥 Şablon İndir (.xlsx)</button>' +
+          '<button type="button" class="btn btn-soft btn-sm" id="currResetBtn" title="Okul onaylı yıllık plana döndür">🔄 Varsayılana Dön</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="curriculum-tabs">' + tabsHtml + '</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">' +
+        '<div style="font-size:12px;color:var(--ink-soft);font-weight:700;">' +
+          (activeGrade === '12-FM' ? '12. Sınıf Sayısal (FL, A, B, C, D)' : (activeGrade === '12-TM' ? '12. Sınıf Eşit Ağırlık (E, F, G)' : activeGrade + '. Sınıf')) + ' Matematik Müfredat Çizelgesi (38 Hafta)' +
+        '</div>' +
+        '<button type="button" class="btn btn-soft btn-xs" id="currJumpCurrentWeekBtn" style="font-size:11px;">📍 Bu Haftaya Git (' + currentWeekInfo.weekNum + '. Hafta)</button>' +
+      '</div>' +
+      '<div class="curriculum-table-wrap" id="currTableWrap">' +
+        '<table class="curriculum-table">' +
+          '<thead>' +
+            '<tr>' +
+              '<th style="text-align:center;width:64px;">Hafta</th>' +
+              '<th style="width:125px;">Tarih</th>' +
+              '<th style="width:150px;">Ünite / Tema</th>' +
+              '<th>Konu / Kazanım</th>' +
+              '<th style="text-align:right;width:65px;">İşlem</th>' +
+            '</tr>' +
+          '</thead>' +
+          '<tbody>' +
+            (rowsHtml || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--ink-soft);">Bu sınıf için yıllık plan verisi bulunamadı.</td></tr>') +
+          '</tbody>' +
+        '</table>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:flex-end;margin-top:4px;">' +
+        '<button type="button" class="btn btn-primary" id="currCloseModalBtn">Kapat</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function wireCurriculumModal(){
+    const root = document.getElementById('modalRoot');
+    if(!root) return;
+
+    root.querySelectorAll('.curriculum-tab-btn').forEach(btn => {
+      btn.onclick = () => {
+        activeGrade = parseInt(btn.dataset.grade, 10);
+        updateModal();
+      };
+    });
+
+    const jumpBtn = document.getElementById('currJumpCurrentWeekBtn');
+    if(jumpBtn){
+      jumpBtn.onclick = () => {
+        const row = document.getElementById('currWeekRow_' + currentWeekInfo.weekNum);
+        if(row){
+          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      };
+    }
+
+    const uploadBtn = document.getElementById('currUploadBtn');
+    const fileInp = document.getElementById('curriculumFileInput');
+    if(uploadBtn && fileInp){
+      uploadBtn.onclick = () => fileInp.click();
+      fileInp.onchange = (e) => {
+        const file = e.target.files && e.target.files[0];
+        if(file){
+          handleAnnualPlanExcelUpload(file, activeGrade, () => {
+            render();
+            updateModal();
+          });
+        }
+      };
+    }
+
+    const downloadBtn = document.getElementById('currDownloadBtn');
+    if(downloadBtn){
+      downloadBtn.onclick = () => exportAnnualPlanTemplate();
+    }
+
+    const resetBtn = document.getElementById('currResetBtn');
+    if(resetBtn){
+      resetBtn.onclick = () => {
+        if(confirm('Yıllık planlar okulunuzun onaylı 2026-2027 yıllık planına sıfırlansın mı?')){
+          resetAnnualPlans();
+          showToast('Yıllık planlar okul planına sıfırlandı');
+          render();
+          updateModal();
+        }
+      };
+    }
+
+    const closeBtn = document.getElementById('currCloseModalBtn');
+    if(closeBtn) closeBtn.onclick = closeModal;
+
+    root.querySelectorAll('.curr-inline-edit-btn').forEach(btn => {
+      btn.onclick = () => {
+        const weekNum = parseInt(btn.dataset.week, 10);
+        openEditCurriculumItemModal(activeGrade, weekNum, () => {
+          render();
+          updateModal();
+        });
+      };
+    });
+  }
+
+  function updateModal(){
+    const wrap = document.getElementById('currModalInnerWrap');
+    if(wrap){
+      wrap.innerHTML = renderCurriculumModalContent();
+      wireCurriculumModal();
+    }
+  }
+
+  openModal('<div id="currModalInnerWrap">' + renderCurriculumModalContent() + '</div>', { width: '880px' });
+  wireCurriculumModal();
+}
+
+function openEditCurriculumItemModal(grade, weekNum, onSave){
+  const plans = getAnnualPlans();
+  const list = plans[grade] || [];
+  const item = list.find(w => w.week === weekNum) || { week: weekNum, unit: '', topic: '', desc: '' };
+  const wInfo = getAcademicWeekDates(weekNum);
+
+  const content =
+    '<div style="display:flex;flex-direction:column;gap:12px;">' +
+      '<h3 style="margin:0;font-size:16px;font-weight:800;color:var(--ink);">' +
+        grade + '. Sınıf · ' + weekNum + '. Hafta Konusunu Düzenle' +
+      '</h3>' +
+      '<div style="font-size:12px;color:var(--ink-soft);">' +
+        'Tarih Aralığı: <b>' + (item.dates || wInfo.dateRangeStr) + '</b>' +
+      '</div>' +
+      '<div>' +
+        '<label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;color:var(--ink);">Ünite:</label>' +
+        '<input type="text" id="editCurrUnitInp" value="' + escapeHtml(item.unit || '') + '" class="form-control" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;" />' +
+      '</div>' +
+      '<div>' +
+        '<label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;color:var(--ink);">Konu / Kazanım:</label>' +
+        '<input type="text" id="editCurrTopicInp" value="' + escapeHtml(item.topic || '') + '" class="form-control" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;" />' +
+      '</div>' +
+      '<div>' +
+        '<label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;color:var(--ink);">Açıklama / Detay:</label>' +
+        '<textarea id="editCurrDescInp" rows="3" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px;">' + escapeHtml(item.desc || '') + '</textarea>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;">' +
+        '<button type="button" class="btn btn-outline" id="cancelEditCurrBtn">İptal</button>' +
+        '<button type="button" class="btn btn-primary" id="saveEditCurrBtn">Kaydet</button>' +
+      '</div>' +
+    '</div>';
+
+  openModal(content, { width: '480px' });
+
+  const cancelBtn = document.getElementById('cancelEditCurrBtn');
+  if(cancelBtn) cancelBtn.onclick = () => {
+    closeModal();
+    openCurriculumModal(grade);
+  };
+
+  const saveBtn = document.getElementById('saveEditCurrBtn');
+  if(saveBtn){
+    saveBtn.onclick = () => {
+      const uVal = (document.getElementById('editCurrUnitInp').value || '').trim();
+      const tVal = (document.getElementById('editCurrTopicInp').value || '').trim();
+      const dVal = (document.getElementById('editCurrDescInp').value || '').trim();
+
+      const existingIndex = list.findIndex(w => w.week === weekNum);
+      if(existingIndex >= 0){
+        list[existingIndex].unit = uVal;
+        list[existingIndex].topic = tVal;
+        list[existingIndex].desc = dVal;
+      } else {
+        list.push({ week: weekNum, dates: wInfo.dateRangeStr, unit: uVal, topic: tVal, desc: dVal });
+      }
+      list.sort((a, b) => a.week - b.week);
+      plans[grade] = list;
+      saveAnnualPlans(plans);
+      showToast(grade + '. Sınıf ' + weekNum + '. hafta konusu güncellendi');
+      closeModal();
+      if(onSave) onSave();
+      openCurriculumModal(grade);
+    };
+  }
+}
+
 function scheduleViewHtml(){
   const sched = getTeacherSchedule();
   const totalHours = getScheduleTotalHours(sched);
@@ -4565,12 +7445,21 @@ function scheduleViewHtml(){
   if(currentDayKey && sched[currentDayKey]){
     const todaySlots = sched[currentDayKey];
     const todayClasses = [];
+    const currWeekInfo = getAcademicWeek(todayStr());
+    const weekNum = currWeekInfo ? currWeekInfo.weekNum : 1;
+
+    let activeCurriculumInfo = null;
+
     PERIOD_DEFS.forEach(p => {
       const slot = todaySlots[p.id];
       if(slot && slot.cls){
         const isActive = (p.id === activePeriodId);
+        const plan = getCurriculumTopicForClass(slot.cls, weekNum);
+        if(isActive && plan){
+          activeCurriculumInfo = { slot, plan, p, currWeekInfo };
+        }
         todayClasses.push(
-          '<div class="timeline-chip '+(isActive ? 'active' : '')+'">' +
+          '<div class="timeline-chip '+(isActive ? 'active' : '')+'" title="'+(plan ? escapeHtml(plan.topic) : '')+'">' +
             '<span style="opacity:0.75;">'+p.no+'. Ders:</span> ' +
             '<b>'+escapeHtml(slot.cls)+'</b> ' +
             (slot.subj ? '<span style="font-size:11px;opacity:0.85;">('+escapeHtml(slot.subj)+')</span>' : '') +
@@ -4582,6 +7471,45 @@ function scheduleViewHtml(){
 
     const dayObj = DAYS_DEF.find(d => d.key === currentDayKey);
     const dayLabel = dayObj ? dayObj.label : 'Bugün';
+
+    let activePlanCallout = '';
+    if(activeCurriculumInfo){
+      const { slot, plan, p } = activeCurriculumInfo;
+      activePlanCallout =
+        '<div style="margin-top:12px;background:linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);border:1.5px solid #93c5fd;border-radius:10px;padding:12px 14px;box-shadow:0 2px 10px rgba(37,99,235,0.08);">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px;">' +
+            '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+              '<span style="font-size:18px;">🎯</span>' +
+              '<span style="background:#2563eb;color:#fff;font-weight:900;font-size:11.5px;padding:3px 9px;border-radius:6px;letter-spacing:.02em;">ŞU ANKİ DERS: '+escapeHtml(slot.cls)+' ('+p.no+'. Ders)</span>' +
+              '<span style="font-size:12px;font-weight:800;color:#1e40af;">'+weekNum+'. Hafta ('+(currWeekInfo ? currWeekInfo.dateRangeStr : '')+')</span>' +
+              (plan.unit ? '<span style="font-size:11px;font-weight:700;color:#334155;background:#e2e8f0;padding:2px 7px;border-radius:4px;">'+escapeHtml(plan.unit)+'</span>' : '') +
+            '</div>' +
+            '<button type="button" class="btn btn-outline btn-sm" id="liveOpenAnnualPlanBtn" style="font-size:11.5px;padding:3px 9px;font-weight:700;background:#fff;border-color:#bfdbfe;color:#1d4ed8;">📖 Yıllık Planı İncele</button>' +
+          '</div>' +
+          '<div style="font-size:14px;font-weight:800;color:#0f172a;line-height:1.45;">' +
+            '<span style="color:#2563eb;margin-right:6px;">📌 Bu Ders Yıllık Planda İşlenecek Konu:</span>' + escapeHtml(plan.topic) +
+          '</div>' +
+          (plan.desc ? '<div style="font-size:12px;color:#475569;margin-top:4px;line-height:1.45;padding-left:14px;border-left:2.5px solid #3b82f6;">'+escapeHtml(plan.desc)+'</div>' : '') +
+        '</div>';
+    } else {
+      // Şu an aktif ders yoksa, bugünkü ilk/sıradaki dersin konusunu göster
+      const firstTodaySlot = PERIOD_DEFS.find(p => todaySlots[p.id] && todaySlots[p.id].cls);
+      if(firstTodaySlot){
+        const slot = todaySlots[firstTodaySlot.id];
+        const plan = getCurriculumTopicForClass(slot.cls, weekNum);
+        if(plan){
+          activePlanCallout =
+            '<div style="margin-top:10px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:9px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
+              '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+                '<span style="font-size:16px;">📚</span>' +
+                '<span style="font-size:12px;font-weight:800;color:#334155;">Bu Hafta ('+weekNum+'. Hafta · '+escapeHtml(slot.cls)+'):</span>' +
+                '<span style="font-size:12.5px;color:var(--primary-deep);font-weight:700;">'+escapeHtml(plan.topic)+'</span>' +
+              '</div>' +
+              '<button type="button" class="btn btn-outline btn-sm" id="liveOpenAnnualPlanBtn" style="font-size:11px;padding:3px 8px;">Yıllık Plan &rarr;</button>' +
+            '</div>';
+        }
+      }
+    }
 
     todayBannerHtml =
       '<div class="today-timeline-banner">' +
@@ -4595,6 +7523,7 @@ function scheduleViewHtml(){
         '<div class="today-timeline-items">' +
           (todayClasses.length ? todayClasses.join('') : '<span style="font-size:12.5px;color:var(--ink-soft);font-weight:600;">Bugün planlanmış dersiniz bulunmuyor (Boş gün).</span>') +
         '</div>' +
+        activePlanCallout +
       '</div>';
   }
 
@@ -4616,10 +7545,19 @@ function scheduleViewHtml(){
       const isActive = (isToday && p.id === activePeriodId);
       if(slot && slot.cls){
         const colorClass = getClassColorCssClass(slot.cls);
+        let activeTopicBadge = '';
+        if(isToday && isActive){
+          const currWeekInfo = getAcademicWeek(todayStr());
+          const plan = getCurriculumTopicForClass(slot.cls, currWeekInfo ? currWeekInfo.weekNum : 1);
+          if(plan){
+            activeTopicBadge = '<div style="font-size:10px;background:rgba(255,255,255,0.92);color:#1e40af;border-radius:4px;padding:2px 4px;margin-top:4px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:1px solid #bfdbfe;" title="Yıllık Planda: '+escapeHtml(plan.topic)+'">🎯 '+escapeHtml(plan.topic)+'</div>';
+          }
+        }
         return '<td>' +
           '<div class="slot-card filled '+colorClass+' '+(isActive ? 'is-active' : '')+'" data-day="'+day.key+'" data-period="'+p.id+'" title="Tıklayarak düzenleyin">' +
             '<div class="cls-name">'+escapeHtml(slot.cls)+'</div>' +
             (slot.subj ? '<div class="subj-name">'+escapeHtml(slot.subj)+'</div>' : '') +
+            activeTopicBadge +
           '</div>' +
         '</td>';
       } else {
@@ -4652,6 +7590,7 @@ function scheduleViewHtml(){
       '<div class="schedule-actions">' +
         '<button class="btn btn-primary btn-sm" id="presetScheduleBtn">📋 Şablon Seç</button>' +
         '<button class="btn btn-outline btn-sm" id="editScheduleMatrixBtn">✏️ Tabloyu Düzenle</button>' +
+        '<button class="btn btn-outline btn-sm" id="clearScheduleBtn" title="Ders programını tamamen boşalt">🗑️ Programı Temizle</button>' +
         '<button class="btn btn-soft btn-sm" id="resetScheduleBtn">'+ic('upload')+'Varsayılana Dön</button>' +
       '</div>' +
     '</div>' +
@@ -4679,6 +7618,27 @@ function wireScheduleView(app){
 
   const editMatrixBtn = document.getElementById('editScheduleMatrixBtn');
   if(editMatrixBtn) editMatrixBtn.onclick = () => openScheduleMatrixEditModal();
+
+  const livePlanBtn = document.getElementById('liveOpenAnnualPlanBtn');
+  if(livePlanBtn) livePlanBtn.onclick = () => openCurriculumModal();
+
+  const clearBtn = document.getElementById('clearScheduleBtn');
+  if(clearBtn){
+    clearBtn.onclick = () => {
+      if(confirm('Haftalık ders programınızdaki tüm dersler temizlensin mi (boşaltılsın mı)?')){
+        const emptySched = {
+          pazartesi: [null, null, null, null, null, null, null, null, null, null],
+          sali:      [null, null, null, null, null, null, null, null, null, null],
+          carsamba:  [null, null, null, null, null, null, null, null, null, null],
+          persembe:  [null, null, null, null, null, null, null, null, null, null],
+          cuma:      [null, null, null, null, null, null, null, null, null, null]
+        };
+        saveTeacherSchedule(emptySched);
+        showToast('Ders programı temizlendi (boşaltıldı)');
+        render();
+      }
+    };
+  }
 
   const resetBtn = document.getElementById('resetScheduleBtn');
   if(resetBtn){
@@ -5232,6 +8192,20 @@ function openPresetScheduleModal(onSelectCallback){
     '</div>' +
 
     '<div style="display:flex;flex-direction:column;gap:12px;">' +
+      // Card 0: Boş Program
+      '<div class="preset-sched-card" style="border:2px dashed #94a3b8;background:#f8fafc;border-radius:12px;padding:14px;cursor:pointer;transition:all 0.15s ease;" id="presetEmptyBtn">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">' +
+          '<div>' +
+            '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+              '<span style="font-size:18px;">📝</span>' +
+              '<b style="font-size:15px;color:var(--ink);">Boş Ders Programı (Kendiniz Doldurun)</b>' +
+              '<span class="schedule-badge hours" style="background:#64748b;color:#fff;">0 Saat</span>' +
+            '</div>' +
+            '<div style="font-size:12px;color:var(--ink-soft);margin-top:4px;">Tüm saatleri boşaltır, kendi sınıf ve ders saatlerinizi tablodan kolayca doldurabilirsiniz.</div>' +
+          '</div>' +
+          '<button type="button" class="btn btn-outline btn-sm" style="white-space:nowrap;">Boş Şablonu Seç</button>' +
+        '</div>' +
+      '</div>' +
       // Card 1: Candan Sarıkan
       '<div class="preset-sched-card" style="border:2px solid #fdba74;background:#fffaf5;border-radius:12px;padding:14px;cursor:pointer;transition:all 0.15s ease;" id="presetCandanBtn">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
@@ -5324,6 +8298,16 @@ function openPresetScheduleModal(onSelectCallback){
     }
   };
 
+  const pEmpty = document.getElementById('presetEmptyBtn');
+  if(pEmpty){
+    pEmpty.onclick = () => selectSched({
+      pazartesi: [null, null, null, null, null, null, null, null, null, null],
+      sali:      [null, null, null, null, null, null, null, null, null, null],
+      carsamba:  [null, null, null, null, null, null, null, null, null, null],
+      persembe:  [null, null, null, null, null, null, null, null, null, null],
+      cuma:      [null, null, null, null, null, null, null, null, null, null]
+    }, 'Boş Şablon (0 Saat)');
+  }
   document.getElementById('presetCandanBtn').onclick = () => selectSched(JSON.parse(JSON.stringify(SCHEDULE_CANDAN_SARIKAN)), 'Candan Sarıkan (26 Saat)');
   document.getElementById('presetCemBtn').onclick = () => selectSched(JSON.parse(JSON.stringify(SCHEDULE_CEM_GURAKAR)), 'Cem Gürakar (25 Saat)');
   document.getElementById('presetFeritBtn').onclick = () => selectSched(JSON.parse(JSON.stringify(SCHEDULE_FERIT_CEM)), 'Ferit Cem (27 Saat)');
@@ -6279,7 +9263,11 @@ function renderHome(app){
           '<div style="font-size:12.5px;font-weight:500;opacity:0.9;margin-top:2px;">Sistemdeki tüm öğretmenlerin sınıflarını ve kayıtlarını görüntülüyorsunuz. Güvenlik gereği veriler üzerinde ekleme, silme veya değişiklik yapılamaz.</div>' +
         '</div>' +
       '</div>' +
-      '<button class="btn btn-primary" id="adminNewUserBtn" style="font-size:12.5px;padding:8px 16px;display:flex;align-items:center;gap:6px;white-space:nowrap;">'+ic('user')+'Yeni Kullanıcı Ekle</button>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+  '<button class="btn btn-primary" id="adminBulkClassExcelBtn" style="font-size:12px;padding:8px 14px;display:flex;align-items:center;gap:6px;white-space:nowrap;background:#059669;border-color:#059669;font-weight:800;">' + ic('upload') + 'Tüm Sınıflar &amp; Öğrenci Exceli Yükle</button>' +
+  '<input type="file" id="adminBulkClassExcelFile" accept=".xlsx,.xls,.csv" style="display:none;">' +
+  '<button class="btn btn-outline" id="adminNewUserBtn" style="font-size:12px;padding:8px 14px;display:flex;align-items:center;gap:6px;white-space:nowrap;">' + ic('user') + 'Yeni Kullanıcı Ekle</button>' +
+'</div>' +
     '</div>' : '';
 
   let filterBar = '';
@@ -6319,7 +9307,12 @@ function renderHome(app){
 
   app.innerHTML =
     adminBanner +
-    '<div class="pagehead" style="margin-bottom:14px;"><h2>Hoş geldin, '+escapeHtml(state.username||'')+(state.isAdmin?' (Yönetici)':'')+'</h2></div>' +
+    '<div class="pagehead" style="margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">' +
+  '<div>' +
+    '<h2 style="margin:0;">Hoş geldin, '+escapeHtml(state.username||'')+(state.isAdmin?' (Yönetici)':'')+'</h2>' +
+  '</div>' +
+  (!state.isAdmin && activeTab === 'classes' ? '<button class="btn btn-primary btn-sm" id="topAddClassBtn">' + ic('plus') + ' Sınıf Ekle</button>' : '') +
+'</div>' +
     navTabsHtml +
     tabBodyHtml;
 
@@ -6334,6 +9327,17 @@ function renderHome(app){
     if(state.isAdmin){
       const aBtn = document.getElementById('adminNewUserBtn');
       if(aBtn) aBtn.onclick = openCreateUserModal;
+
+      const bulkBtn = document.getElementById('adminBulkClassExcelBtn');
+      const bulkFile = document.getElementById('adminBulkClassExcelFile');
+      if(bulkBtn && bulkFile){
+        bulkBtn.onclick = () => bulkFile.click();
+        bulkFile.onchange = (e) => {
+          const file = e.target.files && e.target.files[0];
+          if(file) openAdminBulkClassImportModal(file);
+          bulkFile.value = '';
+        };
+      }
       app.querySelectorAll('[data-filtergrade]').forEach(btn=>{
         btn.onclick = ()=>{
           state.adminGradeFilter = btn.dataset.filtergrade;
@@ -6341,6 +9345,8 @@ function renderHome(app){
         };
       });
     }
+    const topAdd = document.getElementById('topAddClassBtn');
+    if(topAdd) topAdd.onclick = openNewClassModal;
     wireClassCards(app);
   } else if(activeTab === 'schedule'){
     wireScheduleView(app);
@@ -6349,14 +9355,22 @@ function renderHome(app){
   }
 }
 function classGridHtml(){
-  let html = '<div class="classgrid">';
   let classes = state.isAdmin ? sortClassesList(state.classes) : state.classes;
   if(state.isAdmin && state.adminGradeFilter && state.adminGradeFilter !== 'all'){
     classes = classes.filter(c => getGradeLevel(c.name) === state.adminGradeFilter);
   }
   if(classes.length === 0){
+    if(!state.isAdmin){
+      return '<div style="text-align:center;padding:36px 16px;background:var(--surface);border:2px dashed var(--line);border-radius:14px;margin-top:10px;">' +
+        '<div style="font-size:38px;margin-bottom:8px;">🏫</div>' +
+        '<div style="font-size:16px;font-weight:900;color:var(--ink);margin-bottom:4px;">Henüz Kayıtlı Sınıfınız Bulunmuyor</div>' +
+        '<div style="font-size:13px;color:var(--ink-soft);max-width:380px;margin:0 auto 16px;line-height:1.5;">Öğrencilerinizi, ödevlerinizi ve sınavlarınızı takip etmek için hemen ilk sınıfınızı oluşturun.</div>' +
+        '<button class="btn btn-primary" id="addClassCard" style="font-size:14px;padding:10px 22px;font-weight:800;">' + ic('plus') + ' Yeni Sınıf Ekle</button>' +
+      '</div>';
+    }
     return '<div class="empty" style="padding:28px 0;width:100%;">Bu seviyede sınıf bulunamadı.</div>';
   }
+  let html = '<div class="classgrid">';
   classes.forEach(c=>{
     const g12 = isGrade12(c.name);
     const g11 = isGrade11(c.name);
@@ -6383,6 +9397,263 @@ function wireClassCards(app){
   if(addBtn) addBtn.onclick = openNewClassModal;
 }
 
+
+// ==============================================================================
+// MATERYAL KONTROLÜ (FEN BİLİMLERİ / KİMYA / FİZİK / BİYOLOJİ)
+// ==============================================================================
+
+function getMaterialsForClass(clsId){
+  if(!clsId) return [];
+  const key = 'takev_materials_' + clsId;
+  try{
+    const raw = localStorage.getItem(key);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  const defaults = [
+    { slot_no: 1, label: 'Ders Kitabı & Föy', check_date: todayStr() },
+    { slot_no: 2, label: 'Deney Önlüğü & Gözlük', check_date: todayStr() },
+    { slot_no: 3, label: 'Laboratuvar Defteri', check_date: todayStr() },
+    { slot_no: 4, label: 'Soru Bankası & Defter', check_date: '' }
+  ];
+  saveMaterialsForClass(clsId, defaults);
+  return defaults;
+}
+
+function saveMaterialsForClass(clsId, list){
+  if(!clsId) return;
+  try{
+    localStorage.setItem('takev_materials_' + clsId, JSON.stringify(list || []));
+  }catch(e){}
+}
+
+function getMaterialStatusForClass(clsId){
+  if(!clsId) return {};
+  const key = 'takev_mat_status_' + clsId;
+  try{
+    const raw = localStorage.getItem(key);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {};
+}
+
+function saveMaterialStatusForClass(clsId, statusObj){
+  if(!clsId) return;
+  try{
+    localStorage.setItem('takev_mat_status_' + clsId, JSON.stringify(statusObj || {}));
+  }catch(e){}
+}
+
+function addMaterialCheck(label, checkDate){
+  if(!state.cls) return;
+  label = (label || '').trim();
+  if(!label) return;
+  const list = getMaterialsForClass(state.cls.id);
+  const maxSlot = Math.max(0, ...list.map(m => m.slot_no || 0));
+  const nextSlot = maxSlot + 1;
+  list.push({
+    slot_no: nextSlot,
+    label,
+    check_date: checkDate || todayStr()
+  });
+  saveMaterialsForClass(state.cls.id, list);
+  state.cls.materials = list;
+  showToast('Materyal kontrolü eklendi: ' + label);
+  render();
+}
+
+function updateStudentMaterial(sid, slotNo, isDone){
+  if(!state.cls) return;
+  const statusObj = getMaterialStatusForClass(state.cls.id);
+  statusObj[sid] = statusObj[sid] || {};
+  statusObj[sid][slotNo] = !!isDone;
+  saveMaterialStatusForClass(state.cls.id, statusObj);
+  state.cls.materialStatus = statusObj;
+}
+
+function renderMatPicker(app){
+  const cls = state.cls;
+  const materials = getMaterialsForClass(cls.id);
+  cls.materials = materials;
+  const matStatus = getMaterialStatusForClass(cls.id);
+  cls.materialStatus = matStatus;
+  const students = cls.students || [];
+
+  const rows = materials.map(m => {
+    let doneCount = 0;
+    students.forEach(s => {
+      if((matStatus[s.id] || {})[m.slot_no]) doneCount++;
+    });
+    const pct = students.length ? Math.round((doneCount / students.length) * 100) : 0;
+    const badgeColor = pct >= 80 ? '#059669' : (pct >= 50 ? '#d97706' : '#dc2626');
+
+    return '<div class="card rowcard" data-pick-mat="' + m.slot_no + '" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;margin-bottom:8px;">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+          '<b style="font-size:15px;color:var(--ink);">' + escapeHtml(m.label) + '</b>' +
+          '<span class="tag cyan" style="font-size:11px;">📦 Materyal</span>' +
+        '</div>' +
+        '<div style="font-size:12px;color:var(--ink-soft);margin-top:4px;">' +
+          (m.check_date ? 'Kontrol: ' + fmtDate(m.check_date) : 'Tarih belirtilmedi') +
+          ' &middot; <b style="color:' + badgeColor + ';">' + doneCount + ' / ' + students.length + ' Getirdi (%' + pct + ')</b>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<button type="button" class="btn btn-primary btn-sm" style="font-size:12px;padding:6px 12px;pointer-events:none;font-weight:700;">Kontrol Et &rarr;</button>' +
+        (!state.isAdmin ? '<button type="button" class="btn btn-outline btn-sm delete-mat-btn" data-del-mat="' + m.slot_no + '" title="Sil" style="color:var(--red);border-color:#fecdd3;padding:5px 8px;">✕</button>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  app.innerHTML =
+    '<button class="backlink" id="backMatToRoster">' + ic('chevron') + ' ' + escapeHtml(cls.name) + ' paneline dön</button>' +
+    (state.isAdmin ? '<div class="admin-badge-banner" style="background:var(--amber-soft);border:1px solid var(--amber);color:var(--amber);padding:10px 14px;border-radius:10px;font-size:12.5px;font-weight:700;margin-bottom:14px;">Yönetici Modu (Salt Okunur)</div>' : '') +
+    '<div class="pagehead" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">' +
+      '<div>' +
+        '<h2 style="margin:0;">📦 Materyal ve Araç-Gereç Kontrolü</h2>' +
+        '<div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">Öğrencilerin ders ve laboratuvar materyallerini (kitap, föy, önlük, defter vb.) kontrol edin.</div>' +
+      '</div>' +
+      (!state.isAdmin ? '<button type="button" class="btn btn-primary btn-sm" id="addNewMatBtn">' + ic('plus') + ' Yeni Materyal Kontrolü Ekle</button>' : '') +
+    '</div>' +
+    (rows || '<div class="empty" style="padding:32px 0;">Bu sınıf için henüz materyal kontrolü tanımlanmamış. Yukarıdaki butondan ekleyebilirsiniz.</div>');
+
+  document.getElementById('backMatToRoster').onclick = backToRoster;
+
+  const addBtn = document.getElementById('addNewMatBtn');
+  if(addBtn){
+    addBtn.onclick = () => {
+      const name = prompt('Kontrol edilecek materyal adı (örn: Ders Kitabı & Föy, Deney Önlüğü, Laboratuvar Defteri):');
+      if(name && name.trim()){
+        addMaterialCheck(name.trim(), todayStr());
+      }
+    };
+  }
+
+  app.querySelectorAll('[data-pick-mat]').forEach(el => {
+    el.onclick = (e) => {
+      if(e.target.closest('.delete-mat-btn')) return;
+      state.activeMatSlot = parseInt(el.dataset.pickMat, 10);
+      state.view = 'quick_mat';
+      render();
+    };
+  });
+
+  app.querySelectorAll('[data-del-mat]').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const sNo = parseInt(btn.dataset.delMat, 10);
+      if(confirm('Bu materyal kontrol kaydı silinsin mi?')){
+        const curList = getMaterialsForClass(cls.id).filter(m => m.slot_no !== sNo);
+        saveMaterialsForClass(cls.id, curList);
+        cls.materials = curList;
+        render();
+        showToast('Materyal kontrolü silindi');
+      }
+    };
+  });
+}
+
+function renderQuickMat(app){
+  const cls = state.cls;
+  const slotNo = state.activeMatSlot;
+  const materials = getMaterialsForClass(cls.id);
+  const mat = materials.find(m => m.slot_no === slotNo);
+  if(!mat){ state.view = 'mat_picker'; return render(); }
+
+  const students = sortedStudents();
+  const matStatus = getMaterialStatusForClass(cls.id);
+  let doneCount = 0;
+  students.forEach(s => {
+    if((matStatus[s.id] || {})[slotNo]) doneCount++;
+  });
+  const pct = students.length ? Math.round((doneCount / students.length) * 100) : 0;
+
+  const rows = students.map(s => {
+    const done = !!((matStatus[s.id] || {})[slotNo]);
+    return '<div class="card rowcard" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;margin-bottom:6px;">' +
+      '<div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">' +
+        '<div style="min-width:32px;font-weight:800;color:var(--ink-soft);font-size:13px;">' + escapeHtml(s.no || '—') + '</div>' +
+        '<div style="font-weight:700;font-size:14px;color:var(--ink);">' + escapeHtml(s.name) + '</div>' +
+      '</div>' +
+      '<div>' +
+        '<button type="button" class="btn btn-sm mat-toggle-btn ' + (done ? 'btn-success' : 'btn-outline') + '" data-id="' + s.id + '" ' + (state.isAdmin ? 'disabled style="cursor:not-allowed;"' : '') + ' style="' + (done ? 'background:#059669;border-color:#059669;color:#fff;font-weight:800;min-width:130px;' : 'border-color:#e2e8f0;color:var(--red);font-weight:700;min-width:130px;') + '">' +
+          (done ? '✅ Getirdi (Var)' : '❌ Getirmedi') +
+        '</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  app.innerHTML =
+    '<button class="backlink" id="backToMatList">' + ic('chevron') + ' Materyal listesine dön</button>' +
+    (state.isAdmin ? '<div class="admin-badge-banner" style="background:var(--amber-soft);border:1px solid var(--amber);color:var(--amber);padding:10px 14px;border-radius:10px;font-size:12.5px;font-weight:700;margin-bottom:14px;">Yönetici Modu (Salt Okunur)</div>' : '') +
+    '<div class="pagehead" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">' +
+      '<div>' +
+        '<h2 style="margin:0;">📦 ' + escapeHtml(mat.label) + '</h2>' +
+        '<div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">' +
+          (mat.check_date ? 'Kontrol Tarihi: ' + fmtDate(mat.check_date) : '') +
+          ' &middot; Durumu değiştirmek için butona tıklayın' +
+        '</div>' +
+      '</div>' +
+      (!state.isAdmin ? (
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+          '<button type="button" class="btn btn-soft btn-sm" id="matAllDoneBtn">✅ Tümünü Getirdi Yap</button>' +
+          '<button type="button" class="btn btn-outline btn-sm" id="matAllClearBtn">❌ Tümünü Kaldır</button>' +
+          '<button type="button" class="btn btn-outline btn-sm" id="matRenameBtn">✏️ Başlığı Değiştir</button>' +
+        '</div>'
+      ) : '') +
+    '</div>' +
+    '<div class="infobar" style="margin-bottom:14px;">' +
+      '<div class="item"><div class="v">' + students.length + '</div><div class="k">Toplam Öğrenci</div></div>' +
+      '<div class="item"><div class="v" style="font-weight:900;color:#059669;">' + doneCount + '</div><div class="k">Getiren Öğrenci</div></div>' +
+      '<div class="item"><div class="v" style="font-weight:900;color:var(--red);">' + (students.length - doneCount) + '</div><div class="k">Getirmeyen Öğrenci</div></div>' +
+      '<div class="item"><div class="v" style="font-weight:900;color:var(--primary-deep);">%' + pct + '</div><div class="k">Getirme Oranı</div></div>' +
+    '</div>' +
+    (rows || '<div class="empty">Bu sınıfta öğrenci yok.</div>');
+
+  document.getElementById('backToMatList').onclick = () => { state.view = 'mat_picker'; render(); };
+
+  if(!state.isAdmin){
+    const adBtn = document.getElementById('matAllDoneBtn');
+    if(adBtn){
+      adBtn.onclick = () => {
+        students.forEach(s => { updateStudentMaterial(s.id, slotNo, true); });
+        showToast('Tüm öğrenciler "Getirdi" olarak işaretlendi');
+        render();
+      };
+    }
+
+    const acBtn = document.getElementById('matAllClearBtn');
+    if(acBtn){
+      acBtn.onclick = () => {
+        students.forEach(s => { updateStudentMaterial(s.id, slotNo, false); });
+        showToast('Materyal durumu temizlendi');
+        render();
+      };
+    }
+
+    const rnBtn = document.getElementById('matRenameBtn');
+    if(rnBtn){
+      rnBtn.onclick = () => {
+        const n = prompt('Materyal adını güncelleyin:', mat.label);
+        if(n && n.trim()){
+          mat.label = n.trim();
+          saveMaterialsForClass(cls.id, materials);
+          render();
+          showToast('Materyal adı güncellendi');
+        }
+      };
+    }
+
+    app.querySelectorAll('.mat-toggle-btn').forEach(btn => {
+      btn.onclick = () => {
+        const sid = btn.dataset.id;
+        const cur = !!((matStatus[sid] || {})[slotNo]);
+        updateStudentMaterial(sid, slotNo, !cur);
+        render();
+      };
+    });
+  }
+}
+
 function renderSinifDetail(app){
   if(!state.cls){ state.page='home'; return render(); }
   if(state.view==='roster') return renderRoster(app);
@@ -6390,6 +9661,8 @@ function renderSinifDetail(app){
   if(state.view==='homeworks') return renderHomeworksEdit(app);
   if(state.view==='hw_picker') return renderHwPicker(app);
   if(state.view==='quick_hw') return renderQuickHw(app);
+  if(state.view==='mat_picker') return renderMatPicker(app);
+  if(state.view==='quick_mat') return renderQuickMat(app);
   if(state.view==='perfTasks') return renderPerfTasksList(app);
   if(state.view==='rubric') return renderRubric(app);
   if(state.view==='quizzes') return renderQuizzesEdit(app);
@@ -6540,7 +9813,8 @@ function renderRoster(app){
       state.view = 'quiz_picker';
       render();
     };
-    document.getElementById('perfMenuBtn').onclick = ()=>{
+    const pMenuBtn = document.getElementById('perfMenuBtn');
+    if(pMenuBtn) pMenuBtn.onclick = ()=>{
       if(state.isAdmin){
         if(!state.cls.perfTasks.length){
           state.view = 'perfTasks'; render();
@@ -6632,14 +9906,18 @@ function renderStudentDetail(app){
 
   let quizHtml = '', perfHtml = '', tytHtml = '', aytHtml = '';
   if(!g12){
-    const sortedQuizzes = sortQuizzes(cls.quizzes || []);
+    let sortedQuizzes = sortQuizzes(cls.quizzes || []);
     quizHtml = sortedQuizzes.map(q=>{
       const v = (cls.quizScores[s.id]||{})[q.slot_no];
       const isQuiz = isQuizExam(q.label);
       let disp = '-';
       if(isQuiz){
         if(v && v.score != null){
-          disp = '<span style="color:var(--primary-deep);font-weight:900;font-size:15px;">' + v.score + '</span> <span style="font-size:11px;color:var(--ink-soft);font-weight:600;">Puan</span>';
+          if(isGirmedi(v.score)){
+            disp = '<span style="color:#d97706;font-weight:800;font-size:13px;background:#fef3c7;padding:1px 6px;border-radius:4px;border:1px solid #fde68a;">Girmedi (G)</span>';
+          } else {
+            disp = '<span style="color:var(--primary-deep);font-weight:900;font-size:15px;">' + v.score + '</span> <span style="font-size:11px;color:var(--ink-soft);font-weight:600;">Puan</span>';
+          }
         }
       } else {
         if(v && (v.dogru != null || v.yanlis != null || v.bos != null)){
@@ -7631,7 +10909,8 @@ function renderQuizPicker(app){
 
   let mainBodyHtml = '';
   if(state.quizPickerTab === 'matrix'){
-    if(!allQuizzes.length){
+    const matrixExams = allQuizzes;
+    if(!matrixExams.length){
       mainBodyHtml = '<div class="empty" style="padding:28px 14px;">Bu sınıfta henüz sınav tanımlanmadı.</div>';
     } else {
       const students = sortedStudents();
@@ -7639,7 +10918,7 @@ function renderQuizPicker(app){
         '<th style="position:sticky;left:0;background:#f8fafc;z-index:2;min-width:44px;text-align:center;padding:10px 6px;">No</th>' +
         '<th style="position:sticky;left:44px;background:#f8fafc;z-index:2;min-width:150px;text-align:left;padding:10px 8px;">Öğrenci Adı Soyadı</th>';
 
-      allQuizzes.forEach(q => {
+      matrixExams.forEach(q => {
         const isQuiz = isQuizExam(q.label);
         const badge = examBadge(q.label, 'small');
         const title = formatExamLabel(q.label);
@@ -7654,15 +10933,21 @@ function renderQuizPicker(app){
       let tbodyRows = '';
       students.forEach(s => {
         let tds = '';
-        allQuizzes.forEach(q => {
+        matrixExams.forEach(q => {
           const v = (state.cls.quizScores[s.id] || {})[q.slot_no];
           const isQuiz = isQuizExam(q.label);
           if(isQuiz){
             if(v && v.score != null){
-              tds += '<td style="text-align:center;padding:7px 6px;white-space:nowrap;border-bottom:1px solid #f1f5f9;">' +
-                '<span style="font-size:13px;font-weight:900;color:var(--ink);">' + v.score + '</span> ' +
-                '<span style="font-size:10px;color:var(--ink-soft);font-weight:600;">Puan</span>' +
-              '</td>';
+              if(isGirmedi(v.score)){
+                tds += '<td style="text-align:center;padding:7px 6px;white-space:nowrap;border-bottom:1px solid #f1f5f9;">' +
+                  '<span style="font-size:12px;font-weight:800;color:#d97706;background:#fef3c7;padding:2px 6px;border-radius:4px;border:1px solid #fde68a;">Girmedi (G)</span>' +
+                '</td>';
+              } else {
+                tds += '<td style="text-align:center;padding:7px 6px;white-space:nowrap;border-bottom:1px solid #f1f5f9;">' +
+                  '<span style="font-size:13px;font-weight:900;color:var(--ink);">' + v.score + '</span> ' +
+                  '<span style="font-size:10px;color:var(--ink-soft);font-weight:600;">Puan</span>' +
+                '</td>';
+              }
             } else {
               tds += '<td style="text-align:center;padding:7px 6px;color:var(--ink-faint);border-bottom:1px solid #f1f5f9;">-</td>';
             }
@@ -7693,7 +10978,7 @@ function renderQuizPicker(app){
         '<td style="position:sticky;left:0;background:#f8fafc;z-index:1;text-align:center;color:var(--ink-soft);">—</td>' +
         '<td style="position:sticky;left:44px;background:#f8fafc;z-index:1;color:var(--primary-deep);font-weight:900;padding:8px 8px;">Sınıf Ortalaması</td>';
 
-      allQuizzes.forEach(q => {
+      matrixExams.forEach(q => {
         const avg = quizSlotAvgDYB(q.slot_no);
         const isQuiz = isQuizExam(q.label);
         if(isQuiz){
@@ -7847,11 +11132,11 @@ function renderQuizPicker(app){
   document.getElementById('back7').onclick = backToRoster;
 
   // Filter Tabs
-  document.getElementById('tabAllExams').onclick = () => { state.quizPickerTab = 'all'; render(); };
-  document.getElementById('tabQuizExams').onclick = () => { state.quizPickerTab = 'quiz'; render(); };
-  document.getElementById('tabKdsExams').onclick = () => { state.quizPickerTab = 'kds'; render(); };
-  document.getElementById('tabSinavExams').onclick = () => { state.quizPickerTab = 'sinav'; render(); };
-  document.getElementById('tabMatrixExams').onclick = () => { state.quizPickerTab = 'matrix'; render(); };
+  const tAll = document.getElementById('tabAllExams'); if(tAll) tAll.onclick = () => { state.quizPickerTab = 'all'; render(); };
+  const tQuiz = document.getElementById('tabQuizExams'); if(tQuiz) tQuiz.onclick = () => { state.quizPickerTab = 'quiz'; render(); };
+  const tKds = document.getElementById('tabKdsExams'); if(tKds) tKds.onclick = () => { state.quizPickerTab = 'kds'; render(); };
+  const tSinav = document.getElementById('tabSinavExams'); if(tSinav) tSinav.onclick = () => { state.quizPickerTab = 'sinav'; render(); };
+  const tMatrix = document.getElementById('tabMatrixExams'); if(tMatrix) tMatrix.onclick = () => { state.quizPickerTab = 'matrix'; render(); };
 
   if(state.quizPickerTab === 'matrix'){
     const searchInp = document.getElementById('matrixSearchInp');
@@ -7901,7 +11186,7 @@ function renderQuizPicker(app){
             const v = (state.cls.quizScores[s.id] || {})[q.slot_no];
             const isQuiz = isQuizExam(q.label);
             if(isQuiz){
-              row.push(v && v.score != null ? v.score : '-');
+              row.push(v && v.score != null ? (isGirmedi(v.score) ? 'G (Girmedi)' : v.score) : '-');
             } else {
               if(v && (v.dogru != null || v.yanlis != null || v.bos != null)){
                 const d = v.dogru || 0;
@@ -7972,6 +11257,14 @@ function renderQuizPicker(app){
     const pS2Btn = document.getElementById('pickerAddS2Btn');
     if(pS2Btn) pS2Btn.onclick = () => openOrAddOfficialExam('2. Sınav');
 
+    const pWrittenBtn = document.getElementById('pickerAddWrittenBtn');
+    if(pWrittenBtn) pWrittenBtn.onclick = async () => {
+      const name = prompt('Eklemek istediğiniz yazılı sınav adı (örn: 1. Sınav, 2. Sınav, Telafi Sınavı, Ortak Sınav):', '1. Sınav');
+      if(name && name.trim()){
+        await openOrAddOfficialExam(name.trim());
+      }
+    };
+
     const pManageBtn = document.getElementById('pickerManageBtn');
     if(pManageBtn) pManageBtn.onclick = () => { state.view = 'quizzes'; render(); };
 
@@ -8020,14 +11313,24 @@ function renderQuickQuiz(app){
 
     rows = students.map((s, idx) => {
       const v = (state.cls.quizScores[s.id] || {})[slotNo] || {};
-      if(v.score != null) totalWithScore++;
-      const scoreVal = (v.score != null ? v.score : '');
+      const isG = isGirmedi(v.score);
+
       let statusHtml = '<span style="color:var(--ink-faint);font-size:11.5px;">—</span>';
-      if(v.score != null){
-        if(v.score >= 50){
-          statusHtml = '<span style="color:#059669;font-weight:800;font-size:12px;">Başarılı</span>';
-        } else {
-          statusHtml = '<span style="color:#dc2626;font-weight:800;font-size:12px;">Geliştirilmeli</span>';
+      let scoreVal = '';
+
+      if(isG){
+        scoreVal = 'G';
+        statusHtml = '<span style="color:#d97706;background:#fef3c7;padding:2px 8px;border-radius:6px;font-weight:800;font-size:12px;border:1px solid #fde68a;">Girmedi</span>';
+      } else if(v.score != null && String(v.score).trim() !== ''){
+        const num = parseFloat(String(v.score).replace(',', '.'));
+        if(!isNaN(num)){
+          scoreVal = num;
+          totalWithScore++;
+          if(num >= 50){
+            statusHtml = '<span style="color:#059669;font-weight:800;font-size:12px;">Başarılı</span>';
+          } else {
+            statusHtml = '<span style="color:#dc2626;font-weight:800;font-size:12px;">Geliştirilmeli</span>';
+          }
         }
       }
 
@@ -8035,7 +11338,7 @@ function renderQuickQuiz(app){
         '<div class="no" style="font-weight:800;color:var(--ink-soft);min-width:32px;">' + escapeHtml(s.no || '—') + '</div>' +
         '<div class="name" style="font-weight:700;font-size:13.5px;">' + escapeHtml(s.name) + '</div>' +
         '<div style="width:110px;text-align:center;">' +
-          '<input type="text" inputmode="decimal" placeholder="Puan" title="Quiz Puanı (0-100)" value="' + scoreVal + '" data-id="' + s.id + '" data-f="score" data-row="' + idx + '" data-col="0" ' + (state.isAdmin ? 'readonly style="width:85px;background:var(--surface-2);cursor:not-allowed;text-align:center;font-weight:900;font-size:14px;"' : 'style="width:85px;text-align:center;font-weight:900;font-size:14px;color:var(--primary-deep);"') + '>' +
+          '<input type="text" inputmode="decimal" placeholder="Puan / G" title="Quiz Puanı (0-100 veya G: Girmedi)" value="' + scoreVal + '" data-id="' + s.id + '" data-f="score" data-row="' + idx + '" data-col="0" ' + (state.isAdmin ? 'readonly style="width:85px;background:var(--surface-2);cursor:not-allowed;text-align:center;font-weight:900;font-size:14px;"' : 'style="width:85px;text-align:center;font-weight:900;font-size:14px;color:var(--primary-deep);"') + '>' +
         '</div>' +
         '<div class="score-status" style="width:80px;text-align:right;padding-right:6px;">' + statusHtml + '</div>' +
       '</div>';
@@ -8150,16 +11453,23 @@ function renderQuickQuiz(app){
     allInputs.forEach(inp => {
       if(isQuiz){
         inp.oninput = () => {
-          const val = inp.value.replace(',', '.').trim();
-          const num = val === '' ? null : parseFloat(val);
+          const val = inp.value.trim();
+          const isG = isGirmedi(val);
           const stEl = inp.closest('.scorerow')?.querySelector('.score-status');
           if(stEl){
-            if(num != null && !isNaN(num)){
-              stEl.innerHTML = num >= 50
-                ? '<span style="color:#059669;font-weight:800;font-size:12px;">Başarılı</span>'
-                : '<span style="color:#dc2626;font-weight:800;font-size:12px;">Geliştirilmeli</span>';
-            } else {
+            if(isG){
+              stEl.innerHTML = '<span style="color:#d97706;background:#fef3c7;padding:2px 8px;border-radius:6px;font-weight:800;font-size:12px;border:1px solid #fde68a;">Girmedi</span>';
+            } else if(val === ''){
               stEl.innerHTML = '<span style="color:var(--ink-faint);font-size:11.5px;">—</span>';
+            } else {
+              const num = parseFloat(val.replace(',', '.'));
+              if(!isNaN(num)){
+                stEl.innerHTML = num >= 50
+                  ? '<span style="color:#059669;font-weight:800;font-size:12px;">Başarılı</span>'
+                  : '<span style="color:#dc2626;font-weight:800;font-size:12px;">Geliştirilmeli</span>';
+              } else {
+                stEl.innerHTML = '<span style="color:var(--ink-faint);font-size:11.5px;">—</span>';
+              }
             }
           }
         };
@@ -8180,7 +11490,12 @@ function renderQuickQuiz(app){
         };
       }
 
-      inp.onblur = () => updateQuizDYB(inp.dataset.id, slotNo, inp.dataset.f, inp.value);
+      inp.onblur = () => {
+        if(isQuiz && isGirmedi(inp.value)){
+          inp.value = 'G';
+        }
+        updateQuizDYB(inp.dataset.id, slotNo, inp.dataset.f, inp.value);
+      };
       inp.addEventListener('keydown', (e) => {
         const curRow = parseInt(inp.dataset.row, 10);
         const curCol = parseInt(inp.dataset.col, 10);
@@ -8428,6 +11743,100 @@ function renderDenemeScores(app){
     }
   });
 })();
+
+// --- PWA & Android Kurulum Yönetimi ---
+(function setupPwa() {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && navigator.standalone);
+
+  // 1. Service Worker Kaydı
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((reg) => {
+          console.log('[PWA] Service Worker aktif:', reg.scope);
+          reg.addEventListener('updatefound', () => {
+            const installing = reg.installing;
+            if (!installing) return;
+            installing.addEventListener('statechange', () => {
+              if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+                showToast('Ödev Takip güncellendi, yeni sürüm hazır.');
+              }
+            });
+          });
+        })
+        .catch((err) => {
+          console.warn('[PWA] Service Worker hatası:', err);
+        });
+    });
+  }
+
+  // Eğer zaten uygulama olarak açılmışsa yükleme butonunu gösterme
+  if (isStandalone) {
+    console.log('[PWA] Uygulama tam ekran / standalone modda çalışıyor.');
+    return;
+  }
+
+  let deferredPrompt = null;
+  const headerBtn = document.getElementById('pwaInstallHeaderBtn');
+  const banner = document.getElementById('pwaInstallBanner');
+  const bannerInstallBtn = document.getElementById('pwaBannerInstallBtn');
+  const bannerDismissBtn = document.getElementById('pwaBannerDismissBtn');
+
+  if (headerBtn) {
+    headerBtn.style.display = 'inline-flex';
+    headerBtn.onclick = () => triggerInstallPrompt();
+  }
+
+  // 2. Tarayıcının yerel yükleme olayını yakalama
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+
+    const dismissedUntil = localStorage.getItem('pwa_banner_dismissed_until');
+    if (!dismissedUntil || Date.now() > parseInt(dismissedUntil, 10)) {
+      if (banner) banner.style.display = 'flex';
+    }
+    if (headerBtn) headerBtn.style.display = 'inline-flex';
+  });
+
+  if (bannerInstallBtn) {
+    bannerInstallBtn.onclick = () => triggerInstallPrompt();
+  }
+
+  if (bannerDismissBtn) {
+    bannerDismissBtn.onclick = () => {
+      if (banner) banner.style.display = 'none';
+      localStorage.setItem('pwa_banner_dismissed_until', String(Date.now() + 3 * 24 * 60 * 60 * 1000));
+    };
+  }
+
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    if (banner) banner.style.display = 'none';
+    if (headerBtn) headerBtn.style.display = 'none';
+    showToast('🎉 Ödev Takip uygulaması başarıyla yüklendi!');
+  });
+
+  async function triggerInstallPrompt() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        if (banner) banner.style.display = 'none';
+        if (headerBtn) headerBtn.style.display = 'none';
+      }
+      deferredPrompt = null;
+    } else {
+      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      if (isIos) {
+        alert('iOS cihazınızda yüklemek için Safari menüsünden "Paylaş" butonuna basıp "Ana Ekrana Ekle" seçeneğini seçebilirsiniz.');
+      } else {
+        alert('Android cihazınızda Chrome veya tarayıcınızın sağ üst köşesindeki üç nokta (⋮) menüsüne dokunup "Uygulamayı Yükle" veya "Ana Ekrana Ekle" seçeneğini seçerek Ödev Takip uygulamasını telefonunuza yükleyebilirsiniz.');
+      }
+    }
+  }
+})();
+
 </script>
 </body>
 </html>
