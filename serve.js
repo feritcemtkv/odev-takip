@@ -62,6 +62,45 @@ const server = http.createServer((req, res) => {
     }
   }
 
+  // Local API for School Annual Plans
+  if (reqPath === '/api/annual-plans') {
+    const dataDir = path.join(__dirname, 'data');
+    const plansFile = path.join(dataDir, 'annual_plans.json');
+
+    if (req.method === 'GET') {
+      if (fs.existsSync(plansFile)) {
+        try {
+          const content = fs.readFileSync(plansFile, 'utf8');
+          res.writeHead(200, {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Cache-Control': 'no-cache, no-store, must-revalidate'
+          });
+          res.end(content);
+          return;
+        } catch(e){}
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end('{}');
+      return;
+    } else if (req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const parsed = JSON.parse(body);
+          if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+          fs.writeFileSync(plansFile, JSON.stringify(parsed, null, 2), 'utf8');
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ success: true }));
+        } catch(e) {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ error: e.message }));
+        }
+      });
+      return;
+    }
+  }
+
   if (reqPath === '/' || reqPath === '') reqPath = '/index.html';
   const filePath = path.join(__dirname, reqPath);
 

@@ -104,3 +104,26 @@ $$;
 -- Fonksiyonu yetkilendir
 REVOKE EXECUTE ON FUNCTION public.create_class_for_teacher(text, uuid, boolean, jsonb) FROM anon;
 GRANT EXECUTE ON FUNCTION public.create_class_for_teacher(text, uuid, boolean, jsonb) TO authenticated;
+
+-- ==============================================================================
+-- 4. OKUL YILLIK PLANLARI TABLOSU (Admin Yükler, Tüm Öğretmenler Görür)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.annual_plans (
+    grade text PRIMARY KEY,
+    plan_data jsonb NOT NULL DEFAULT '[]'::jsonb,
+    updated_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE public.annual_plans ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "annual_plans_read" ON public.annual_plans;
+CREATE POLICY "annual_plans_read" ON public.annual_plans
+    FOR SELECT TO authenticated
+    USING (true);
+
+DROP POLICY IF EXISTS "annual_plans_write" ON public.annual_plans;
+CREATE POLICY "annual_plans_write" ON public.annual_plans
+    FOR ALL TO authenticated
+    USING (public.is_admin())
+    WITH CHECK (public.is_admin());
+

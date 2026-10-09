@@ -602,16 +602,36 @@ function getSameGradeClasses(cls){
   if(!g) return [];
   return (state.classes || []).filter(c => c.id !== cls.id && getGradeLevel(c.name) === g);
 }
+function getTeacherDisplayName(ownerId){
+  if(!ownerId) return 'Bilinmiyor';
+  const found = PREDEFINED_TEACHERS.find(t => t.id === ownerId || t.username === ownerId);
+  if(found) return found.name.split(' (')[0];
+  if(state.teacherMap && state.teacherMap[ownerId]){
+    return state.teacherMap[ownerId];
+  }
+  return 'Öğretmen (' + String(ownerId).slice(0, 6) + ')';
+}
+
 function sortClassesList(classes){
   return [...classes].sort((a, b)=>{
     const nameA = (a.name || '').trim();
     const nameB = (b.name || '').trim();
-    const gradeA = getGradeLevel(nameA);
-    const gradeB = getGradeLevel(nameB);
-    const numA = gradeA ? parseInt(gradeA, 10) : 999;
-    const numB = gradeB ? parseInt(gradeB, 10) : 999;
+    const normA = normalizeClassName(nameA);
+    const normB = normalizeClassName(nameB);
+    const gradeA = getGradeLevel(normA);
+    const gradeB = getGradeLevel(normB);
+    const numA = gradeA ? parseInt(gradeA, 10) : (normA.toLowerCase().startsWith('hz') ? 8 : 999);
+    const numB = gradeB ? parseInt(gradeB, 10) : (normB.toLowerCase().startsWith('hz') ? 8 : 999);
     if(numA !== numB) return numA - numB;
-    return nameA.localeCompare(nameB, 'tr', { numeric: true, sensitivity: 'base' });
+
+    // Normalize edilmiş ada göre sırala (9-A ve 9A yan yana gelsin)
+    const cmp = normA.localeCompare(normB, 'tr', { numeric: true, sensitivity: 'base' });
+    if(cmp !== 0) return cmp;
+
+    // Aynı sınıfta ise öğretmene göre sırala
+    const tA = getTeacherDisplayName(a.owner_id);
+    const tB = getTeacherDisplayName(b.owner_id);
+    return tA.localeCompare(tB, 'tr');
   });
 }
 async function getAllSameGradeClasses(cls){
@@ -800,6 +820,7 @@ async function startApp(){
   try { await syncSchoolRosterCatalogFromServer(); } catch(e){}
   state.loading = true; render();
   await loadClasses();
+  await syncAnnualPlansFromServer();
   state.loading = false;
   render();
   resetIdleTimer();
@@ -1739,6 +1760,27 @@ async function loadClasses(){
   });
   if(state.isAdmin){
     list = sortClassesList(list);
+    try {
+      const { data: profs } = await sb.from('profiles').select('id, username');
+      if(profs){
+        const tMap = {};
+        profs.forEach(p => {
+          let disp = p.username || 'Öğretmen';
+          if(disp === 'feritcem' || disp === 'ferit') disp = 'Ferit Cem';
+          else if(disp === 'candan') disp = 'Candan Sarıkan';
+          else if(disp === 'hasancem') disp = 'Cem Gürakar';
+          else disp = disp.charAt(0).toUpperCase() + disp.slice(1) + ' Hoca';
+          tMap[p.id] = disp;
+        });
+        state.teacherMap = tMap;
+      }
+      const { data: stus } = await sb.from('students').select('id, class_id');
+      if(stus){
+        const countMap = {};
+        stus.forEach(s => { countMap[s.class_id] = (countMap[s.class_id] || 0) + 1; });
+        state.classStudentCountMap = countMap;
+      }
+    } catch(e){}
   }
   state.classes = list;
 }
@@ -1898,15 +1940,23 @@ async function renameClass(newName){
   render();
   showToast('Sınıf adı güncellendi');
 }
-async function deleteClass(){
-  if(state.isAdmin){ showToast('Yönetici modunda sınıf silinemez (Salt Okunur).'); return; }
-  const name = state.cls.name;
-  await sb.from('classes').delete().eq('id', state.cls.id);
-  state.classes = state.classes.filter(c=>c.id!==state.cls.id);
-  logActivity('"'+name+'" sınıfını sildi');
-  state.page='home'; state.cls=null; state.classId=null;
+async function deleteClass(targetClassId = null, targetClassName = null){
+  const clsId = targetClassId || (state.cls && state.cls.id);
+  const clsName = targetClassName || (state.cls && state.cls.name) || 'Sınıf';
+  if(!clsId) return;
+
+  const { error } = await sb.from('classes').delete().eq('id', clsId);
+  if(error){
+    showToast('Sınıf silinemedi: ' + error.message);
+    return;
+  }
+  state.classes = state.classes.filter(c => c.id !== clsId);
+  logActivity('"' + clsName + '" sınıfını sildi' + (state.isAdmin ? ' (Yönetici)' : ''));
+  if(state.classId === clsId){
+    state.page = 'home'; state.cls = null; state.classId = null;
+  }
   render();
-  showToast('Sınıf silindi');
+  showToast('✅ "' + clsName + '" sınıfı silindi');
 }
 
 function autoWidth(rows){
@@ -7108,10 +7158,74 @@ function getAnnualPlans(){
   return JSON.parse(JSON.stringify(DEFAULT_ANNUAL_PLANS));
 }
 
-function saveAnnualPlans(plans){
+async function saveAnnualPlans(plans){
   try{
     localStorage.setItem(ANNUAL_PLANS_STORAGE_KEY, JSON.stringify(plans));
   }catch(e){}
+
+  // 1. Local server endpointine kaydet (/api/annual-plans)
+  try{
+    await fetch('/api/annual-plans', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(plans)
+    });
+  }catch(e){}
+
+  // 2. Supabase annual_plans tablosuna kaydet (Admin)
+  if(state.isAdmin && typeof sb !== 'undefined'){
+    try{
+      for(const g of Object.keys(plans)){
+        await sb.from('annual_plans').upsert({
+          grade: String(g),
+          plan_data: plans[g],
+          updated_at: new Date().toISOString()
+        });
+      }
+    }catch(e){
+      console.warn('Supabase annual_plans kaydetme atlandı:', e);
+    }
+  }
+}
+
+async function syncAnnualPlansFromServer(){
+  let serverPlans = null;
+  // 1. Supabase'den çekmeyi dene
+  if(typeof sb !== 'undefined'){
+    try{
+      const { data, error } = await sb.from('annual_plans').select('*');
+      if(!error && data && data.length > 0){
+        serverPlans = {};
+        data.forEach(row => {
+          if(row.grade && row.plan_data){
+            serverPlans[row.grade] = row.plan_data;
+          }
+        });
+      }
+    }catch(e){}
+  }
+  // 2. Supabase yoksa veya boşsa yerel server /api/annual-plans dene
+  if(!serverPlans){
+    try{
+      const res = await fetch('/api/annual-plans');
+      if(res.ok){
+        const data = await res.json();
+        if(data && typeof data === 'object' && Object.keys(data).length > 0){
+          serverPlans = data;
+        }
+      }
+    }catch(e){}
+  }
+
+  if(serverPlans && Object.keys(serverPlans).length > 0){
+    const merged = {
+      ...getAnnualPlans(),
+      ...serverPlans
+    };
+    localStorage.setItem(ANNUAL_PLANS_STORAGE_KEY, JSON.stringify(merged));
+    return merged;
+  }
+  return getAnnualPlans();
 }
 
 function resetAnnualPlans(){
@@ -7119,7 +7233,6 @@ function resetAnnualPlans(){
     localStorage.removeItem(ANNUAL_PLANS_STORAGE_KEY);
   }catch(e){}
 }
-
 function getClassGrade(clsName){
   if(!clsName) return null;
   const s = String(clsName).trim();
@@ -9409,46 +9522,304 @@ function openAddCalendarEventModal(dateStr){
   };
 }
 
+function adminAnnualPlansViewHtml(){
+  const activeGradeKey = state.adminCurriculumGrade || 9;
+  const plans = getAnnualPlans();
+  const currentWeekInfo = getAcademicWeek(new Date());
+
+  const TABS = [
+    { key: 9, label: '9. Sınıf Yıllık Plan' },
+    { key: 10, label: '10. Sınıf Yıllık Plan' },
+    { key: 11, label: '11. Sınıf Yıllık Plan' },
+    { key: '12-FM', label: '12. Sınıf Sayısal (FM)' },
+    { key: '12-TM', label: '12. Sınıf Eşit Ağırlık (TM)' }
+  ];
+
+  const tabsHtml = TABS.map(t => {
+    const isActive = String(t.key) === String(activeGradeKey);
+    return '<button type="button" class="btn btn-sm ' + (isActive ? 'btn-primary' : 'btn-outline') + ' admin-curr-tab" data-currgrade="' + t.key + '" style="font-weight:700;">' +
+      t.label +
+    '</button>';
+  }).join('');
+
+  let activePlan = [];
+  if(activeGradeKey === '12-FM' || activeGradeKey === '12-TM'){
+    activePlan = plans[activeGradeKey] || plans[12] || [];
+  } else {
+    activePlan = plans[activeGradeKey] || [];
+  }
+
+  const rowsHtml = activePlan.map(p => {
+    const isCurrent = (p.week === currentWeekInfo.weekNum);
+    return '<tr style="' + (isCurrent ? 'background:#f0fdf4;font-weight:600;' : '') + '">' +
+      '<td style="text-align:center;font-weight:800;color:var(--primary);">' +
+        p.week + (isCurrent ? ' <span style="font-size:10px;background:#22c55e;color:#fff;padding:1px 5px;border-radius:999px;">Bu Hafta</span>' : '') +
+      '</td>' +
+      '<td style="white-space:nowrap;font-size:12px;color:var(--ink-soft);">' + escapeHtml(p.dates || '-') + '</td>' +
+      '<td style="font-weight:700;font-size:12.5px;color:var(--ink);">' + escapeHtml(p.unit || '-') + '</td>' +
+      '<td style="font-size:12.5px;">' +
+        '<div style="font-weight:700;color:var(--ink);">' + escapeHtml(p.topic || '-') + '</div>' +
+        (p.desc ? '<div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">' + escapeHtml(p.desc) + '</div>' : '') +
+      '</td>' +
+      '<td style="text-align:right;white-space:nowrap;">' +
+        '<button type="button" class="btn btn-outline btn-xs" data-curreditweek="' + p.week + '" style="padding:3px 8px;margin-right:4px;">Düzenle</button>' +
+        '<button type="button" class="btn btn-soft btn-xs" data-currdelweek="' + p.week + '" style="color:#ef4444;padding:3px 6px;">Sil</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+
+  return '<div style="display:flex;flex-direction:column;gap:16px;">' +
+    '<div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:14px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;">' +
+      '<div>' +
+        '<h3 style="margin:0;font-size:17px;font-weight:900;color:#1e40af;display:flex;align-items:center;gap:8px;">' +
+          '📖 Okul Yıllık Planları & Müfredat Yönetimi' +
+        '</h3>' +
+        '<div style="font-size:12.5px;color:#3b82f6;margin-top:4px;max-width:680px;line-height:1.5;">' +
+          'Yönetici olarak buradan 9, 10, 11 ve 12. sınıflar için haftalık ünite ve konuları düzenleyebilir veya Excel formatında yükleyebilirsiniz. Kaydettiğiniz planlar <b>tüm öğretmenlerin panellerinde otomatik olarak görüntülenir</b>.' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+        '<input type="file" id="adminCurriculumFileInput" accept=".xlsx,.xls" style="display:none;" />' +
+        '<button type="button" class="btn btn-primary" id="adminCurrUploadBtn" style="font-size:12.5px;padding:8px 14px;font-weight:800;background:#2563eb;">📤 Excel Yıllık Plan Yükle</button>' +
+        '<button type="button" class="btn btn-outline" id="adminCurrDownloadBtn" style="font-size:12.5px;padding:8px 14px;font-weight:700;">📥 Şablon İndir (.xlsx)</button>' +
+        '<button type="button" class="btn btn-primary" id="adminCurrAddWeekBtn" style="font-size:12.5px;padding:8px 14px;font-weight:800;background:#059669;border-color:#059669;color:#fff;">➕ Yeni Hafta Ekle</button>' +
+      '</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;border-bottom:2px solid var(--line);padding-bottom:12px;">' +
+      tabsHtml +
+    '</div>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">' +
+      '<div style="font-size:13.5px;font-weight:800;color:var(--ink);">' +
+        '📋 ' + (TABS.find(t=>String(t.key)===String(activeGradeKey))?.label || '') + ' (' + activePlan.length + ' Hafta Kayıtlı)' +
+      '</div>' +
+      '<button type="button" class="btn btn-soft btn-xs" id="adminCurrResetGradeBtn" style="color:#b91c1c;">🔄 Bu Sınıfı Varsayılan Okul Planına Sıfırla</button>' +
+    '</div>' +
+    '<div style="overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:#fff;">' +
+      '<table class="curriculum-table" style="width:100%;border-collapse:collapse;">' +
+        '<thead>' +
+          '<tr style="background:#f8fafc;border-bottom:1.5px solid var(--line);">' +
+            '<th style="text-align:center;width:70px;padding:10px 8px;font-size:12px;font-weight:800;color:var(--ink-soft);">Hafta</th>' +
+            '<th style="width:130px;padding:10px 8px;font-size:12px;font-weight:800;color:var(--ink-soft);">Tarih Aralığı</th>' +
+            '<th style="width:160px;padding:10px 8px;font-size:12px;font-weight:800;color:var(--ink-soft);">Ünite / Tema</th>' +
+            '<th style="padding:10px 8px;font-size:12px;font-weight:800;color:var(--ink-soft);">Konu / Kazanım</th>' +
+            '<th style="text-align:right;width:120px;padding:10px 12px;font-size:12px;font-weight:800;color:var(--ink-soft);">İşlem</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tbody>' +
+          (rowsHtml || '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--ink-soft);font-weight:600;">Bu sınıf için henüz yıllık plan kaydı bulunmuyor. Yeni Hafta Ekle butonundan veya Excel yükleyerek plan oluşturabilirsiniz.</td></tr>') +
+        '</tbody>' +
+      '</table>' +
+    '</div>' +
+  '</div>';
+}
+
+function wireAdminAnnualPlans(app){
+  const activeGradeKey = state.adminCurriculumGrade || 9;
+
+  app.querySelectorAll('.admin-curr-tab').forEach(btn => {
+    btn.onclick = () => {
+      const g = btn.dataset.currgrade;
+      state.adminCurriculumGrade = isNaN(parseInt(g, 10)) ? g : parseInt(g, 10);
+      render();
+    };
+  });
+
+  const uploadBtn = document.getElementById('adminCurrUploadBtn');
+  const fileInp = document.getElementById('adminCurriculumFileInput');
+  if(uploadBtn && fileInp){
+    uploadBtn.onclick = () => fileInp.click();
+    fileInp.onchange = (e) => {
+      const file = e.target.files && e.target.files[0];
+      if(file){
+        handleAnnualPlanExcelUpload(file, activeGradeKey, async () => {
+          await saveAnnualPlans(getAnnualPlans());
+          showToast('✅ Yıllık plan yüklendi ve tüm öğretmenlerle paylaşıldı!');
+          render();
+        });
+      }
+    };
+  }
+
+  const downloadBtn = document.getElementById('adminCurrDownloadBtn');
+  if(downloadBtn){
+    downloadBtn.onclick = () => exportAnnualPlanTemplate();
+  }
+
+  const addWeekBtn = document.getElementById('adminCurrAddWeekBtn');
+  if(addWeekBtn){
+    addWeekBtn.onclick = () => {
+      const plans = getAnnualPlans();
+      const planList = plans[activeGradeKey] || [];
+      const nextWeek = planList.length ? (Math.max(...planList.map(p=>p.week||0)) + 1) : 1;
+
+      openModalHtml(
+        '<h3>➕ Yeni Hafta Ekle (' + activeGradeKey + '. Sınıf)</h3>' +
+        '<label>Hafta Numarası</label><input type="number" id="mNewCurrWeek" value="' + nextWeek + '" min="1" max="42">' +
+        '<label>Tarih Aralığı (Örn: 14 - 18 Eylül)</label><input type="text" id="mNewCurrDates" placeholder="Örn: 14 - 18 Eylül">' +
+        '<label>Ünite / Tema</label><input type="text" id="mNewCurrUnit" placeholder="Örn: SAYILAR">' +
+        '<label>Konu</label><input type="text" id="mNewCurrTopic" placeholder="Örn: Gerçek Sayılar">' +
+        '<label>Kazanım / Detaylı Açıklama</label><textarea id="mNewCurrDesc" rows="3" placeholder="Kazanım açıklaması..."></textarea>' +
+        '<div class="modalactions"><button class="btn btn-outline" id="mCancelAddWeek">Vazgeç</button><button class="btn btn-primary" id="mSaveAddWeek">Haftayı Kaydet</button></div>'
+      );
+      document.getElementById('mCancelAddWeek').onclick = closeModal;
+      document.getElementById('mSaveAddWeek').onclick = async () => {
+        const w = parseInt(document.getElementById('mNewCurrWeek').value, 10);
+        const dates = document.getElementById('mNewCurrDates').value.trim();
+        const unit = document.getElementById('mNewCurrUnit').value.trim();
+        const topic = document.getElementById('mNewCurrTopic').value.trim();
+        const desc = document.getElementById('mNewCurrDesc').value.trim();
+
+        if(!w || !topic){ showToast('Lütfen hafta numarası ve konu girin'); return; }
+
+        if(!plans[activeGradeKey]) plans[activeGradeKey] = [];
+        plans[activeGradeKey] = plans[activeGradeKey].filter(p => p.week !== w);
+        plans[activeGradeKey].push({ week: w, dates, unit, topic, desc });
+        plans[activeGradeKey].sort((a,b) => a.week - b.week);
+
+        await saveAnnualPlans(plans);
+        closeModal();
+        showToast('✅ ' + w + '. hafta eklendi ve tüm öğretmenlere yayınlandı!');
+        render();
+      };
+    };
+  }
+
+  const resetBtn = document.getElementById('adminCurrResetGradeBtn');
+  if(resetBtn){
+    resetBtn.onclick = async () => {
+      if(confirm(activeGradeKey + '. Sınıf yıllık planı varsayılan okul planına sıfırlansın mı?')){
+        const plans = getAnnualPlans();
+        plans[activeGradeKey] = JSON.parse(JSON.stringify(DEFAULT_ANNUAL_PLANS[activeGradeKey] || []));
+        await saveAnnualPlans(plans);
+        showToast('Yıllık plan varsayılana sıfırlandı');
+        render();
+      }
+    };
+  }
+
+  app.querySelectorAll('[data-curreditweek]').forEach(btn => {
+    btn.onclick = () => {
+      const w = parseInt(btn.dataset.curreditweek, 10);
+      const plans = getAnnualPlans();
+      const planList = plans[activeGradeKey] || [];
+      const item = planList.find(p => p.week === w);
+      if(!item) return;
+
+      openModalHtml(
+        '<h3>✏️ Haftayı Düzenle (' + activeGradeKey + '. Sınıf - ' + w + '. Hafta)</h3>' +
+        '<label>Tarih Aralığı</label><input type="text" id="mEditCurrDates" value="' + escapeHtml(item.dates || '') + '">' +
+        '<label>Ünite / Tema</label><input type="text" id="mEditCurrUnit" value="' + escapeHtml(item.unit || '') + '">' +
+        '<label>Konu</label><input type="text" id="mEditCurrTopic" value="' + escapeHtml(item.topic || '') + '">' +
+        '<label>Kazanım / Detaylı Açıklama</label><textarea id="mEditCurrDesc" rows="3">' + escapeHtml(item.desc || '') + '</textarea>' +
+        '<div class="modalactions"><button class="btn btn-outline" id="mCancelEditWeek">Vazgeç</button><button class="btn btn-primary" id="mSaveEditWeek">Kaydet</button></div>'
+      );
+      document.getElementById('mCancelEditWeek').onclick = closeModal;
+      document.getElementById('mSaveEditWeek').onclick = async () => {
+        item.dates = document.getElementById('mEditCurrDates').value.trim();
+        item.unit = document.getElementById('mEditCurrUnit').value.trim();
+        item.topic = document.getElementById('mEditCurrTopic').value.trim();
+        item.desc = document.getElementById('mEditCurrDesc').value.trim();
+
+        await saveAnnualPlans(plans);
+        closeModal();
+        showToast('✅ ' + w + '. hafta güncellendi ve yayınlandı!');
+        render();
+      };
+    };
+  });
+
+  app.querySelectorAll('[data-currdelweek]').forEach(btn => {
+    btn.onclick = async () => {
+      const w = parseInt(btn.dataset.currdelweek, 10);
+      if(confirm(w + '. hafta kaydı silinsin mi?')){
+        const plans = getAnnualPlans();
+        if(plans[activeGradeKey]){
+          plans[activeGradeKey] = plans[activeGradeKey].filter(p => p.week !== w);
+          await saveAnnualPlans(plans);
+          showToast(w + '. hafta silindi');
+          render();
+        }
+      }
+    };
+  });
+}
+
 function renderHome(app){
   const adminBanner = state.isAdmin ?
     '<div style="background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius);padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;color:#8a4d05;">' +
       '<div style="display:flex;align-items:center;gap:14px;">' +
         '<div style="font-size:28px;line-height:1;">👁️</div>' +
         '<div>' +
-          '<div style="font-size:15px;font-weight:800;">Yönetici İzleme Modu (Salt Okunur)</div>' +
-          '<div style="font-size:12.5px;font-weight:500;opacity:0.9;margin-top:2px;">Sistemdeki tüm öğretmenlerin sınıflarını ve kayıtlarını görüntülüyorsunuz. Güvenlik gereği veriler üzerinde ekleme, silme veya değişiklik yapılamaz.</div>' +
+          '<div style="font-size:15px;font-weight:800;">Yönetici Kontrol Paneli</div>' +
+          '<div style="font-size:12.5px;font-weight:500;opacity:0.9;margin-top:2px;">Tüm öğretmenlerin sınıflarını izleyebilir, yeni sınıflar atayabilir ve okul geneli yıllık planları yönetebilirsiniz.</div>' +
         '</div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
-  '<button class="btn btn-primary" id="adminQuickAddClassBtn" style="font-size:12px;padding:8px 14px;display:flex;align-items:center;gap:6px;white-space:nowrap;background:var(--primary);border-color:var(--primary);font-weight:800;">' + ic('plus') + '➕ Hızlı Sınıf Ekle &amp; Ata</button>' +
-  '<button class="btn btn-primary" id="adminBulkClassExcelBtn" style="font-size:12px;padding:8px 14px;display:flex;align-items:center;gap:6px;white-space:nowrap;background:#059669;border-color:#059669;font-weight:800;">' + ic('upload') + 'Tüm Sınıflar &amp; Öğrenci Exceli Yükle</button>' +
-  '<input type="file" id="adminBulkClassExcelFile" accept=".xlsx,.xls,.csv" style="display:none;">' +
-  '<button class="btn btn-outline" id="adminNewUserBtn" style="font-size:12px;padding:8px 14px;display:flex;align-items:center;gap:6px;white-space:nowrap;">' + ic('user') + 'Yeni Kullanıcı Ekle</button>' +
-'</div>' +
+        '<button class="btn btn-primary" id="adminQuickAddClassBtn" style="font-size:12px;padding:8px 14px;display:flex;align-items:center;gap:6px;white-space:nowrap;background:var(--primary);border-color:var(--primary);font-weight:800;">' + ic('plus') + '➕ Hızlı Sınıf Ekle &amp; Ata</button>' +
+        '<button class="btn btn-outline" id="adminGoPlansBtn" style="font-size:12px;padding:8px 14px;display:flex;align-items:center;gap:6px;white-space:nowrap;background:#fff;font-weight:700;">' + ic('file') + '📖 Yıllık Planlar</button>' +
+        '<button class="btn btn-primary" id="adminBulkClassExcelBtn" style="font-size:12px;padding:8px 14px;display:flex;align-items:center;gap:6px;white-space:nowrap;background:#059669;border-color:#059669;font-weight:800;">' + ic('upload') + 'Tüm Sınıflar &amp; Öğrenci Exceli Yükle</button>' +
+        '<input type="file" id="adminBulkClassExcelFile" accept=".xlsx,.xls,.csv" style="display:none;">' +
+        '<button class="btn btn-outline" id="adminNewUserBtn" style="font-size:12px;padding:8px 14px;display:flex;align-items:center;gap:6px;white-space:nowrap;background:#fff;">' + ic('user') + 'Yeni Kullanıcı Ekle</button>' +
+      '</div>' +
     '</div>' : '';
 
   let filterBar = '';
   if(state.isAdmin && state.classes.length > 0){
     const grades = [...new Set(state.classes.map(c=>getGradeLevel(c.name)).filter(Boolean))].sort((a,b)=>parseInt(a,10)-parseInt(b,10));
-    if(grades.length > 1){
-      const activeF = state.adminGradeFilter || 'all';
-      filterBar = '<div class="admin-grade-filters" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">' +
-        '<button class="btn btn-sm '+(activeF==='all'?'btn-primary':'btn-outline')+'" data-filtergrade="all">Tüm Sınıflar ('+state.classes.length+')</button>' +
-        grades.map(g=>{
-          const count = state.classes.filter(c=>getGradeLevel(c.name)===g).length;
-          return '<button class="btn btn-sm '+(activeF===g?'btn-primary':'btn-outline')+'" data-filtergrade="'+g+'">'+g+'. Sınıflar ('+count+')</button>';
-        }).join('') +
+    const activeF = state.adminGradeFilter || 'all';
+    const activeTeacher = state.adminTeacherFilter || 'all';
+
+    // Sınıfı olan öğretmenler
+    const teacherIds = [...new Set(state.classes.map(c=>c.owner_id).filter(Boolean))];
+
+    filterBar =
+      '<div style="background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:16px;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;">' +
+          '<div style="font-size:12px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.5px;">Sınıf &amp; Öğretmen Filtreleri</div>' +
+          '<div style="display:flex;align-items:center;gap:8px;">' +
+            '<label style="font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;">👤 Öğretmen:</label>' +
+            '<select id="adminTeacherFilterSelect" style="padding:6px 12px;font-size:12.5px;font-weight:700;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);">' +
+              '<option value="all">Tüm Öğretmenler (' + state.classes.length + ' Sınıf)</option>' +
+              teacherIds.map(tId => {
+                const tName = getTeacherDisplayName(tId);
+                const tCount = state.classes.filter(c=>c.owner_id === tId).length;
+                return '<option value="' + escapeHtml(tId) + '" ' + (activeTeacher === tId ? 'selected' : '') + '>' + escapeHtml(tName) + ' (' + tCount + ' Sınıf)</option>';
+              }).join('') +
+            '</select>' +
+          '</div>' +
+        '</div>' +
+        '<div class="admin-grade-filters" style="display:flex;gap:8px;flex-wrap:wrap;">' +
+          '<button class="btn btn-sm '+(activeF==='all'?'btn-primary':'btn-outline')+'" data-filtergrade="all">Tüm Sınıflar ('+state.classes.length+')</button>' +
+          grades.map(g=>{
+            const count = state.classes.filter(c=>getGradeLevel(c.name)===g).length;
+            return '<button class="btn btn-sm '+(activeF===g?'btn-primary':'btn-outline')+'" data-filtergrade="'+g+'">'+g+'. Sınıflar ('+count+')</button>';
+          }).join('') +
+        '</div>' +
       '</div>';
-    }
   }
 
-  const activeTab = state.homeTab || 'classes';
-  const navTabsHtml =
-    '<div class="home-nav-tabs">' +
-      '<button class="home-tab-btn '+(activeTab==='classes'?'active':'')+'" data-hometab="classes">'+ic('school')+'Sınıflarım</button>' +
-      '<button class="home-tab-btn '+(activeTab==='schedule'?'active':'')+'" data-hometab="schedule">'+ic('clock')+'Ders Programı</button>' +
-      '<button class="home-tab-btn '+(activeTab==='calendar'?'active':'')+'" data-hometab="calendar">'+ic('calendar')+'Ajanda & Takvim</button>' +
-    '</div>';
+  // Adminde Ders Programı ve Ajanda & Takvim kaldırıldı; yerine Yıllık Planlar eklendi
+  let activeTab = state.homeTab || 'classes';
+  if(state.isAdmin && (activeTab === 'schedule' || activeTab === 'calendar')){
+    activeTab = 'classes';
+    state.homeTab = 'classes';
+  }
+
+  let navTabsHtml = '';
+  if(state.isAdmin){
+    navTabsHtml =
+      '<div class="home-nav-tabs">' +
+        '<button class="home-tab-btn '+(activeTab==='classes'?'active':'')+'" data-hometab="classes">'+ic('school')+'Sınıflar ('+state.classes.length+')</button>' +
+        '<button class="home-tab-btn '+(activeTab==='annual_plans'?'active':'')+'" data-hometab="annual_plans">'+ic('file')+'📖 Yıllık Planlar (9, 10, 11, 12)</button>' +
+      '</div>';
+  } else {
+    navTabsHtml =
+      '<div class="home-nav-tabs">' +
+        '<button class="home-tab-btn '+(activeTab==='classes'?'active':'')+'" data-hometab="classes">'+ic('school')+'Sınıflarım</button>' +
+        '<button class="home-tab-btn '+(activeTab==='schedule'?'active':'')+'" data-hometab="schedule">'+ic('clock')+'Ders Programı</button>' +
+        '<button class="home-tab-btn '+(activeTab==='calendar'?'active':'')+'" data-hometab="calendar">'+ic('calendar')+'Ajanda & Takvim</button>' +
+      '</div>';
+  }
 
   let tabBodyHtml = '';
   if(activeTab === 'classes'){
@@ -9456,6 +9827,8 @@ function renderHome(app){
       '<div class="section-title"><span>'+(state.isAdmin?('Tüm Sınıflar ('+state.classes.length+' Sınıf)'):'Sınıflarım')+'</span><span class="line"></span></div>' +
       filterBar +
       classGridHtml();
+  } else if(activeTab === 'annual_plans'){
+    tabBodyHtml = adminAnnualPlansViewHtml();
   } else if(activeTab === 'schedule'){
     tabBodyHtml = scheduleViewHtml();
   } else if(activeTab === 'calendar'){
@@ -9465,11 +9838,11 @@ function renderHome(app){
   app.innerHTML =
     adminBanner +
     '<div class="pagehead" style="margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">' +
-  '<div>' +
-    '<h2 style="margin:0;">Hoş geldin, '+escapeHtml(state.username||'')+(state.isAdmin?' (Yönetici)':'')+'</h2>' +
-  '</div>' +
-  (activeTab === 'classes' ? '<button class="btn btn-primary btn-sm" id="topAddClassBtn">' + ic('plus') + (state.isAdmin ? ' Hızlı Sınıf Ekle &amp; Ata' : ' Sınıf Ekle') + '</button>' : '') +
-'</div>' +
+      '<div>' +
+        '<h2 style="margin:0;">Hoş geldin, '+escapeHtml(state.username||'')+(state.isAdmin?' (Yönetici)':'')+'</h2>' +
+      '</div>' +
+      (activeTab === 'classes' ? '<button class="btn btn-primary btn-sm" id="topAddClassBtn">' + ic('plus') + (state.isAdmin ? ' Hızlı Sınıf Ekle &amp; Ata' : ' Sınıf Ekle') + '</button>' : '') +
+    '</div>' +
     navTabsHtml +
     tabBodyHtml;
 
@@ -9484,6 +9857,9 @@ function renderHome(app){
     if(state.isAdmin){
       const qBtn = document.getElementById('adminQuickAddClassBtn');
       if(qBtn) qBtn.onclick = openNewClassModal;
+
+      const pBtn = document.getElementById('adminGoPlansBtn');
+      if(pBtn) pBtn.onclick = () => { state.homeTab = 'annual_plans'; render(); };
 
       const aBtn = document.getElementById('adminNewUserBtn');
       if(aBtn) aBtn.onclick = openCreateUserModal;
@@ -9504,20 +9880,36 @@ function renderHome(app){
           render();
         };
       });
+
+      const tFilterSel = document.getElementById('adminTeacherFilterSelect');
+      if(tFilterSel){
+        tFilterSel.onchange = () => {
+          state.adminTeacherFilter = tFilterSel.value;
+          render();
+        };
+      }
     }
     const topAdd = document.getElementById('topAddClassBtn');
     if(topAdd) topAdd.onclick = openNewClassModal;
     wireClassCards(app);
+  } else if(activeTab === 'annual_plans'){
+    wireAdminAnnualPlans(app);
   } else if(activeTab === 'schedule'){
     wireScheduleView(app);
   } else if(activeTab === 'calendar'){
     wireCalendarView(app);
   }
 }
+
 function classGridHtml(){
   let classes = state.isAdmin ? sortClassesList(state.classes) : state.classes;
-  if(state.isAdmin && state.adminGradeFilter && state.adminGradeFilter !== 'all'){
-    classes = classes.filter(c => getGradeLevel(c.name) === state.adminGradeFilter);
+  if(state.isAdmin){
+    if(state.adminGradeFilter && state.adminGradeFilter !== 'all'){
+      classes = classes.filter(c => getGradeLevel(c.name) === state.adminGradeFilter);
+    }
+    if(state.adminTeacherFilter && state.adminTeacherFilter !== 'all'){
+      classes = classes.filter(c => c.owner_id === state.adminTeacherFilter);
+    }
   }
   if(classes.length === 0){
     if(!state.isAdmin){
@@ -9528,17 +9920,40 @@ function classGridHtml(){
         '<button class="btn btn-primary" id="addClassCard" style="font-size:14px;padding:10px 22px;font-weight:800;">' + ic('plus') + ' Yeni Sınıf Ekle</button>' +
       '</div>';
     }
-    return '<div class="empty" style="padding:28px 0;width:100%;">Bu seviyede sınıf bulunamadı.</div>';
+    return '<div class="empty" style="padding:28px 0;width:100%;">Bu filtreye uygun sınıf bulunamadı.</div>';
   }
   let html = '<div class="classgrid">';
   classes.forEach(c=>{
     const g12 = isGrade12(c.name);
     const g11 = isGrade11(c.name);
-    let tags = '<span class="tag blue">Ödev Takibi</span>';
-    if(!g12) tags += '<span class="tag teal">Performans</span><span class="tag amber">KDS & Quiz & Sınav</span>';
+    let tags = '';
+
+    if(state.isAdmin){
+      const tName = getTeacherDisplayName(c.owner_id);
+      const sCount = (c.students ? c.students.length : (c.student_count ?? (state.classStudentCountMap && state.classStudentCountMap[c.id]) ?? 0));
+      tags += '<span class="tag purple" style="font-weight:700;background:#ede9fe;color:#6b21a8;border:1px solid #ddd6fe;">👤 ' + escapeHtml(tName) + '</span>';
+      if(sCount > 0){
+        tags += '<span class="tag teal" style="font-weight:700;">👥 ' + sCount + ' Öğrenci</span>';
+      } else {
+        tags += '<span class="tag gray" style="font-weight:600;opacity:0.85;">(0 Öğrenci)</span>';
+      }
+    }
+
+    tags += '<span class="tag blue">Ödev Takibi</span>';
+    if(!g12) tags += '<span class="tag teal">Performans</span><span class="tag amber">KDS &amp; Quiz &amp; Sınav</span>';
     if(g12 || g11) tags += '<span class="tag amber">TYT</span><span class="tag amber">AYT</span>';
     if(isCounselor(c)) tags += '<span class="tag teal">Danışmanlık</span>';
-    html += '<div class="classcard" data-openclass="'+c.id+'">' +
+
+    let adminDeleteBtn = '';
+    if(state.isAdmin){
+      adminDeleteBtn =
+        '<button type="button" class="btn btn-soft btn-xs admin-card-del-btn" data-delclassid="' + c.id + '" data-delclassname="' + escapeHtml(c.name) + '" style="position:absolute;top:10px;right:10px;color:#ef4444;padding:3px 7px;font-size:11px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;z-index:2;" title="Sınıfı Sil">' +
+          '🗑️ Sil' +
+        '</button>';
+    }
+
+    html += '<div class="classcard" data-openclass="'+c.id+'" style="position:relative;">' +
+      adminDeleteBtn +
       '<h3>'+escapeHtml(c.name)+'</h3>' +
       '<div class="tags">'+tags+'</div>' +
     '</div>';
@@ -9546,15 +9961,29 @@ function classGridHtml(){
   html += '</div>';
   return html;
 }
+
 function wireClassCards(app){
   app.querySelectorAll('[data-openclass]').forEach(el=>{
-    el.onclick = async ()=>{ state.page='sinif_detail'; state.classId=el.dataset.openclass; state.view='roster'; state.studentId=null; await loadClassDetail(state.classId); };
+    el.onclick = async (e)=>{
+      if(e.target.closest('.admin-card-del-btn')) return;
+      state.page='sinif_detail'; state.classId=el.dataset.openclass; state.view='roster'; state.studentId=null; await loadClassDetail(state.classId);
+    };
   });
+  if(state.isAdmin){
+    app.querySelectorAll('.admin-card-del-btn').forEach(btn => {
+      btn.onclick = async (e) => {
+        e.stopPropagation();
+        const cid = btn.dataset.delclassid;
+        const cname = btn.dataset.delclassname;
+        if(confirm('"' + cname + '" sınıfını ve tüm kayıtlarını sistemden silmek istediğinizden emin misiniz?')){
+          await deleteClass(cid, cname);
+        }
+      };
+    });
+  }
   const addBtn = document.getElementById('addClassCard');
   if(addBtn) addBtn.onclick = openNewClassModal;
 }
-
-
 // ==============================================================================
 // MATERYAL KONTROLÜ (FEN BİLİMLERİ / KİMYA / FİZİK / BİYOLOJİ)
 // ==============================================================================
