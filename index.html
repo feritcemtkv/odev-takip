@@ -1483,19 +1483,94 @@ async function openAdminBulkClassImportModal(file){
   }
 }
 
-function openNewClassModal(){
+const PREDEFINED_TEACHERS = [
+  { id: '8cec1a66-5554-437a-8c5a-dd74a402da34', username: 'feritcem', name: 'Ferit Cem (feritcem)' },
+  { id: '6d54dccb-66b4-41b0-b810-4c581591d2d6', username: 'candan', name: 'Candan Sarıkan (candan)' },
+  { id: 'bce1ad28-a1c6-48d9-b58f-1f2161c3334f', username: 'hasancem', name: 'Cem Gürakar (hasancem)' },
+  { id: '25e61bc6-8532-4210-ab1d-95e72f1862fe', username: 'fulya', name: 'Fulya Hoca (fulya)' },
+  { id: '44e4e770-ecf5-4e9e-bf59-d89ebdd21237', username: 'murat', name: 'Murat Hoca (murat)' },
+  { id: 'ef944170-a470-4f1d-a2fe-55d0cbcee698', username: 'erdal', name: 'Erdal Hoca (erdal)' },
+  { id: '8ec77d6a-dbea-41e1-801f-14659969906f', username: 'yunus', name: 'Yunus Hoca (yunus)' },
+  { id: '17d43b79-1d72-4389-afb7-49b15d50678f', username: 'ozge', name: 'Özge Hoca (ozge)' }
+];
+
+async function getAvailableTeachers(){
+  const map = new Map();
+  PREDEFINED_TEACHERS.forEach(t => map.set(t.id, { ...t }));
+  try {
+    const { data: profs } = await sb.from('profiles').select('*');
+    if(profs && profs.length){
+      profs.forEach(p => {
+        if(!p.id || p.username === 'admin') return;
+        if(!map.has(p.id)){
+          let disp = p.username || 'Öğretmen';
+          if(disp === 'feritcem' || disp === 'ferit') disp = 'Ferit Cem (' + p.username + ')';
+          else if(disp === 'candan') disp = 'Candan Sarıkan (candan)';
+          else if(disp === 'hasancem') disp = 'Cem Gürakar (hasancem)';
+          else disp = disp.charAt(0).toUpperCase() + disp.slice(1) + ' (' + disp + ')';
+          map.set(p.id, { id: p.id, username: p.username, name: disp });
+        }
+      });
+    }
+  } catch(e){}
+
+  if(state.classes && state.classes.length){
+    state.classes.forEach(c => {
+      if(c.owner_id && !map.has(c.owner_id)){
+        map.set(c.owner_id, { id: c.owner_id, username: 'ogretmen', name: 'Öğretmen (' + c.owner_id.slice(0, 8) + '...)' });
+      }
+    });
+  }
+  return Array.from(map.values()).sort((a,b)=>a.name.localeCompare(b.name,'tr'));
+}
+
+function openSqlNoticeModal(sqlFilePath){
+  openModalHtml(
+    '<h3>⚙️ Supabase Yönetici İzni Gerekli</h3>' +
+    '<div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:14px;margin-bottom:14px;color:#92400e;font-size:12.5px;line-height:1.55;">' +
+      '<div style="font-weight:800;font-size:13.5px;margin-bottom:4px;">Yönetici (Admin) Modunda Sınıf &amp; Öğrenci Tanımlama</div>' +
+      'Yöneticinin doğrudan öğretmenler adına sınıf oluşturup tüm öğrencileri tek tıkla aktarabilmesi için Supabase veritabanında izin politikalarının 1 kez güncellenmesi gerekir.' +
+    '</div>' +
+    '<div style="font-size:12.5px;color:var(--ink);margin-bottom:10px;line-height:1.5;">' +
+      'Lütfen Supabase panelinizde <b>SQL Editor</b> alanına gidip projenizdeki <b><code>' + escapeHtml(sqlFilePath) + '</code></b> dosyasındaki SQL kodunu çalıştırın.' +
+    '</div>' +
+    '<div style="display:flex;gap:8px;margin-top:16px;">' +
+      '<button type="button" class="btn btn-outline full" id="mCloseSqlNotice" style="justify-content:center;">Kapat</button>' +
+      '<a href="https://supabase.com/dashboard/project/miekldpkuclbinclnvvu/sql/new" target="_blank" rel="noopener" class="btn btn-primary full" style="text-align:center;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-weight:700;">' +
+        'Supabase SQL Editor ↗' +
+      '</a>' +
+    '</div>'
+  );
+  document.getElementById('mCloseSqlNotice').onclick = closeModal;
+}
+
+async function openNewClassModal(){
   const catalog = getSchoolRosterCatalog();
   const catalogClasses = Object.keys(catalog).sort((a,b)=>a.localeCompare(b,'tr',{numeric:true}));
+
+  let teacherSelectHtml = '';
+  if(state.isAdmin){
+    const teachers = await getAvailableTeachers();
+    teacherSelectHtml =
+      '<div style="margin-bottom:14px;background:#eff6ff;border:1.5px solid #93c5fd;border-radius:12px;padding:12px 14px;">' +
+        '<label style="display:block;font-size:13px;font-weight:800;margin-bottom:6px;color:#1e40af;">👤 Sınıfın Tanımlanacağı Öğretmen (Hesap Sahibi):</label>' +
+        '<select id="mAssignTeacherSelect" style="width:100%;padding:10px 12px;border:1.5px solid #93c5fd;border-radius:8px;font-size:13.5px;font-weight:700;background:#fff;color:#1e40af;">' +
+          '<option value="">— Sınıfı Atayacağınız Öğretmeni Seçin —</option>' +
+          teachers.map(t => '<option value="' + escapeHtml(t.id) + '">' + escapeHtml(t.name) + '</option>').join('') +
+        '</select>' +
+        '<div style="font-size:11.5px;color:#3b82f6;margin-top:6px;font-weight:600;">ℹ️ Sınıf oluşturulduğunda bu öğretmenin kendi hesabına tanımlanır ve kendi panelinde görünür.</div>' +
+      '</div>';
+  }
 
   let catalogSelectHtml = '';
   if(catalogClasses.length){
     catalogSelectHtml =
       '<div style="margin-bottom:14px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:14px;">' +
-        '<label style="display:block;font-size:13px;font-weight:800;margin-bottom:6px;color:#166534;">🏫 Okul Listesinden Sınıfınızı Seçin (Öğrenciler Otomatik Gelir):</label>' +
+        '<label style="display:block;font-size:13px;font-weight:800;margin-bottom:6px;color:#166534;">🏫 Okul Listesinden Sınıfı Seçin (Öğrenciler Otomatik Gelir):</label>' +
         '<select id="mCatalogClassSelect" style="width:100%;padding:10px 12px;border:1.5px solid #86efac;border-radius:8px;font-size:13.5px;font-weight:700;background:#fff;color:#166534;">' +
-          '<option value="">— Sınıfınızı Seçin (Öğrenciler Otomatik Gelir) —</option>' +
+          '<option value="">— Sınıfı Seçin (Öğrenciler Otomatik Gelir) —</option>' +
           catalogClasses.map(c => {
-            const alreadyHas = state.classes.some(ex => normalizeClassName(ex.name) === normalizeClassName(c));
+            const alreadyHas = !state.isAdmin && state.classes.some(ex => normalizeClassName(ex.name) === normalizeClassName(c));
             return '<option value="'+escapeHtml(c)+'" '+(alreadyHas ? 'disabled style="color:#94a3b8;"' : '')+'>'+
               escapeHtml(c)+' ('+catalog[c].length+' Öğrenci)' + (alreadyHas ? ' — Zaten Listenizde Ekli' : '') +
             '</option>';
@@ -1506,27 +1581,35 @@ function openNewClassModal(){
       '<div style="text-align:center;font-size:11.5px;color:var(--ink-soft);margin-bottom:10px;font-weight:600;">veya sınıf adını manuel yazın:</div>';
   }
 
+  const modalTitle = state.isAdmin ? '<h3>➕ Hızlı Sınıf Ekle &amp; Öğretmene Tanımla</h3>' : '<h3>Yeni Sınıf Ekle</h3>';
+  const adminNotice = state.isAdmin ?
+    '<div style="background:#fefce8;border:1px solid #fde047;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12px;line-height:1.5;color:#854d0e;">' +
+      '✨ <b>Otomatik Aktarım:</b> "Sınıfı Oluştur" dediğinizde sınıf seçilen öğretmenin kendi hesabına tanımlanır ve seçilen sınıfa ait tüm öğrenciler <b>tek tıkla otomatik olarak sınıfa aktarılır</b>.' +
+    '</div>' : '';
+
   openModalHtml(
-    '<h3>Yeni Sınıf Ekle</h3>' +
+    modalTitle +
+    teacherSelectHtml +
     catalogSelectHtml +
-    '<label>Sınıf adı (örn. 12-D, 11-A)</label><input type="text" id="mClassName" placeholder="Sınıf adı">' +
+    '<label>Sınıf adı (örn. 12-D, 11-A, 9-B)</label><input type="text" id="mClassName" placeholder="Sınıf adı">' +
     '<div style="margin:14px 0 16px;background:var(--surface-2);border-radius:10px;padding:12px 14px;border:1px solid var(--line);">' +
       '<div style="font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:8px;">Danışmanlık Rolü</div>' +
       '<label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;font-size:13px;color:var(--ink);font-weight:700;margin-bottom:8px;">' +
         '<input type="radio" name="mDanismanRole" value="counselor" id="roleCounselor" style="margin-top:2px;">' +
         '<div>' +
-          '<div>Bu sınıfın Danışman Öğretmeniyim</div>' +
+          '<div>Bu sınıfın Danışman Öğretmenidir</div>' +
           '<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;margin-top:2px;">Ödev ve sınav takibine ek olarak Rehberlik &amp; Danışmanlık formları (Form-2, Form-3a, Form-4) aktif olur.</div>' +
         '</div>' +
       '</label>' +
       '<label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;font-size:13px;color:var(--ink);font-weight:700;">' +
         '<input type="radio" name="mDanismanRole" value="subject" id="roleSubject" checked style="margin-top:2px;">' +
         '<div>' +
-          '<div>Sadece Ders Öğretmeniyim</div>' +
+          '<div>Sadece Ders Öğretmenidir</div>' +
           '<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;margin-top:2px;">Yalnızca Ödev Takibi ve Sınav/Deneme takibi aktif olur; danışmanlık formları gizlenir.</div>' +
         '</div>' +
       '</label>' +
     '</div>' +
+    adminNotice +
     '<div class="modalactions"><button class="btn btn-outline" id="mCancel">Vazgeç</button><button class="btn btn-primary" id="mSave">Sınıfı Oluştur</button></div>'
   );
   const nameInp = document.getElementById('mClassName');
@@ -1543,7 +1626,7 @@ function openNewClassModal(){
           catInfo.style.display = 'block';
           const sampleNames = stus.slice(0, 5).map(s=>escapeHtml(s.name) + (s.no ? ' ('+escapeHtml(s.no)+')' : '')).join(', ');
           const moreCount = stus.length > 5 ? ' ve ' + (stus.length - 5) + ' öğrenci daha...' : '';
-          catInfo.innerHTML = '✅ <b>' + escapeHtml(chosen) + '</b> seçildi (' + stus.length + ' Öğrenci):<br><span style="font-size:11px;color:#166534;margin-top:4px;display:block;">Öğrenciler: ' + sampleNames + moreCount + '</span>';
+          catInfo.innerHTML = '✅ <b>' + escapeHtml(chosen) + '</b> seçildi (' + stus.length + ' Öğrenci):<br><span style="font-size:11px;color:#166534;margin-top:4px;display:block;">Öğrenciler: ' + sampleNames + moreCount + ' (Tek tıkla otomatik aktarılacak)</span>';
         }
         if(isGrade12(chosen)){
           const rC = document.getElementById('roleCounselor');
@@ -1576,10 +1659,25 @@ function openNewClassModal(){
   document.getElementById('roleCounselor').addEventListener('change', ()=>{ document.getElementById('roleCounselor').dataset.userTouched = '1'; });
 
   document.getElementById('mCancel').onclick = closeModal;
-  document.getElementById('mSave').onclick = ()=>{
-    const name = document.getElementById('mClassName').value;
+  document.getElementById('mSave').onclick = async ()=>{
+    const name = document.getElementById('mClassName').value.trim();
     const isDanisman = document.getElementById('roleCounselor').checked;
-    addClass(name, isDanisman);
+    if(!name){
+      showToast('Sınıf adı girilmeli');
+      return;
+    }
+    let targetOwnerId = state.userId;
+    let targetTeacherName = state.username;
+    if(state.isAdmin){
+      const tSel = document.getElementById('mAssignTeacherSelect');
+      targetOwnerId = tSel ? tSel.value : '';
+      if(!targetOwnerId){
+        showToast('Lütfen sınıfın tanımlanacağı öğretmeni seçin.');
+        return;
+      }
+      targetTeacherName = tSel.options[tSel.selectedIndex]?.text || 'Öğretmen';
+    }
+    await addClass(name, isDanisman, targetOwnerId, targetTeacherName);
   };
 }
 function openNewStudentModal(){
@@ -1644,48 +1742,97 @@ async function loadClasses(){
   }
   state.classes = list;
 }
-async function addClass(name, isCounselorVal = false){
-  if(state.isAdmin){ showToast('Yönetici modunda sınıf eklenemez (Salt Okunur).'); return; }
+
+async function addClass(name, isCounselorVal = false, targetOwnerId = null, targetTeacherName = ''){
   name = name.trim();
-  if(!name) return;
-  if(state.classes.some(c=>normalizeClassName(c.name)===normalizeClassName(name))){ showToast('Bu sınıf zaten listenizde var'); return; }
-  const maxOrder = Math.max(-1, ...state.classes.map(c=>c.sort_order||0));
+  if(!name){ showToast('Sınıf adı girilmeli'); return; }
 
-  let newClass = null;
-  const { data, error } = await sb.from('classes').insert({
-    name,
-    sort_order: maxOrder + 1,
-    owner_id: state.userId,
-    is_counselor: isCounselorVal
-  }).select();
+  const ownerId = (state.isAdmin && targetOwnerId) ? targetOwnerId : state.userId;
+  if(!ownerId){ showToast('Kullanıcı kimliği bulunamadı'); return; }
 
-  if(error){
-    if(error.message && error.message.includes('is_counselor')){
-      const { data: d2, error: e2 } = await sb.from('classes').insert({
-        name,
-        sort_order: maxOrder + 1,
-        owner_id: state.userId
-      }).select();
-      if(e2){ showToast('Hata: ' + e2.message); return; }
-      newClass = d2 && d2[0];
-    } else {
-      showToast('Hata: ' + error.message);
-      return;
-    }
-  } else {
-    newClass = data && data[0];
+  // Bu sınıftan bu öğretmende zaten var mı?
+  const existingForOwner = state.classes.some(c => (c.owner_id === ownerId || (!state.isAdmin)) && normalizeClassName(c.name) === normalizeClassName(name));
+  if(existingForOwner){
+    showToast('Bu sınıf ' + (state.isAdmin ? 'seçilen öğretmenin hesabında' : 'listenizde') + ' zaten var');
+    return;
   }
 
-  if(newClass){
-    newClass.is_counselor = isCounselorVal;
-    saveLocalCounselor(newClass.id, isCounselorVal);
-    state.classes.push(newClass);
+  const catalog = getSchoolRosterCatalog();
+  const matchedKey = Object.keys(catalog).find(k => normalizeClassName(k) === normalizeClassName(name));
+  const stus = (matchedKey && catalog[matchedKey]) ? catalog[matchedKey] : [];
 
-    // Okul kataloğunda bu sınıfın öğrencileri varsa doğrudan ekle
-    const catalog = getSchoolRosterCatalog();
-    const matchedKey = Object.keys(catalog).find(k => normalizeClassName(k) === normalizeClassName(name));
-    if(matchedKey && catalog[matchedKey] && catalog[matchedKey].length){
-      const stus = catalog[matchedKey];
+  const stuPayload = stus.map((s, idx) => ({
+    name: s.name,
+    no: s.no || null,
+    sort_order: idx + 1
+  }));
+
+  let newClass = null;
+  const saveBtn = document.getElementById('mSave');
+  if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = 'Oluşturuluyor...'; }
+
+  // 1. Önce RPC fonksiyonunu dene (SECURITY DEFINER ile admin ve öğretmenler için en güvenli ve tam yetkili yöntem)
+  try {
+    const { data: rpcData, error: rpcErr } = await sb.rpc('create_class_for_teacher', {
+      p_name: name,
+      p_owner_id: ownerId,
+      p_is_counselor: isCounselorVal,
+      p_students: stuPayload
+    });
+    if(!rpcErr && rpcData && rpcData.success){
+      newClass = {
+        id: rpcData.class_id,
+        name: name,
+        owner_id: ownerId,
+        is_counselor: isCounselorVal,
+        sort_order: 999
+      };
+      newClass.students = stuPayload.map((s, idx) => ({ ...s, id: 'stu_' + (idx + 1), class_id: newClass.id }));
+    } else if(rpcErr && !rpcErr.message?.includes('Could not find the function')){
+      console.warn('RPC create_class_for_teacher hatası:', rpcErr);
+    }
+  } catch(e){
+    console.warn('RPC çağrısı yakalandı:', e);
+  }
+
+  // 2. RPC bulunamadıysa doğrudan Supabase insert ile dene
+  if(!newClass){
+    const maxOrder = Math.max(-1, ...state.classes.map(c=>c.sort_order||0));
+    const insertPayload = {
+      name,
+      sort_order: maxOrder + 1,
+      owner_id: ownerId,
+      is_counselor: isCounselorVal
+    };
+
+    let { data, error } = await sb.from('classes').insert(insertPayload).select();
+
+    if(error){
+      if(error.message && error.message.includes('is_counselor')){
+        delete insertPayload.is_counselor;
+        const retryRes = await sb.from('classes').insert(insertPayload).select();
+        if(!retryRes.error && retryRes.data && retryRes.data[0]){
+          newClass = retryRes.data[0];
+        } else {
+          error = retryRes.error;
+        }
+      }
+    } else if(data && data[0]){
+      newClass = data[0];
+    }
+
+    if(!newClass && error){
+      if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = 'Sınıfı Oluştur'; }
+      if(state.isAdmin && (error.code === '42501' || error.message?.includes('violates row-level security policy'))){
+        openSqlNoticeModal('sql/admin_quick_class_assign.sql');
+        return;
+      }
+      showToast('Sınıf eklenemedi: ' + error.message);
+      return;
+    }
+
+    // Doğrudan insert başarılı olduysa ve katalogda öğrenci varsa öğrencileri aktar
+    if(newClass && stus.length){
       const stuRows = stus.map((s, idx) => ({
         class_id: newClass.id,
         name: s.name,
@@ -1694,25 +1841,34 @@ async function addClass(name, isCounselorVal = false){
       }));
       try {
         const { data: insertedStus, error: insErr } = await sb.from('students').insert(stuRows).select();
-        if(!insErr && insertedStus){
-          newClass.students = insertedStus;
-        } else {
-          newClass.students = stuRows;
-        }
+        newClass.students = (!insErr && insertedStus) ? insertedStus : stuRows;
       } catch(e){
         newClass.students = stuRows;
       }
-      showToast('"'+name+'" sınıfı ve ' + stus.length + ' öğrencisi doğrudan yüklendi!');
-    } else {
-      showToast('"'+name+'" sınıfı oluşturuldu');
     }
-  } else {
-    showToast('"'+name+'" sınıfı oluşturuldu');
   }
-  closeModal();
-  logActivity('"'+name+'" sınıfını oluşturdu');
-  state.page='sinif_detail'; state.classId=newClass.id; state.view='roster';
-  await loadClassDetail(state.classId);
+
+  if(newClass){
+    newClass.is_counselor = isCounselorVal;
+    saveLocalCounselor(newClass.id, isCounselorVal);
+    state.classes.push(newClass);
+
+    closeModal();
+    logActivity('"' + name + '" sınıfını oluşturdu' + (state.isAdmin ? ' (' + targetTeacherName + ')' : ''));
+
+    if(stus.length){
+      showToast('✅ "' + name + '" sınıfı ' + (state.isAdmin ? targetTeacherName + ' hesabına tanımlandı' : 'oluşturuldu') + ' ve ' + stus.length + ' öğrenci tek tıkla aktarıldı!');
+    } else {
+      showToast('✅ "' + name + '" sınıfı ' + (state.isAdmin ? targetTeacherName + ' hesabına tanımlandı' : 'oluşturuldu') + '!');
+    }
+
+    if(state.isAdmin){
+      render();
+    } else {
+      state.page='sinif_detail'; state.classId=newClass.id; state.view='roster';
+      await loadClassDetail(state.classId);
+    }
+  }
 }
 async function toggleCounselorRole(){
   const cls = state.cls;
@@ -9264,6 +9420,7 @@ function renderHome(app){
         '</div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+  '<button class="btn btn-primary" id="adminQuickAddClassBtn" style="font-size:12px;padding:8px 14px;display:flex;align-items:center;gap:6px;white-space:nowrap;background:var(--primary);border-color:var(--primary);font-weight:800;">' + ic('plus') + '➕ Hızlı Sınıf Ekle &amp; Ata</button>' +
   '<button class="btn btn-primary" id="adminBulkClassExcelBtn" style="font-size:12px;padding:8px 14px;display:flex;align-items:center;gap:6px;white-space:nowrap;background:#059669;border-color:#059669;font-weight:800;">' + ic('upload') + 'Tüm Sınıflar &amp; Öğrenci Exceli Yükle</button>' +
   '<input type="file" id="adminBulkClassExcelFile" accept=".xlsx,.xls,.csv" style="display:none;">' +
   '<button class="btn btn-outline" id="adminNewUserBtn" style="font-size:12px;padding:8px 14px;display:flex;align-items:center;gap:6px;white-space:nowrap;">' + ic('user') + 'Yeni Kullanıcı Ekle</button>' +
@@ -9311,7 +9468,7 @@ function renderHome(app){
   '<div>' +
     '<h2 style="margin:0;">Hoş geldin, '+escapeHtml(state.username||'')+(state.isAdmin?' (Yönetici)':'')+'</h2>' +
   '</div>' +
-  (!state.isAdmin && activeTab === 'classes' ? '<button class="btn btn-primary btn-sm" id="topAddClassBtn">' + ic('plus') + ' Sınıf Ekle</button>' : '') +
+  (activeTab === 'classes' ? '<button class="btn btn-primary btn-sm" id="topAddClassBtn">' + ic('plus') + (state.isAdmin ? ' Hızlı Sınıf Ekle &amp; Ata' : ' Sınıf Ekle') + '</button>' : '') +
 '</div>' +
     navTabsHtml +
     tabBodyHtml;
@@ -9325,6 +9482,9 @@ function renderHome(app){
 
   if(activeTab === 'classes'){
     if(state.isAdmin){
+      const qBtn = document.getElementById('adminQuickAddClassBtn');
+      if(qBtn) qBtn.onclick = openNewClassModal;
+
       const aBtn = document.getElementById('adminNewUserBtn');
       if(aBtn) aBtn.onclick = openCreateUserModal;
 
@@ -9383,9 +9543,6 @@ function classGridHtml(){
       '<div class="tags">'+tags+'</div>' +
     '</div>';
   });
-  if(!state.isAdmin){
-    html += '<button class="addcard" id="addClassCard">'+ic('plus')+'Yeni Sınıf Ekle</button>';
-  }
   html += '</div>';
   return html;
 }
