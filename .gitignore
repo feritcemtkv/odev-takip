@@ -12,5 +12,5 @@ backups/
 scripts/*
 !scripts/get_google_token.mjs
 !scripts/restore.mjs
-data/school_roster.json
+data/
 scratch/
