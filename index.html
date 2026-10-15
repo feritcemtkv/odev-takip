@@ -548,7 +548,31 @@ function matchStudent(rawName, studentList){
     }
   }
 
-  // 3. Subset / multi-token match (handles middle names or names embedded with school/class text)
+  // 3. Match with middle name initials (e.g. "Ali V. Yilmaz" <-> "ALİ VELİ YILMAZ")
+  for(const s of studentList){
+    const sTokens = cleanTr(s.name).split(' ').filter(Boolean);
+    const tNonInitials = targetTokens.filter(t => t.length > 1);
+    const sNonInitials = sTokens.filter(t => t.length > 1);
+    const sTokenSet = new Set(sTokens);
+
+    if(tNonInitials.length >= 2 && tNonInitials.every(t => sTokenSet.has(t))){
+      const tInitials = targetTokens.filter(t => t.length === 1);
+      const sRemaining = sTokens.filter(t => !tNonInitials.includes(t));
+      if(!tInitials.length || tInitials.every(init => sRemaining.some(rem => rem.startsWith(init)))){
+        return s;
+      }
+    }
+
+    if(sNonInitials.length >= 2 && sNonInitials.every(t => targetTokenSet.has(t))){
+      const sInitials = sTokens.filter(t => t.length === 1);
+      const tRemaining = targetTokens.filter(t => !sNonInitials.includes(t));
+      if(!sInitials.length || sInitials.every(init => tRemaining.some(rem => rem.startsWith(init)))){
+        return s;
+      }
+    }
+  }
+
+  // 4. Subset / multi-token match (handles middle names or names embedded with school/class text)
   let candidates = [];
   for(const s of studentList){
     const sTokens = cleanTr(s.name).split(' ').filter(Boolean);
@@ -4835,10 +4859,296 @@ function normalizeDenemeSubjName(s){
            .replace(/T[ÜU]RK\s+D[İI]L[İI]\s+VE\s+EDEB[İI]YATI/gi, 'EDEBİYAT')
            .replace(/T\.\s*D[İI]L[İI]/gi, 'EDEBİYAT')
            .replace(/D[İI]N\s+K[ÜU]LT[ÜU]R[ÜU]/gi, 'DİN')
+           .replace(/D[İI]N\s+K\.?/gi, 'DİN')
            .replace(/FEN\s+B[İI]L[İI]MLER[İI]/gi, 'FEN')
            .replace(/SOSYAL\s+B[İI]L[İI]MLER/gi, 'SOSYAL')
            .replace(/S[EÇ]C?\.\s*FELSEFE/gi, 'S.FELSEFE');
   return str.toLocaleUpperCase('tr');
+}
+
+function getSubjectQuestionTotal(subjName, examType = 'tyt'){
+  const clean = cleanTr(subjName);
+  const STANDARD_TYT = {
+    'TÜRKÇE': 40, 'TURKCE': 40,
+    'TAR-1': 5, 'TARİH-1': 5, 'TARIH-1': 5, 'TARİH': 5, 'TARIH': 5, 'TAR': 5,
+    'COĞ-1': 5, 'COĞRAFYA-1': 5, 'COGRAFYA-1': 5, 'COĞRAFYA': 5, 'COGRAFYA': 5, 'COĞ': 5, 'COG': 5,
+    'FEL-1': 5, 'FELSEFE-1': 5, 'FELSEFE': 5, 'FEL': 5, 'S.FELSEFE': 5, 'SEÇMELİ FELSEFE': 5, 'SECMELI FELSEFE': 5,
+    'DİN-1': 5, 'DİN': 5, 'DIN': 5, 'DİN KÜLTÜRÜ': 5, 'DIN KULTURU': 5, 'DİN K.': 5, 'DIN K.': 5, 'DIN K': 5, 'DİN K': 5,
+    'SOSYAL': 20, 'SOSYAL BİLİMLER': 20, 'SOS': 20,
+    'T.MAT': 30, 'TEMEL MATEMATİK': 30, 'MATEMATİK': 40, 'MAT': 40, 'MAT-1': 40,
+    'GEO-1': 10, 'GEOMETRİ-1': 10, 'GEOMETRİ': 10, 'GEO': 10, 'GEOMETRI': 10,
+    'FİZ-1': 7, 'FİZİK-1': 7, 'FİZİK': 7, 'FIZIK': 7, 'FİZ': 7, 'FIZ': 7,
+    'KİM-1': 7, 'KİMYA-1': 7, 'KİMYA': 7, 'KIMYA': 7, 'KİM': 7, 'KIM': 7,
+    'BİY-1': 6, 'BİYOLOJİ-1': 6, 'BİYOLOJİ': 6, 'BIYOLOJI': 6, 'BİY': 6, 'BIY': 6,
+    'FEN': 20, 'FEN BİLİMLERİ': 20
+  };
+  const STANDARD_AYT = {
+    'EDEBİYAT': 24, 'T. DİLİ VE EDEBİYATI': 24, 'EDEB': 24, 'TÜRK DİLİ VE EDEBİYATI': 24,
+    'TAR-1': 10, 'COĞ-1': 6, 'TARİH-1': 10, 'COĞRAFYA-1': 6,
+    'TAR-2': 11, 'COĞ-2': 11, 'TARİH-2': 11, 'COĞRAFYA-2': 11, 'FEL': 12, 'FELSEFE': 12, 'DİN': 6, 'DIN': 6,
+    'MAT': 40, 'MAT-2': 40, 'MATEMATİK': 40, 'MATEMATİK-2': 40,
+    'FİZ-2': 14, 'FİZİK-2': 14, 'FİZİK': 14, 'KİM-2': 13, 'KİMYA-2': 13, 'KİMYA': 13, 'BİY-2': 13, 'BİYOLOJİ-2': 13, 'BİYOLOJİ': 13
+  };
+  const dict = examType === 'ayt' ? STANDARD_AYT : STANDARD_TYT;
+  for(const [k, v] of Object.entries(dict)){
+    if(cleanTr(k) === clean) return v;
+  }
+  const altDict = examType === 'ayt' ? STANDARD_TYT : STANDARD_AYT;
+  for(const [k, v] of Object.entries(altDict)){
+    if(cleanTr(k) === clean) return v;
+  }
+  return 40;
+}
+
+function netToDY(net, totalQuestions = 40){
+  if(net == null || net === '' || isNaN(net)) return { dogru: null, yanlis: null, bos: null };
+  const n = parseFloat(String(net).replace(',', '.'));
+  if(isNaN(n)) return { dogru: null, yanlis: null, bos: null };
+
+  let d = 0, y = 0;
+  if(n >= 0){
+    const frac = Math.round((n - Math.floor(n)) * 100);
+    if(frac === 0){
+      d = Math.floor(n);
+      y = 0;
+    } else if(frac === 25){
+      d = Math.floor(n) + 1;
+      y = 3;
+    } else if(frac === 50){
+      d = Math.floor(n) + 1;
+      y = 2;
+    } else if(frac === 75){
+      d = Math.floor(n) + 1;
+      y = 1;
+    } else {
+      d = Math.round(n);
+      y = 0;
+    }
+  } else {
+    y = Math.round(Math.abs(n) * 4);
+    d = 0;
+  }
+  const b = totalQuestions != null ? Math.max(0, totalQuestions - d - y) : null;
+  return { dogru: d, yanlis: y, bos: b };
+}
+
+function isSummaryOrMetaColumn(cleanColName){
+  return /^(DENEME|KOD|SINAV\s*KODU?|SINAV\s*TARIHI|RAPOR\s*TARIHI|OGRENCI|ADI\s*SOYADI|AD\s*SOYAD|ISIM|NO|NUMARA|OKUL\s*NO|OGR\s*NO)$/.test(cleanColName) ||
+         /(NET|PUAN|PUANI|\bSIRA|\bSIRASI|DERECE|DRC|DOGRU|YANLIS|YUZDELIK|KATILAN|ORTALAMA|STANDART\s*SAPMA)$/.test(cleanColName);
+}
+
+function openMasterDenemeBatchModal({
+  exams,
+  subjects,
+  examType,
+  onConfirm
+}){
+  const examCards = exams.map((ex, idx) => {
+    const unmatchWarn = ex.unmatchedCount > 0 ?
+      ('<div style="font-size:11px;color:var(--amber);margin-top:4px;">⚠️ ' + ex.unmatchedCount + ' satır sınıfta bulunamadı (' + escapeHtml(ex.unmatchedNames.slice(0, 3).join(', ')) + (ex.unmatchedNames.length > 3 ? '...' : '') + ')</div>') : '';
+
+    return '<div class="card" style="margin-bottom:10px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;">' +
+      '<div style="display:flex;align-items:flex-start;gap:10px;">' +
+        '<input type="checkbox" id="chkBatchEx_' + idx + '" checked style="margin-top:3px;transform:scale(1.2);cursor:pointer;">' +
+        '<div style="flex:1;">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">' +
+            '<span style="background:var(--primary);color:#fff;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;">' + escapeHtml(ex.code) + '</span>' +
+            (ex.date ? ('<span style="font-size:12px;color:var(--ink-soft);font-weight:600;">📅 ' + escapeHtml(ex.date) + '</span>') : '') +
+            '<span style="font-size:12px;color:var(--emerald);font-weight:700;">✓ ' + ex.matchedCount + ' Öğrenci</span>' +
+            '<span style="font-size:12px;color:var(--ink-soft);">' + ex.subjects.length + ' Ders</span>' +
+          '</div>' +
+          '<input type="text" id="inpBatchLabel_' + idx + '" value="' + escapeHtml(ex.label) + '" style="width:100%;border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:13px;font-weight:700;color:var(--ink);">' +
+          unmatchWarn +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  const modalHtml =
+    '<div style="max-height:85vh;overflow-y:auto;padding-right:2px;">' +
+      '<h3 style="margin-bottom:10px;display:flex;align-items:center;gap:8px;font-size:16px;">' +
+        ic('upload') + ' Toplu ' + (examType==='tyt'?'TYT':'AYT') + ' Denemesi İçe Aktarma' +
+      '</h3>' +
+      '<div style="background:var(--primary-soft);color:var(--primary-deep);border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:12.5px;">' +
+        'Excel dosyasında <strong>' + exams.length + ' adet deneme sınavı</strong> tespit edildi. Sisteme aktarmak istediğiniz denemeleri seçip sınav adlarını dilediğiniz gibi düzenleyebilirsiniz.' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+        '<span style="font-size:12.5px;font-weight:700;color:var(--ink-soft);">Sınav Listesi:</span>' +
+        '<button class="btn btn-outline btn-sm" id="btnToggleAllBatch" style="padding:2px 8px;font-size:11.5px;">Tümünü Seç / Bırak</button>' +
+      '</div>' +
+      '<div style="margin-bottom:14px;">' + examCards + '</div>' +
+      '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;">' +
+        '<button class="btn btn-outline" id="btnCancelBatch">Vazgeç</button>' +
+        '<button class="btn btn-primary" id="btnConfirmBatch">' + ic('clipboard') + ' Seçili Denemeleri Sisteme Aktar</button>' +
+      '</div>' +
+    '</div>';
+
+  openModalHtml(modalHtml);
+
+  document.getElementById('btnCancelBatch').onclick = closeModal;
+
+  document.getElementById('btnToggleAllBatch').onclick = () => {
+    const chks = document.querySelectorAll('[id^="chkBatchEx_"]');
+    const allChecked = Array.from(chks).every(c => c.checked);
+    chks.forEach(c => c.checked = !allChecked);
+  };
+
+  document.getElementById('btnConfirmBatch').onclick = async () => {
+    const selectedExams = [];
+    exams.forEach((ex, idx) => {
+      const chk = document.getElementById('chkBatchEx_' + idx);
+      if(chk && chk.checked){
+        const inp = document.getElementById('inpBatchLabel_' + idx);
+        const finalLabel = (inp && inp.value.trim()) ? inp.value.trim() : ex.label;
+        selectedExams.push({ ...ex, label: finalLabel });
+      }
+    });
+
+    if(!selectedExams.length){
+      showToast('Lütfen en az bir deneme seçin.');
+      return;
+    }
+
+    const btn = document.getElementById('btnConfirmBatch');
+    btn.disabled = true;
+    btn.textContent = 'Kaydediliyor... (0/' + selectedExams.length + ')';
+
+    try {
+      await onConfirm(selectedExams, (curr, total) => {
+        btn.textContent = 'Kaydediliyor... (' + curr + '/' + total + ')';
+      });
+      closeModal();
+    } catch(err){
+      btn.disabled = false;
+      btn.textContent = 'Seçili Denemeleri Sisteme Aktar';
+      showToast('Hata: ' + err.message);
+    }
+  };
+}
+
+function exportDenemeListToExcel(examType){
+  const label = examType === 'tyt' ? 'TYT' : 'AYT';
+  const exams = examType === 'tyt' ? (state.cls.tytExams||[]) : (state.cls.aytExams||[]);
+  if(!exams.length){
+    showToast('Dışa aktarılacak ' + label + ' denemesi bulunamadı.');
+    return;
+  }
+  const students = sortedStudents();
+  if(!students.length){
+    showToast('Sınıfta öğrenci bulunamadı.');
+    return;
+  }
+
+  // Collect all unique subjects across exams
+  const subjSet = new Set();
+  exams.forEach(e => (e.subjects||[]).forEach(s => subjSet.add(s)));
+  let subjects = Array.from(subjSet);
+  if(!subjects.length){
+    subjects = examType === 'tyt' ?
+      ['TÜRKÇE', 'TARİH', 'COĞRAFYA', 'FELSEFE', 'DİN', 'MATEMATİK', 'FİZİK', 'KİMYA', 'BİYOLOJİ'] :
+      ['EDEBİYAT', 'TARİH-1', 'COĞRAFYA-1', 'MATEMATİK', 'FİZİK', 'KİMYA', 'BİYOLOJİ'];
+  }
+
+  const wb = XLSX.utils.book_new();
+
+  // 1. Özet Sayfası
+  const ozetHeaders = ['Öğrenci No', 'Adı Soyadı'];
+  exams.forEach((ex, idx) => ozetHeaders.push((ex.label || ('D' + (idx+1))) + ' Toplam Net'));
+  ozetHeaders.push('Ortalama Net', 'En Yüksek Net');
+
+  const ozetRows = [ozetHeaders];
+  students.forEach(s => {
+    const row = [s.no || '', s.name];
+    const nets = [];
+    exams.forEach(ex => {
+      const scores = (state.cls.denemeScoresByExam[ex.id]||{})[s.id] || {};
+      let tot = 0;
+      let hasAny = false;
+      subjects.forEach(sbj => {
+        const sc = scores[sbj];
+        if(sc && (sc.dogru != null || sc.yanlis != null)){
+          hasAny = true;
+          const d = sc.dogru || 0;
+          const y = sc.yanlis || 0;
+          tot += (d - y / 4);
+        }
+      });
+      if(hasAny){
+        const rounded = Math.round(tot * 100) / 100;
+        row.push(rounded);
+        nets.push(rounded);
+      } else {
+        row.push('');
+      }
+    });
+    if(nets.length){
+      const avg = Math.round((nets.reduce((a,b)=>a+b, 0) / nets.length) * 100) / 100;
+      const max = Math.max(...nets);
+      row.push(avg, max);
+    } else {
+      row.push('', '');
+    }
+    ozetRows.push(row);
+  });
+  const wsOzet = XLSX.utils.aoa_to_sheet(ozetRows);
+  XLSX.utils.book_append_sheet(wb, wsOzet, 'Özet');
+
+  // 2. Ham Veri Sayfası
+  const hamHeaders = ['Deneme', 'Sınav Tarihi', 'Öğrenci', ...subjects, 'Sosyal Net', 'Fen Net', 'Toplam Net'];
+  const hamRows = [hamHeaders];
+
+  exams.forEach((ex, exIdx) => {
+    const code = 'D' + (exIdx + 1);
+    const dateMatch = (ex.label||'').match(/\b(\d{2}[./-]\d{2}[./-]\d{4})\b/);
+    const dateStr = dateMatch ? dateMatch[1] : '';
+
+    students.forEach(s => {
+      const scores = (state.cls.denemeScoresByExam[ex.id]||{})[s.id] || {};
+      const row = [code, dateStr, s.name];
+      let sosNet = 0, fenNet = 0, totNet = 0;
+      let hasData = false;
+
+      subjects.forEach(sbj => {
+        const sc = scores[sbj];
+        if(sc && (sc.dogru != null || sc.yanlis != null)){
+          hasData = true;
+          const net = Math.round(((sc.dogru || 0) - (sc.yanlis || 0) / 4) * 100) / 100;
+          row.push(net);
+          totNet += net;
+          if(/TARİH|COĞRAFYA|FELSEFE|DİN/i.test(sbj)) sosNet += net;
+          if(/FİZİK|KİMYA|BİYOLOJİ/i.test(sbj)) fenNet += net;
+        } else {
+          row.push('');
+        }
+      });
+
+      if(hasData){
+        row.push(Math.round(sosNet * 100) / 100);
+        row.push(Math.round(fenNet * 100) / 100);
+        row.push(Math.round(totNet * 100) / 100);
+        hamRows.push(row);
+      }
+    });
+  });
+  const wsHam = XLSX.utils.aoa_to_sheet(hamRows);
+  XLSX.utils.book_append_sheet(wb, wsHam, 'Ham Veri');
+
+  // 3. Deneme Bilgileri Sayfası
+  const infoHeaders = ['Deneme', 'Adı', 'Sınav Tarihi', 'Ders Sayısı'];
+  const infoRows = [infoHeaders];
+  exams.forEach((ex, exIdx) => {
+    const code = 'D' + (exIdx + 1);
+    const dateMatch = (ex.label||'').match(/\b(\d{2}[./-]\d{2}[./-]\d{4})\b/);
+    const dateStr = dateMatch ? dateMatch[1] : '';
+    infoRows.push([code, ex.label || '', dateStr, (ex.subjects||[]).length]);
+  });
+  const wsInfo = XLSX.utils.aoa_to_sheet(infoRows);
+  XLSX.utils.book_append_sheet(wb, wsInfo, 'Deneme Bilgileri');
+
+  // Dosyayı İndir
+  const fileName = (state.cls.name || 'Sinif') + '_' + label + '_Deneme_Takibi.xlsx';
+  XLSX.writeFile(wb, fileName);
+  showToast(fileName + ' indirildi.');
 }
 
 async function importDenemeFromExcel(file, examType){
@@ -4848,6 +5158,185 @@ async function importDenemeFromExcel(file, examType){
   try{
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, {type:'array'});
+
+    // -------------------------------------------------------------
+    // ADIM A: MASTER TAKİP ÇOKLU DENEME KONTROLÜ (12D_TYT formatı vb.)
+    // -------------------------------------------------------------
+    let masterSheet = wb.Sheets['Ham Veri'];
+    if(!masterSheet){
+      const sn = wb.SheetNames.find(n => /ham|veri|sonuc|deneme/i.test(n));
+      if(sn) masterSheet = wb.Sheets[sn];
+    }
+
+    if(masterSheet){
+      const masterRows = XLSX.utils.sheet_to_json(masterSheet, {header:1, raw:false, defval:''});
+      let mHeaderIdx = -1;
+      for(let r = 0; r < Math.min(10, masterRows.length); r++){
+        const rowClean = masterRows[r].map(c => cleanTr(c));
+        if(rowClean.some(c => /^(DENEME|KOD)$/.test(c)) && rowClean.some(c => /(OGRENCI|AD|SOYAD|ISIM)/.test(c))){
+          mHeaderIdx = r;
+          break;
+        }
+      }
+
+      if(mHeaderIdx >= 0){
+        const mRawHeader = masterRows[mHeaderIdx].map(c => String(c||'').trim());
+        const mCleanHeader = mRawHeader.map(c => cleanTr(c));
+
+        const exCol = mCleanHeader.findIndex(h => /^(DENEME|KOD|SINAV)$/.test(h));
+        const dtCol = mCleanHeader.findIndex((h, idx) => /(TARIH|TARIHI)/.test(h) && idx < 5);
+        const stCol = mCleanHeader.findIndex(h => /(OGRENCI|AD|SOYAD|ISIM)/.test(h));
+
+        if(exCol >= 0 && stCol >= 0){
+          const mSubjCols = [];
+          mRawHeader.forEach((h, idx) => {
+            if(idx === exCol || idx === dtCol || idx === stCol) return;
+            const clean = cleanTr(h);
+            if(isSummaryOrMetaColumn(clean)) return;
+            const norm = normalizeDenemeSubjName(h);
+            mSubjCols.push({ idx, name: norm, raw: h, total: getSubjectQuestionTotal(norm, examType) });
+          });
+
+          if(mSubjCols.length > 0){
+            // Deneme Bilgileri sheet parse
+            const fullTitles = {};
+            if(wb.Sheets['Deneme Bilgileri']){
+              const infoRows = XLSX.utils.sheet_to_json(wb.Sheets['Deneme Bilgileri'], {header:1, raw:false, defval:''});
+              for(const r of infoRows){
+                const code = String(r[0]||'').trim();
+                const title = String(r[1]||'').trim();
+                const date = String(r[2]||'').trim();
+                if(code && title && !/^(kod|deneme|soru)/i.test(code)){
+                  fullTitles[code] = date ? (title + ' (' + date + ')') : title;
+                }
+              }
+            }
+
+            // Group by exam code
+            const examGroups = new Map();
+            for(let r = mHeaderIdx + 1; r < masterRows.length; r++){
+              const row = masterRows[r];
+              if(!row || row.every(c => String(c||'').trim() === '')) continue;
+              const exCode = String(row[exCol]||'').trim();
+              if(!exCode || exCode.startsWith('Kaynak:') || exCode.includes('sütunu') || exCode.length > 20) continue;
+
+              if(!examGroups.has(exCode)){
+                const dateVal = dtCol >= 0 ? String(row[dtCol]||'').trim() : '';
+                const label = fullTitles[exCode] || (exCode + ' Denemesi' + (dateVal ? ' (' + dateVal + ')' : ''));
+                examGroups.set(exCode, { code: exCode, label, date: dateVal, rows: [] });
+              }
+
+              const studentName = String(row[stCol]||'').trim();
+              const student = matchStudent(studentName, state.cls.students);
+
+              const scores = [];
+              mSubjCols.forEach(sc => {
+                const val = row[sc.idx];
+                const dy = netToDY(val, sc.total);
+                scores.push({
+                  subject: sc.name,
+                  dogru: dy.dogru,
+                  yanlis: dy.yanlis,
+                  bos: dy.bos
+                });
+              });
+
+              examGroups.get(exCode).rows.push({ studentName, student, scores });
+            }
+
+            if(examGroups.size > 0){
+              const parsedExams = Array.from(examGroups.values()).map(eg => {
+                const matched = eg.rows.filter(r => r.student != null);
+                const unmatched = eg.rows.filter(r => r.student == null);
+                return {
+                  code: eg.code,
+                  label: eg.label,
+                  date: eg.date,
+                  totalRows: eg.rows.length,
+                  matchedCount: matched.length,
+                  unmatchedCount: unmatched.length,
+                  unmatchedNames: unmatched.map(u => u.studentName),
+                  subjects: mSubjCols.map(s => s.name),
+                  matched
+                };
+              });
+
+              openMasterDenemeBatchModal({
+                exams: parsedExams,
+                subjects: mSubjCols.map(s => s.name),
+                examType,
+                onConfirm: async (selectedExams, onProgress) => {
+                  let totalInserted = 0;
+                  let totalScoreRows = 0;
+                  const list = examType === 'tyt' ? state.cls.tytExams : state.cls.aytExams;
+
+                  for(let i = 0; i < selectedExams.length; i++){
+                    const exItem = selectedExams[i];
+                    if(onProgress) onProgress(i + 1, selectedExams.length);
+
+                    let examObj = list.find(e => e.label === exItem.label || e.label.startsWith(exItem.code + ' '));
+                    if(!examObj){
+                      const maxSlot = Math.max(0, ...list.map(e => e.slot_no || 0));
+                      const { data, error } = await sb.from('deneme_exams').insert({
+                        class_id: state.cls.id,
+                        exam_type: examType,
+                        slot_no: maxSlot + 1,
+                        label: exItem.label,
+                        subjects: exItem.subjects
+                      }).select();
+                      if(error) throw error;
+                      examObj = data[0];
+                      list.push(examObj);
+                    } else {
+                      examObj.subjects = exItem.subjects;
+                      examObj.label = exItem.label;
+                      await sb.from('deneme_exams').update({ subjects: exItem.subjects, label: exItem.label }).eq('id', examObj.id);
+                    }
+
+                    const scoreRows = [];
+                    for(const m of exItem.matched){
+                      for(const sc of m.scores){
+                        scoreRows.push({
+                          student_id: m.student.id,
+                          exam_id: examObj.id,
+                          subject: sc.subject,
+                          dogru: sc.dogru,
+                          yanlis: sc.yanlis,
+                          bos: sc.bos
+                        });
+                      }
+                    }
+
+                    if(scoreRows.length){
+                      const { error } = await sb.from('deneme_scores').upsert(scoreRows, { onConflict: 'student_id,exam_id,subject' });
+                      if(error) throw error;
+
+                      state.cls.denemeScoresByExam[examObj.id] = state.cls.denemeScoresByExam[examObj.id] || {};
+                      scoreRows.forEach(sr => {
+                        state.cls.denemeScoresByExam[examObj.id][sr.student_id] = state.cls.denemeScoresByExam[examObj.id][sr.student_id] || {};
+                        state.cls.denemeScoresByExam[examObj.id][sr.student_id][sr.subject] = { dogru: sr.dogru, yanlis: sr.yanlis, bos: sr.bos };
+                      });
+                      totalScoreRows += scoreRows.length;
+                    }
+                    totalInserted++;
+                  }
+
+                  logActivity('"' + file.name + '" dosyasından ' + totalInserted + ' adet ' + (examType==='tyt'?'TYT':'AYT') + ' denemesi aktardı (' + totalScoreRows + ' ders notu)');
+                  showToast(totalInserted + ' deneme ve ' + totalScoreRows + ' ders notu başarıyla yüklendi.');
+                  state.view = 'deneme_list';
+                  render();
+                }
+              });
+              return;
+            }
+          }
+        }
+      }
+    }
+
+    // -------------------------------------------------------------
+    // ADIM B: TEK DENEME DOSYASI (Single Sheet veya Geleneksel Excel)
+    // -------------------------------------------------------------
     const sheetName = wb.SheetNames[0];
     const sheet = wb.Sheets[sheetName];
     const rows = XLSX.utils.sheet_to_json(sheet, {header:1, raw:false, defval:''});
@@ -4867,7 +5356,7 @@ async function importDenemeFromExcel(file, examType){
       defaultLabel = fn || ((examType === 'tyt' ? 'TYT' : 'AYT') + ' Deneme Sınavı');
     }
 
-    // 2. Başlık Satırını (Header & Subheader) Tespit Etme
+    // 2. Başlık Satırını Tespit Etme
     let headerRowIdx = -1;
     let subHeaderRowIdx = -1;
 
@@ -4921,7 +5410,6 @@ async function importDenemeFromExcel(file, examType){
 
     const dataStartIdx = (subHeaderRowIdx >= 0 ? subHeaderRowIdx : headerRowIdx) + 1;
 
-    // Sütunlar başlıktan çıkmadıysa verilerden tespit et
     if(noCol === -1 || nameCol === -1){
       for(let col = 0; col < Math.min(6, hRow.length); col++){
         let nameHits = 0, noHits = 0;
@@ -4944,7 +5432,7 @@ async function importDenemeFromExcel(file, examType){
       nameCol = 1;
     }
 
-    // 4. Ders Sütunlarını Çıkarma
+    // 4. Ders Sütunlarını Çıkarma (3'lü D/Y/B veya Tek Sütun Net)
     let subjectDefs = [];
     const startCol = Math.max(noCol, nameCol) + 1;
 
@@ -4979,13 +5467,14 @@ async function importDenemeFromExcel(file, examType){
           name: normalizeDenemeSubjName(subjName),
           dCol: c,
           yCol: yCol,
-          bCol: bCol
+          bCol: bCol,
+          isNetCol: false
         });
       }
     }
 
-    // 3'lü sütun (Doğru, Yanlış, Boş) fallback
-    if(subjectDefs.length === 0){
+    // Fallback: 3'lü sütun (Doğru, Yanlış, Boş) kontrolü
+    if(subjectDefs.length === 0 && subHeaderRowIdx >= 0){
       for(let c = startCol; c + 1 < hRow.length; c += 3){
         let name = String(hRow[c]||'').replace(/\s*(D|Doğru|Y|Yanlış|B|Boş)\s*$/i,'').trim();
         if(!name) name = 'Ders ' + (subjectDefs.length + 1);
@@ -4993,7 +5482,25 @@ async function importDenemeFromExcel(file, examType){
           name: normalizeDenemeSubjName(name),
           dCol: c,
           yCol: c + 1,
-          bCol: (c + 2 < hRow.length) ? c + 2 : null
+          bCol: (c + 2 < hRow.length) ? c + 2 : null,
+          isNetCol: false
+        });
+      }
+    }
+
+    // Fallback: Tek Sütun Net Formatı
+    if(subjectDefs.length === 0){
+      for(let c = startCol; c < hRow.length; c++){
+        const topVal = hRow[c] || '';
+        const clean = cleanTr(topVal);
+        if(!clean || isSummaryOrMetaColumn(clean)) continue;
+        if(/^(D|Y|B|DOGRU|YANLIS|BOS|NET)$/i.test(clean)) continue;
+        const norm = normalizeDenemeSubjName(topVal);
+        subjectDefs.push({
+          name: norm,
+          netCol: c,
+          isNetCol: true,
+          total: getSubjectQuestionTotal(norm, examType)
         });
       }
     }
@@ -5015,7 +5522,8 @@ async function importDenemeFromExcel(file, examType){
     }
 
     const chosenSubjects = subjectDefs.map(s => s.name);
-    const totals = detectSoruSayisi([], chosenSubjects);
+    const totals = {};
+    chosenSubjects.forEach(s => totals[s] = getSubjectQuestionTotal(s, examType));
 
     // 5. Öğrencileri Eşleştirme ve Notları Alma
     const matchedList = [];
@@ -5034,7 +5542,6 @@ async function importDenemeFromExcel(file, examType){
       if(nameVal) student = matchStudent(nameVal, state.cls.students);
       if(!student && noVal) student = byNo[noVal];
 
-      // Satırdaki tüm hücrelerde arama
       if(!student){
         for(const cell of row){
           const cStr = String(cell||'').trim();
@@ -5052,19 +5559,24 @@ async function importDenemeFromExcel(file, examType){
 
       const scores = [];
       subjectDefs.forEach(subj => {
-        const dRaw = row[subj.dCol];
-        const yRaw = subj.yCol != null ? row[subj.yCol] : null;
-        const bRaw = subj.bCol != null ? row[subj.bCol] : null;
+        if(subj.isNetCol){
+          const dy = netToDY(row[subj.netCol], subj.total);
+          scores.push({ subject: subj.name, dogru: dy.dogru, yanlis: dy.yanlis, bos: dy.bos });
+        } else {
+          const dRaw = row[subj.dCol];
+          const yRaw = subj.yCol != null ? row[subj.yCol] : null;
+          const bRaw = subj.bCol != null ? row[subj.bCol] : null;
 
-        const d = toIntOrNull(dRaw);
-        const y = toIntOrNull(yRaw);
-        let b = toIntOrNull(bRaw);
+          const d = toIntOrNull(dRaw);
+          const y = toIntOrNull(yRaw);
+          let b = toIntOrNull(bRaw);
 
-        const tot = totals[subj.name];
-        if(b == null && tot != null && d != null && y != null){
-          b = Math.max(0, tot - d - y);
+          const tot = totals[subj.name];
+          if(b == null && tot != null && d != null && y != null){
+            b = Math.max(0, tot - d - y);
+          }
+          scores.push({ subject: subj.name, dogru: d, yanlis: y, bos: b });
         }
-        scores.push({ subject: subj.name, dogru: d, yanlis: y, bos: b });
       });
 
       matchedList.push({ student, scores });
@@ -5078,7 +5590,6 @@ async function importDenemeFromExcel(file, examType){
     const matchedStudentIds = new Set(matchedList.map(m => m.student.id));
     const missingInReport = (state.cls.students || []).filter(s => !matchedStudentIds.has(s.id));
 
-    // Önizleme Modalını Aç
     openDenemeImportPreviewModal({
       defaultLabel,
       examType,
@@ -12387,10 +12898,13 @@ function renderDenemeList(app, examType){
       '</div>' +
       '<div class="section-title"><span>Var Olan Denemeler</span><span class="line"></span></div>' +
       '<div class="card">'+(rows||'<div class="empty">Henüz '+label+' denemesi eklenmedi.</div>')+'</div>' +
-      '<div class="section-title"><span>Elle Ekle (Excel)</span><span class="line"></span></div>' +
-      '<button class="btn btn-soft full" id="addDenemeBtn">'+ic('upload')+'Excelden '+label+' Denemesi Ekle</button>' +
+      '<div class="section-title"><span>Excel ile İçe / Dışa Aktar</span><span class="line"></span></div>' +
+      '<div style="display:flex;gap:8px;margin-bottom:6px;">' +
+        '<button class="btn btn-soft" id="addDenemeBtn" style="flex:1;justify-content:center;">'+ic('upload')+'Excel\'den '+label+' Denemesi Ekle</button>' +
+        '<button class="btn btn-outline" id="exportDenemeListBtn" style="flex:1;justify-content:center;">'+ic('download')+'Excel Takip Tablosu İndir</button>' +
+      '</div>' +
       '<input type="file" id="denemeExcelFile" accept=".xlsx,.xls,.csv" style="display:none;">' +
-      '<p style="font-size:12px;color:var(--ink-faint);margin-top:14px;">Excel formatı: 1. sütun Öğrenci No, sonrasında her ders için 3 sütun (Doğru, Yanlış, Boş) yan yana. Başlık satırında ders adını yaz (örn. "Türkçe D", "Türkçe Y", "Türkçe B").</p>'
+      '<p style="font-size:12px;color:var(--ink-faint);margin-top:6px;line-height:1.4;">💡 <strong>Esnek Excel Desteği:</strong> 11 ve 12. sınıflar için <em>"12D_TYT_Deneme_Takibi.xlsx"</em> formatındaki master takip tabloları (Ham Veri + Deneme Bilgileri içeren çoklu denemeler D1, D2, D3...), tek sınavlık net tabloları veya 3 sütunlu (Doğru, Yanlış, Boş) Excel dosyaları doğrudan yüklenebilir.</p>'
     ) : (
       '<div class="section-title"><span>Var Olan Denemeler</span><span class="line"></span></div>' +
       '<div class="card">'+(rows||'<div class="empty">Henüz '+label+' denemesi eklenmedi.</div>')+'</div>'
@@ -12405,6 +12919,8 @@ function renderDenemeList(app, examType){
     if(xlBtn) xlBtn.onclick = ()=> document.getElementById('denemeExcelFile').click();
     const xlFile = document.getElementById('denemeExcelFile');
     if(xlFile) xlFile.onchange = (e)=> importDenemeFromExcel(e.target.files[0], examType);
+    const exportBtn = app.querySelector('#exportDenemeListBtn');
+    if(exportBtn) exportBtn.onclick = () => exportDenemeListToExcel(examType);
     app.querySelectorAll('[data-del]').forEach(btn=>{
       btn.onclick = ()=>{ if(confirm('Bu deneme silinsin mi? Tüm ders notları da silinir.')) deleteDenemeExam(btn.dataset.del, examType); };
     });
