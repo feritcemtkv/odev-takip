@@ -1,4 +1,4 @@
-const CACHE_NAME = 'odev-takip-v1.0.6';
+const CACHE_NAME = 'odev-takip-v1.0.8';
 
 const PRECACHE_ASSETS = [
   './',

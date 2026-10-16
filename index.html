@@ -731,6 +731,476 @@ function shortenDenemeLabel(label, examType, fallbackNum){
 
   return cleaned || str;
 }
+function parseStudentScreenTime(s){
+  if(!s) return { time: '', date: '' };
+  if(s.screen_time !== undefined && s.screen_time_date !== undefined){
+    return { time: s.screen_time || '', date: s.screen_time_date || '' };
+  }
+  if(s.somestr){
+    try {
+      const parsed = JSON.parse(s.somestr);
+      if(parsed && typeof parsed === 'object'){
+        return { time: parsed.time || parsed.screen_time || '', date: parsed.date || '' };
+      }
+    } catch(e){
+      return { time: String(s.somestr).trim(), date: '' };
+    }
+  }
+  try {
+    const raw = localStorage.getItem('takip_st_screen_time_' + s.id);
+    if(raw){
+      return JSON.parse(raw);
+    }
+  } catch(e){}
+  return { time: '', date: '' };
+}
+
+function fmtDateShort(d){
+  if(!d) return '';
+  const parts = d.split('-');
+  if(parts.length === 3){
+    const months = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+    const mIdx = parseInt(parts[1], 10) - 1;
+    return parseInt(parts[2], 10) + ' ' + (months[mIdx] || parts[1]);
+  }
+  return d;
+}
+
+function classScreenTimeStats(cls){
+  const students = (cls && cls.students) || [];
+  let count = 0;
+  students.forEach(s => {
+    const st = parseStudentScreenTime(s);
+    if(st.time) count++;
+  });
+  if(count === 0) return '0/' + students.length + ' Girildi';
+  return count + '/' + students.length + ' Girildi';
+}
+
+async function updateStudentScreenTime(sid, timeVal, dateVal, silent = false){
+  if(state.isAdmin) return;
+  const s = studentById(sid);
+  timeVal = (timeVal || '').trim();
+  dateVal = (dateVal || '').trim();
+
+  if(s){
+    s.screen_time = timeVal;
+    s.screen_time_date = dateVal;
+    const payload = JSON.stringify({ time: timeVal, date: dateVal });
+    s.somestr = payload;
+
+    try {
+      localStorage.setItem('takip_st_screen_time_' + sid, payload);
+    } catch(e){}
+
+    const { error } = await sb.from('students').update({ somestr: payload }).eq('id', sid);
+    if(error){
+      if(!silent) showToast('Kayıt hatası: ' + error.message);
+      return;
+    }
+    if(!silent){
+      logActivity('"' + s.name + '" öğrencisinin telefon ekran süresini güncelledi (' + (timeVal||'-') + ', ' + (dateVal||'-') + ')');
+      showToast('Telefon ekran süresi kaydedildi');
+    }
+  }
+}
+
+function openScreenTimeModal(){
+  const cls = state.cls;
+  if(!cls) return;
+  const students = sortedStudents();
+  const today = todayStr();
+
+  const rows = students.map((s, idx) => {
+    const st = parseStudentScreenTime(s);
+    return '<div class="listedit-row" style="align-items:center;padding:8px 6px;border-bottom:1px solid var(--line);">' +
+      '<div style="width:36px;font-size:11.5px;color:var(--ink-faint);font-weight:700;">' + escapeHtml(s.no || ('#' + (idx+1))) + '</div>' +
+      '<div style="flex:2;font-size:13.5px;font-weight:700;color:var(--ink);min-width:140px;">' + escapeHtml(s.name) + '</div>' +
+      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+        '<input type="text" class="st-row-time" data-sid="' + s.id + '" value="' + escapeHtml(st.time) + '" placeholder="Örn: 3s 45dk" ' + (state.isAdmin ? 'disabled readonly style="background:var(--surface-2);"' : '') + ' style="width:120px;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12.5px;font-weight:700;">' +
+        '<input type="date" class="st-row-date" data-sid="' + s.id + '" value="' + escapeHtml(st.date || today) + '" ' + (state.isAdmin ? 'disabled readonly style="background:var(--surface-2);"' : '') + ' style="border:1px solid var(--line);border-radius:6px;padding:5px 6px;font-size:12px;font-weight:600;">' +
+        (!state.isAdmin ? '<button type="button" class="btn btn-soft btn-sm st-row-save" data-sid="' + s.id + '" style="padding:5px 10px;font-size:11.5px;font-weight:700;" title="Kaydet">💾</button>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  openModalHtml(
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+      '<h3 style="margin:0;display:flex;align-items:center;gap:6px;">📱 ' + escapeHtml(cls.name) + ' Telefon Ekran Süresi Takibi</h3>' +
+    '</div>' +
+    '<div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:14px;line-height:1.45;">' +
+      '12. sınıf YKS maratonunda öğrencilerin haftalık veya günlük telefon ekran sürelerini (iOS Ekran Süresi / Android Dijital Denge) ve kontrol tarihlerini buradan topluca düzenleyin.' +
+    '</div>' +
+    '<div style="max-height:420px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--surface);margin-bottom:14px;">' +
+      (rows || '<div class="empty">Bu sınıfta öğrenci yok.</div>') +
+    '</div>' +
+    '<div class="modalactions" style="display:flex;gap:8px;">' +
+      '<button type="button" class="btn btn-outline" id="mCloseScreenTime" style="flex:1;">Kapat</button>' +
+      (!state.isAdmin ? '<button type="button" class="btn btn-primary" id="mSaveAllScreenTime" style="flex:1;font-weight:800;background:#7e22ce;border-color:#7e22ce;">💾 Tümünü Kaydet</button>' : '') +
+    '</div>',
+    '640px'
+  );
+
+  document.getElementById('mCloseScreenTime').onclick = closeModal;
+  if(!state.isAdmin){
+    const saveAllBtn = document.getElementById('mSaveAllScreenTime');
+    if(saveAllBtn){
+      saveAllBtn.onclick = async () => {
+        saveAllBtn.textContent = 'Kaydediliyor...';
+        saveAllBtn.disabled = true;
+        const timeInps = document.querySelectorAll('.st-row-time');
+        const dateInps = document.querySelectorAll('.st-row-date');
+        for(let i = 0; i < timeInps.length; i++){
+          const sid = timeInps[i].dataset.sid;
+          const tVal = timeInps[i].value.trim();
+          const dVal = dateInps[i] ? dateInps[i].value : '';
+          await updateStudentScreenTime(sid, tVal, dVal, true);
+        }
+        closeModal();
+        render();
+        showToast('Tüm öğrencilerin ekran süreleri kaydedildi');
+      };
+    }
+    document.querySelectorAll('.st-row-save').forEach(btn => {
+      btn.onclick = async () => {
+        const row = btn.closest('.listedit-row');
+        const tInp = row ? row.querySelector('.st-row-time') : null;
+        const dInp = row ? row.querySelector('.st-row-date') : null;
+        btn.textContent = '...';
+        btn.disabled = true;
+        await updateStudentScreenTime(btn.dataset.sid, tInp ? tInp.value.trim() : '', dInp ? dInp.value : '');
+        btn.textContent = '💾';
+        btn.disabled = false;
+        render();
+      };
+    });
+  }
+}
+
+function openEditStudentScreenTimeModal(studentId){
+  const s = studentById(studentId);
+  if(!s) return;
+  const st = parseStudentScreenTime(s);
+  const today = todayStr();
+
+  openModalHtml(
+    '<h3>📱 ' + escapeHtml(s.name) + ' — Telefon Ekran Süresi</h3>' +
+    '<div style="font-size:12.5px;color:var(--ink-soft);margin:6px 0 14px;">Öğrencinin haftalık veya günlük telefon ekran süresini girin:</div>' +
+    '<div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px;">' +
+      '<div>' +
+        '<label style="font-size:12px;font-weight:800;color:var(--ink-soft);display:block;margin-bottom:4px;">Ekran Süresi (Örn: 3 saat 15 dk veya 4s 30dk)</label>' +
+        '<input type="text" id="mSingleStTime" value="' + escapeHtml(st.time) + '" placeholder="Örn: 3 saat 30 dk" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-size:14px;font-weight:700;box-sizing:border-box;">' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+        '<span style="font-size:11.5px;color:var(--ink-soft);font-weight:700;margin-right:2px;align-self:center;">Hızlı Seçim:</span>' +
+        ['1.5 saat', '2 saat', '3 saat', '4 saat', '5 saat', '6+ saat'].map(preset =>
+          '<button type="button" class="btn btn-outline btn-sm st-preset-btn" data-val="' + preset + '" style="padding:3px 8px;font-size:11.5px;">' + preset + '</button>'
+        ).join('') +
+      '</div>' +
+      '<div>' +
+        '<label style="font-size:12px;font-weight:800;color:var(--ink-soft);display:block;margin-bottom:4px;">📅 Kontrol Tarihi</label>' +
+        '<input type="date" id="mSingleStDate" value="' + escapeHtml(st.date || today) + '" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;box-sizing:border-box;">' +
+      '</div>' +
+    '</div>' +
+    '<div class="modalactions">' +
+      '<button type="button" class="btn btn-outline" id="mCancelSingleSt">Vazgeç</button>' +
+      (!state.isAdmin ? '<button type="button" class="btn btn-primary" id="mSaveSingleSt" style="background:#7e22ce;border-color:#7e22ce;">💾 Kaydet</button>' : '') +
+    '</div>'
+  );
+
+  document.getElementById('mCancelSingleSt').onclick = closeModal;
+  document.querySelectorAll('.st-preset-btn').forEach(btn => {
+    btn.onclick = () => {
+      const inp = document.getElementById('mSingleStTime');
+      if(inp) inp.value = btn.dataset.val;
+    };
+  });
+  if(!state.isAdmin){
+    document.getElementById('mSaveSingleSt').onclick = async () => {
+      const tVal = document.getElementById('mSingleStTime').value.trim();
+      const dVal = document.getElementById('mSingleStDate').value;
+      closeModal();
+      await updateStudentScreenTime(s.id, tVal, dVal);
+      render();
+    };
+  }
+}
+
+
+function parseDenemeExamMeta(exam){
+  if(!exam) return { isoDate: '', dispDate: '', duration: 165, shortTitle: '' };
+  const label = exam.label || '';
+  const examType = exam.exam_type || (label.toLowerCase().includes('ayt') ? 'ayt' : 'tyt');
+  const defaultDur = examType === 'ayt' ? 180 : 165;
+
+  let isoDate = '';
+  let dispDate = '';
+  const mDate = label.match(/\b(\d{2})[./-](\d{2})[./-](\d{4})\b/);
+  if(mDate){
+    dispDate = mDate[1] + '.' + mDate[2] + '.' + mDate[3];
+    isoDate = mDate[3] + '-' + mDate[2] + '-' + mDate[1];
+  } else {
+    const mDateIso = label.match(/\b(\d{4})[./-](\d{2})[./-](\d{2})\b/);
+    if(mDateIso){
+      isoDate = mDateIso[1] + '-' + mDateIso[2] + '-' + mDateIso[3];
+      dispDate = mDateIso[3] + '.' + mDateIso[2] + '.' + mDateIso[1];
+    }
+  }
+
+  let duration = defaultDur;
+  const mDur = label.match(/\b(\d+)\s*(?:dk|dakika|min)\b/i);
+  if(mDur){
+    duration = parseInt(mDur[1], 10);
+  }
+
+  try {
+    const raw = localStorage.getItem('takip_deneme_meta_' + exam.id);
+    if(raw){
+      const cached = JSON.parse(raw);
+      if(!isoDate && cached.date){
+        isoDate = cached.date;
+        const p = isoDate.split('-');
+        if(p.length === 3) dispDate = p[2] + '.' + p[1] + '.' + p[0];
+      }
+      if(cached.duration) duration = parseInt(cached.duration, 10);
+    }
+  } catch(e){}
+
+  const shortTitle = shortenDenemeLabel(label, examType, exam.slot_no);
+  return { isoDate, dispDate, duration, shortTitle };
+}
+
+function formatUpdatedDenemeLabel(oldLabel, examType, slotNo, newDate, newDuration){
+  const dur = parseInt(newDuration, 10) || (examType === 'tyt' ? 165 : 180);
+  const date = newDate ? String(newDate).trim() : '';
+
+  let dateFormatted = '';
+  if(date){
+    const p = date.split('-');
+    if(p.length === 3) dateFormatted = p[2] + '.' + p[1] + '.' + p[0];
+    else dateFormatted = date;
+  }
+
+  let baseTitle = (oldLabel || '')
+    .replace(/\s*\(\d{2}[./-]\d{2}[./-]\d{4}\)/g, '')
+    .replace(/\s*\(\d+\s*dk\)/gi, '')
+    .trim();
+
+  let newLabel = baseTitle;
+  if(dateFormatted) newLabel += ' (' + dateFormatted + ')';
+  if(dur) newLabel += ' (' + dur + ' dk)';
+  return newLabel;
+}
+
+async function saveDenemeMeta(examId, examType, dateVal, durVal){
+  if(state.isAdmin) return;
+  const list = examType === 'tyt' ? state.cls.tytExams : state.cls.aytExams;
+  const exam = list.find(e => e.id === examId);
+  if(!exam) return;
+
+  const dur = parseInt(durVal, 10) || (examType === 'tyt' ? 165 : 180);
+  const date = dateVal ? String(dateVal).trim() : '';
+  const newLabel = formatUpdatedDenemeLabel(exam.label, examType, exam.slot_no, date, dur);
+
+  exam.label = newLabel;
+
+  try {
+    localStorage.setItem('takip_deneme_meta_' + examId, JSON.stringify({ date, duration: dur }));
+  } catch(e){}
+
+  const { error } = await sb.from('deneme_exams').update({ label: newLabel }).eq('id', examId);
+  if(error){
+    showToast('Kayıt hatası: ' + error.message);
+    return;
+  }
+  const sTitle = shortenDenemeLabel(newLabel, examType, exam.slot_no);
+  logActivity('"' + sTitle + '" deneme sınavı tarih ve süresini güncelledi (' + (date||'-') + ', ' + dur + ' dk)');
+  showToast('Sınav tarihi ve süresi kaydedildi');
+}
+
+function openNewDenemeExamModal(examType){
+  if(state.isAdmin){ showToast('Yönetici modunda deneme eklenemez (Salt Okunur).'); return; }
+  examType = examType || 'tyt';
+  const label = examType === 'tyt' ? 'TYT' : 'AYT';
+  const list = examType === 'tyt' ? state.cls.tytExams : state.cls.aytExams;
+  const nextNum = (list.length || 0) + 1;
+  const defaultTitle = label + ' ' + nextNum + '. Deneme';
+  const defaultDur = examType === 'tyt' ? 165 : 180;
+  const today = todayStr();
+
+  openModalHtml(
+    '<h3>Yeni ' + label + ' Denemesi Ekle</h3>' +
+    '<div style="display:flex;flex-direction:column;gap:12px;margin:12px 0 16px;">' +
+      '<div>' +
+        '<label style="font-size:12px;font-weight:800;color:var(--ink-soft);display:block;margin-bottom:4px;">Sınav Adı / Yayın</label>' +
+        '<input type="text" id="mNewDenemeTitle" value="' + escapeHtml(defaultTitle) + '" placeholder="Örn: ' + label + ' ' + nextNum + '. Deneme - ÖZDEBİR" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-size:13.5px;box-sizing:border-box;">' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+        '<div style="flex:1;min-width:140px;">' +
+          '<label style="font-size:12px;font-weight:800;color:var(--ink-soft);display:block;margin-bottom:4px;">📅 Sınav Tarihi</label>' +
+          '<input type="date" id="mNewDenemeDate" value="' + today + '" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;box-sizing:border-box;">' +
+        '</div>' +
+        '<div style="flex:1;min-width:140px;">' +
+          '<label style="font-size:12px;font-weight:800;color:var(--ink-soft);display:block;margin-bottom:4px;">⏱️ Sınav Süresi (dk)</label>' +
+          '<input type="number" min="15" max="600" step="5" id="mNewDenemeDur" value="' + defaultDur + '" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;box-sizing:border-box;">' +
+        '</div>' +
+      '</div>' +
+      '<div style="font-size:12px;color:var(--ink-faint);line-height:1.4;">' +
+        'Standart dersler (' + (examType==='tyt'?'Türkçe, Tarih, Coğrafya, Felsefe, Din, Matematik, Fizik, Kimya, Biyoloji':'Edebiyat, Tarih-1, Coğrafya-1, Matematik, Fizik, Kimya, Biyoloji') + ') otomatik atanacaktır.' +
+      '</div>' +
+    '</div>' +
+    '<div class="modalactions">' +
+      '<button class="btn btn-outline" id="mCancelDeneme">Vazgeç</button>' +
+      '<button class="btn btn-primary" id="mSaveDeneme">Sınavı Ekle ve Not Girişine Git</button>' +
+    '</div>'
+  );
+
+  document.getElementById('mCancelDeneme').onclick = closeModal;
+  document.getElementById('mSaveDeneme').onclick = async () => {
+    const titleInp = document.getElementById('mNewDenemeTitle');
+    const dateInp = document.getElementById('mNewDenemeDate');
+    const durInp = document.getElementById('mNewDenemeDur');
+    const title = (titleInp ? titleInp.value : '').trim() || defaultTitle;
+    const dateVal = dateInp ? dateInp.value : '';
+    const durVal = parseInt(durInp ? durInp.value : defaultDur, 10) || defaultDur;
+
+    let dateFormatted = '';
+    if(dateVal){
+      const p = dateVal.split('-');
+      if(p.length === 3) dateFormatted = p[2] + '.' + p[1] + '.' + p[0];
+      else dateFormatted = dateVal;
+    }
+
+    let fullLabel = title;
+    if(dateFormatted) fullLabel += ' (' + dateFormatted + ')';
+    if(durVal) fullLabel += ' (' + durVal + ' dk)';
+
+    const subjects = examType === 'tyt' ?
+      ['TÜRKÇE', 'TARİH', 'COĞRAFYA', 'FELSEFE', 'DİN', 'MATEMATİK', 'FİZİK', 'KİMYA', 'BİYOLOJİ'] :
+      ['EDEBİYAT', 'TARİH-1', 'COĞRAFYA-1', 'MATEMATİK', 'FİZİK', 'KİMYA', 'BİYOLOJİ'];
+
+    const maxSlot = Math.max(0, ...list.map(e => e.slot_no || 0));
+    const { data, error } = await sb.from('deneme_exams').insert({
+      class_id: state.cls.id,
+      exam_type: examType,
+      slot_no: maxSlot + 1,
+      label: fullLabel,
+      subjects: subjects
+    }).select();
+
+    if(error){
+      showToast('Hata: ' + error.message);
+      return;
+    }
+
+    const examObj = data[0];
+    list.push(examObj);
+    state.cls.denemeScoresByExam[examObj.id] = state.cls.denemeScoresByExam[examObj.id] || {};
+
+    try {
+      localStorage.setItem('takip_deneme_meta_' + examObj.id, JSON.stringify({ date: dateVal, duration: durVal }));
+    } catch(e){}
+
+    closeModal();
+    state.activeExamId = examObj.id;
+    state.examType = examType;
+    state.view = 'deneme_scores';
+    render();
+    logActivity('"' + fullLabel + '" ' + label + ' deneme sınavını ekledi');
+    showToast(label + ' denemesi eklendi');
+  };
+}
+
+function renderDenemeRosterSection(cls, examType){
+  const label = examType === 'tyt' ? 'TYT' : 'AYT';
+  const exams = examType === 'tyt' ? (cls.tytExams || []) : (cls.aytExams || []);
+  const studentsCount = (cls.students || []).length;
+
+  let cardsHtml = '';
+  if(!exams.length){
+    cardsHtml =
+      '<div class="card" style="padding:16px;text-align:center;background:var(--surface);margin-bottom:12px;">' +
+        '<div style="font-size:13px;color:var(--ink-soft);margin-bottom:10px;">Henüz ' + label + ' denemesi eklenmedi.</div>' +
+        (!state.isAdmin ? (
+          '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">' +
+            '<button type="button" class="btn btn-primary btn-sm add-quick-deneme-btn" data-type="' + examType + '">' + ic('plus') + 'Yeni ' + label + ' Denemesi Ekle</button>' +
+            '<button type="button" class="btn btn-outline btn-sm open-deneme-mgmt-btn" data-type="' + examType + '">' + ic('upload') + 'PDF / Excel Yükle</button>' +
+          '</div>'
+        ) : '') +
+      '</div>';
+  } else {
+    cardsHtml = exams.map(ex => {
+      const meta = parseDenemeExamMeta(ex);
+      const scores = (cls.denemeScoresByExam && cls.denemeScoresByExam[ex.id]) || {};
+      const scoredStudents = (cls.students || []).filter(s => {
+        const sc = scores[s.id] || {};
+        return (ex.subjects || []).some(sbj => sc[sbj] && (sc[sbj].dogru != null || sc[sbj].yanlis != null || sc[sbj].bos != null));
+      }).length;
+
+      const { totalNet } = (typeof calcDenemeAverages === 'function') ? calcDenemeAverages(ex.id, ex.subjects) : { totalNet: null };
+      const avgBadge = totalNet ? ('<span style="font-size:11.5px;font-weight:800;color:var(--teal);background:var(--teal-soft);padding:3px 8px;border-radius:6px;white-space:nowrap;">Ort: ' + totalNet + ' Net</span>') : '';
+
+      return '<div class="card" style="padding:14px 16px;margin-bottom:12px;border-left:4px solid ' + (examType==='tyt'?'var(--amber)':'var(--primary)') + ';box-shadow:var(--shadow);">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:10px;">' +
+          '<div style="flex:1;min-width:210px;">' +
+            '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+              '<span class="tag ' + (examType==='tyt'?'amber':'blue') + '" style="font-weight:800;font-size:11px;">' + label + ' #' + (ex.slot_no||1) + '</span>' +
+              '<span style="font-weight:800;font-size:15px;color:var(--ink);">' + escapeHtml(meta.shortTitle) + '</span>' +
+              avgBadge +
+            '</div>' +
+            '<div style="font-size:11.5px;color:var(--ink-soft);margin-top:4px;">' +
+              (ex.subjects||[]).length + ' Ders &middot; ' + scoredStudents + '/' + studentsCount + ' Öğrenci Notu' +
+            '</div>' +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:6px;">' +
+            '<button type="button" class="btn btn-primary btn-sm deneme-card-enter-btn" data-exam-id="' + ex.id + '" data-exam-type="' + examType + '" style="font-size:12px;padding:6px 12px;font-weight:700;">' +
+              (state.isAdmin ? 'Notları İncele' : 'Notları Gör / Gir') + ' ➔' +
+            '</button>' +
+            (!state.isAdmin ? (
+              '<button type="button" class="iconbtn deneme-card-del-btn" data-exam-id="' + ex.id + '" data-exam-type="' + examType + '" title="Denemeyi Sil" style="color:var(--red);">' +
+                ic('trash') +
+              '</button>'
+            ) : '') +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--surface-2);padding:9px 12px;border-radius:8px;">' +
+          '<div style="display:flex;align-items:center;gap:6px;">' +
+            '<label style="font-size:12px;font-weight:800;color:var(--ink);white-space:nowrap;">📅 Sınav Tarihi:</label>' +
+            '<input type="date" class="deneme-card-date-inp" data-exam-id="' + ex.id + '" data-exam-type="' + examType + '" value="' + escapeHtml(meta.isoDate) + '" ' + (state.isAdmin ? 'disabled readonly style="background:var(--surface-2);"' : '') + ' style="border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:12.5px;font-weight:700;color:var(--ink);background:var(--surface);">' +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:6px;">' +
+            '<label style="font-size:12px;font-weight:800;color:var(--ink);white-space:nowrap;">⏱️ Sınav Süresi:</label>' +
+            '<div style="display:inline-flex;align-items:center;gap:3px;">' +
+              '<input type="number" min="15" max="600" step="5" class="deneme-card-dur-inp" data-exam-id="' + ex.id + '" data-exam-type="' + examType + '" value="' + meta.duration + '" ' + (state.isAdmin ? 'disabled readonly style="background:var(--surface-2);"' : '') + ' style="width:62px;text-align:center;border:1px solid var(--line);border-radius:6px;padding:5px 6px;font-size:12.5px;font-weight:700;color:var(--ink);background:var(--surface);">' +
+              '<span style="font-size:12px;font-weight:700;color:var(--ink-soft);">dk</span>' +
+            '</div>' +
+          '</div>' +
+          (!state.isAdmin ? (
+            '<button type="button" class="btn btn-soft btn-sm deneme-card-save-btn" data-exam-id="' + ex.id + '" data-exam-type="' + examType + '" style="margin-left:auto;padding:5px 12px;font-size:12px;font-weight:700;">' +
+              '💾 Kaydet' +
+            '</button>'
+          ) : '') +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    if(!state.isAdmin){
+      cardsHtml +=
+        '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">' +
+          '<button type="button" class="btn btn-outline btn-sm add-quick-deneme-btn" data-type="' + examType + '" style="flex:1;justify-content:center;font-weight:700;">' +
+            ic('plus') + 'Yeni ' + label + ' Denemesi Ekle' +
+          '</button>' +
+          '<button type="button" class="btn btn-soft btn-sm open-deneme-mgmt-btn" data-type="' + examType + '" style="flex:1;justify-content:center;font-weight:700;">' +
+            ic('upload') + label + ' Deneme Yönetimi (PDF/Excel)' +
+          '</button>' +
+        '</div>';
+    }
+  }
+
+  return '<div class="section-title"><span>' + label + ' Denemeleri (' + exams.length + ')</span><span class="line"></span></div>' + cardsHtml;
+}
+
+
 function isKdsExam(label){
   return /kds/i.test(label || '');
 }
@@ -11112,9 +11582,26 @@ function renderRoster(app){
     } else if(m === 2){
       flBadge = '<span class="fl27-pill amber" style="margin-right:6px;" title="2 yapılmayan ödev (FL-27 sınırında)">⚠️ 2 Eksik</span>';
     }
+    let screenTimeBadge = '';
+    if(g12){
+      const st = parseStudentScreenTime(s);
+      if(st.time){
+        const shortD = st.date ? (' (' + fmtDateShort(st.date) + ')') : '';
+        screenTimeBadge =
+          '<button type="button" class="st-screen-btn" data-st-id="' + s.id + '" title="Telefon Ekran Süresi: ' + escapeHtml(st.time) + (st.date ? (' - ' + escapeHtml(st.date)) : '') + ' (Değiştirmek için tıkla)" style="background:#f3e8ff;color:#7e22ce;border:1px solid #d8b4fe;border-radius:8px;padding:3px 9px;font-size:11.5px;font-weight:800;white-space:nowrap;margin-right:8px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;flex-shrink:0;">' +
+            '📱 ' + escapeHtml(st.time) + (shortD ? ('<span style="font-size:10px;opacity:.75;font-weight:600;">' + shortD + '</span>') : '') +
+          '</button>';
+      } else {
+        screenTimeBadge =
+          '<button type="button" class="st-screen-btn empty" data-st-id="' + s.id + '" title="Telefon ekran süresi girilmedi (Girmek için tıkla)" style="background:var(--surface-2);color:var(--ink-soft);border:1px dashed var(--line);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;white-space:nowrap;margin-right:8px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;flex-shrink:0;">' +
+            '📱 Süre Gir' +
+          '</button>';
+      }
+    }
     return '<div class="card rowcard" data-student="'+s.id+'">' +
       '<div class="no">'+escapeHtml(s.no||'—')+'</div>' +
       '<div class="name">'+absentTag+escapeHtml(s.name)+'</div>' +
+      screenTimeBadge +
       flBadge +
       '<div class="pct '+pillClass+'">'+p+'%</div>' +
       '<div class="chev">'+ic('chevron')+'</div>' +
@@ -11135,11 +11622,7 @@ function renderRoster(app){
       '</div>';
   }
   if(showTytAyt){
-    midSections +=
-      '<div class="section-title"><span>TYT</span><span class="line"></span></div>' +
-      '<div class="actionrow"><button class="btn btn-primary full" id="tytBtn">'+ic('clipboard')+'TYT Denemeleri</button></div>' +
-      '<div class="section-title"><span>AYT</span><span class="line"></span></div>' +
-      '<div class="actionrow"><button class="btn btn-primary full" id="aytBtn">'+ic('clipboard')+'AYT Denemeleri</button></div>';
+    midSections += renderDenemeRosterSection(cls, 'tyt') + renderDenemeRosterSection(cls, 'ayt');
   }
   if(isCounselor(cls)){
     midSections +=
@@ -11162,6 +11645,7 @@ function renderRoster(app){
       '<div class="item"><div class="v">'+(hwAvg!=null?hwAvg+'%':'-')+'</div><div class="k">Ödev Tamamlama Ort.</div></div>' +
       (totalFl > 0 ? ('<div class="item" id="rosterFl27Item" style="cursor:pointer;" title="FL-27 listesini incele"><div class="v" style="color:var(--red);">'+totalFl+'</div><div class="k" style="color:var(--red);">Toplam FL-27</div></div>') : '') +
       (showTytAyt ? ('<div class="item"><div class="v">'+cls.tytExams.length+'</div><div class="k">TYT Denemesi</div></div><div class="item"><div class="v">'+cls.aytExams.length+'</div><div class="k">AYT Denemesi</div></div>') : '') +
+      (g12 ? ('<div class="item" id="rosterScreenTimeItem" style="cursor:pointer;" title="Sınıfın telefon ekran sürelerini incele"><div class="v" style="color:#7e22ce;">' + (classScreenTimeStats(cls) || '—') + '</div><div class="k" style="color:#7e22ce;">📱 Ekran Süresi</div></div>') : '') +
       (!g12 ? ('<div class="item"><div class="v">'+(perfClassAvg()!=null?perfClassAvg():'-')+'</div><div class="k">Performans Ort.</div></div>') : '') +
     '</div>' +
     '<div class="section-title"><span>Takip</span><span class="line"></span></div>' +
@@ -11170,6 +11654,9 @@ function renderRoster(app){
       '<button class="btn btn-outline" id="fl27QuickBtn" style="flex:1;justify-content:center;'+(totalFl>0?'border-color:var(--red);color:var(--red);font-weight:700;':'')+'">' +
         ic('file') + 'FL-27 Takip' + (totalFl > 0 ? (' <span class="tag red" style="margin-left:4px;padding:2px 7px;">' + totalFl + '</span>') : '') +
       '</button>' +
+      (g12 ? ('<button class="btn btn-outline" id="screenTimeQuickBtn" style="flex:1;justify-content:center;border-color:#c084fc;color:#7e22ce;font-weight:800;background:#faf5ff;">' +
+        '📱 Ekran Süresi Takibi' +
+      '</button>') : '') +
     '</div>' +
     midSections +
     '<div class="section-title"><span>Öğrenciler</span><span class="line"></span>' +
@@ -11199,6 +11686,16 @@ function renderRoster(app){
   if(f27Btn) f27Btn.onclick = openFl27Modal;
   const rFlItem = document.getElementById('rosterFl27Item');
   if(rFlItem) rFlItem.onclick = openFl27Modal;
+  const stQBtn = document.getElementById('screenTimeQuickBtn');
+  if(stQBtn) stQBtn.onclick = openScreenTimeModal;
+  const rStItem = document.getElementById('rosterScreenTimeItem');
+  if(rStItem) rStItem.onclick = openScreenTimeModal;
+  app.querySelectorAll('.st-screen-btn').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      openEditStudentScreenTimeModal(btn.dataset.stId);
+    };
+  });
   document.getElementById('hwMenuBtn').onclick = ()=>{
     if(state.isAdmin){
       openActionMenu('Ödevler', [
@@ -11260,8 +11757,60 @@ function renderRoster(app){
     };
   }
   if(showTytAyt){
-    document.getElementById('tytBtn').onclick = ()=>{ state.examType='tyt'; state.view='deneme_list'; render(); };
-    document.getElementById('aytBtn').onclick = ()=>{ state.examType='ayt'; state.view='deneme_list'; render(); };
+    const tBtn = document.getElementById('tytBtn');
+    if(tBtn) tBtn.onclick = ()=>{ state.examType='tyt'; state.view='deneme_list'; render(); };
+    const aBtn = document.getElementById('aytBtn');
+    if(aBtn) aBtn.onclick = ()=>{ state.examType='ayt'; state.view='deneme_list'; render(); };
+
+    app.querySelectorAll('.deneme-card-enter-btn').forEach(btn => {
+      btn.onclick = () => {
+        state.activeExamId = btn.dataset.examId;
+        state.examType = btn.dataset.examType;
+        state.view = 'deneme_scores';
+        render();
+      };
+    });
+    app.querySelectorAll('.deneme-card-del-btn').forEach(btn => {
+      btn.onclick = () => {
+        if(confirm('Bu deneme silinsin mi? Tüm ders notları da silinir.')){
+          deleteDenemeExam(btn.dataset.examId, btn.dataset.examType);
+        }
+      };
+    });
+    app.querySelectorAll('.deneme-card-save-btn').forEach(btn => {
+      btn.onclick = async () => {
+        const card = btn.closest('.card');
+        const dateInp = card ? card.querySelector('.deneme-card-date-inp') : null;
+        const durInp = card ? card.querySelector('.deneme-card-dur-inp') : null;
+        const dVal = dateInp ? dateInp.value : '';
+        const durVal = durInp ? durInp.value : '';
+        btn.textContent = 'Kaydediliyor...';
+        btn.disabled = true;
+        await saveDenemeMeta(btn.dataset.examId, btn.dataset.examType, dVal, durVal);
+        btn.textContent = '💾 Kaydet';
+        btn.disabled = false;
+      };
+    });
+    app.querySelectorAll('.deneme-card-date-inp, .deneme-card-dur-inp').forEach(inp => {
+      inp.onchange = async () => {
+        const card = inp.closest('.card');
+        const dateInp = card ? card.querySelector('.deneme-card-date-inp') : null;
+        const durInp = card ? card.querySelector('.deneme-card-dur-inp') : null;
+        const dVal = dateInp ? dateInp.value : '';
+        const durVal = durInp ? durInp.value : '';
+        await saveDenemeMeta(inp.dataset.examId, inp.dataset.examType, dVal, durVal);
+      };
+    });
+    app.querySelectorAll('.add-quick-deneme-btn').forEach(btn => {
+      btn.onclick = () => openNewDenemeExamModal(btn.dataset.type);
+    });
+    app.querySelectorAll('.open-deneme-mgmt-btn').forEach(btn => {
+      btn.onclick = () => {
+        state.examType = btn.dataset.type;
+        state.view = 'deneme_list';
+        render();
+      };
+    });
   }
   if(isCounselor(cls)){
     const teBtn = document.getElementById('takevExportBtn');
@@ -11427,15 +11976,14 @@ function renderStudentDetail(app){
         }
 
         const rowBg = (idx % 2 === 1) ? 'var(--bg)' : 'var(--surface)';
-        const shortName = shortenDenemeLabel(ex.label, examType, ex.slot_no || (idx + 1));
-        const dateMatch = (ex.label || '').match(/\b(\d{2}[./-]\d{2}[./-]\d{4})\b/);
-        const dateStr = dateMatch ? dateMatch[1] : '';
+        const meta = parseDenemeExamMeta(ex);
+        const metaSub = [meta.dispDate, (meta.duration ? meta.duration + ' dk' : '')].filter(Boolean).join(' &middot; ');
 
         return '<tr style="background:'+rowBg+';">' +
           '<td style="position:sticky;left:0;z-index:5;background:'+rowBg+';padding:7px 10px;border-bottom:1px solid var(--line);border-right:2px solid var(--line);box-shadow:3px 0 6px -2px rgba(0,0,0,0.08);white-space:nowrap;min-width:130px;max-width:180px;">' +
             '<button type="button" class="st-exam-link" data-exam-id="'+ex.id+'" data-exam-type="'+examType+'" style="background:none;border:none;padding:0;font:inherit;cursor:pointer;text-align:left;display:flex;flex-direction:column;align-items:flex-start;" title="'+escapeHtml(ex.label)+' (Tüm sınıf notlarını aç)">' +
-              '<span style="font-size:12.5px;font-weight:800;color:var(--primary-deep);text-decoration:underline;text-underline-offset:2px;white-space:nowrap;">'+escapeHtml(shortName)+'</span>' +
-              (dateStr ? '<span style="font-size:10px;color:var(--ink-faint);font-weight:600;margin-top:2px;white-space:nowrap;">'+escapeHtml(dateStr)+'</span>' : '') +
+              '<span style="font-size:12.5px;font-weight:800;color:var(--primary-deep);text-decoration:underline;text-underline-offset:2px;white-space:nowrap;">'+escapeHtml(meta.shortTitle)+'</span>' +
+              (metaSub ? '<span style="font-size:10px;color:var(--ink-faint);font-weight:600;margin-top:2px;white-space:nowrap;">'+escapeHtml(metaSub)+'</span>' : '') +
             '</button>' +
           '</td>' +
           cells +
@@ -11619,6 +12167,7 @@ function renderStudentDetail(app){
       '<div class="item"><div class="v" style="'+(mCount>0?'color:var(--red);':'')+'">'+mCount+'</div><div class="k">Yapılmayan Ödev</div></div>' +
       '<div class="item"><div class="v" style="'+(flCount>0?'color:var(--red);font-weight:800;':(mCount===2?'color:var(--amber);':'color:var(--teal);'))+'">'+(flCount>0 ? (flCount+' Adet') : (mCount===2 ? 'Sınırda (2/3)' : '0'))+'</div><div class="k">FL-27 Durumu</div></div>' +
       (tytAvgNetBadge ? '<div class="item"><div class="v" style="color:var(--primary-deep);font-weight:900;">'+tytAvgNetBadge+'</div><div class="k">TYT Net Ort. ('+tytExamsCount+' Sınav)</div></div>' : '') +
+      (g12 ? ('<div class="item"><div class="v" style="color:#7e22ce;font-weight:900;">' + (parseStudentScreenTime(s).time || '—') + '</div><div class="k" style="color:#7e22ce;">📱 Ekran Süresi</div></div>') : '') +
     '</div>' +
     (!g12 && cls.quizzes.length ? '<div class="section-title"><span>'+escapeHtml(examWord(cls.name))+' Notları</span><span class="line"></span></div><div class="detail-grid">'+quizHtml+'</div>' : '') +
     (!g12 && cls.perfTasks.length ? '<div class="section-title"><span>Performans</span><span class="line"></span></div><div class="detail-grid">'+perfHtml+'</div>' : '') +
@@ -11627,6 +12176,37 @@ function renderStudentDetail(app){
     (isCounselor(cls) ? renderMeetingReportsSection(s) : '') +
     (isCounselor(cls) ? renderUniversityGoalsSection(s) : '') +
     (isCounselor(cls) ? renderAbroadConsultingSection(s) : '') +
+    (g12 ? (
+      '<div class="section-title"><span>📱 Telefon Ekran Süresi &amp; Dijital Denge</span><span class="line"></span></div>' +
+      '<div class="card" style="padding:16px;background:var(--surface);border-left:4px solid #9333ea;margin-bottom:16px;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">' +
+          '<div style="flex:1;min-width:210px;">' +
+            '<div style="font-weight:800;font-size:14.5px;color:var(--ink);display:flex;align-items:center;gap:8px;">' +
+              '<span>Haftalık / Günlük Telefon Ekran Süresi</span>' +
+              (parseStudentScreenTime(s).time ? ('<span class="tag purple" style="font-weight:800;background:#f3e8ff;color:#7e22ce;">' + escapeHtml(parseStudentScreenTime(s).time) + '</span>') : '<span class="tag gray">Girilmedi</span>') +
+            '</div>' +
+            '<div style="font-size:12px;color:var(--ink-soft);margin-top:4px;">' +
+              'YKS sınav senesinde telefon/tablet bağımlılığı ve odak süresini kontrol etmek için öğrencinin ekran süresini takip edin.' +
+            '</div>' +
+          '</div>' +
+          '<div style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;">' +
+            '<div>' +
+              '<label style="font-size:11.5px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:3px;">📱 Ekran Süresi:</label>' +
+              '<input type="text" id="stDetailScreenTime" value="' + escapeHtml(parseStudentScreenTime(s).time) + '" placeholder="Örn: 3 saat 15 dk" ' + (state.isAdmin ? 'disabled readonly style="background:var(--surface-2);"' : '') + ' style="width:130px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700;">' +
+            '</div>' +
+            '<div>' +
+              '<label style="font-size:11.5px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:3px;">📅 Kontrol Tarihi:</label>' +
+              '<input type="date" id="stDetailScreenDate" value="' + escapeHtml(parseStudentScreenTime(s).date || todayStr()) + '" ' + (state.isAdmin ? 'disabled readonly style="background:var(--surface-2);"' : '') + ' style="border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:12.5px;font-weight:600;">' +
+            '</div>' +
+            (!state.isAdmin ? (
+              '<button type="button" class="btn btn-primary btn-sm" id="stDetailSaveScreenTime" style="padding:7px 14px;font-weight:700;background:#7e22ce;border-color:#7e22ce;">' +
+                '💾 Kaydet' +
+              '</button>'
+            ) : '') +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    ) : '') +
     '<div class="section-title"><span>Ödev &amp; FL-27 Takip Durumu</span><span class="line"></span></div>' +
     flStatusHtml +
     '<div class="section-title"><span>Ödev Geçmişi</span><span class="line"></span></div>' +
@@ -11649,6 +12229,21 @@ function renderStudentDetail(app){
   document.getElementById('parentReportBtn').onclick = ()=> exportParentReport(s.id);
   const stFlBtn = document.getElementById('viewStFl27Btn');
   if(stFlBtn) stFlBtn.onclick = ()=> openStudentFl27PrintModal(s.id);
+  const saveStBtn = document.getElementById('stDetailSaveScreenTime');
+  if(saveStBtn){
+    saveStBtn.onclick = async () => {
+      const tInp = document.getElementById('stDetailScreenTime');
+      const dInp = document.getElementById('stDetailScreenDate');
+      const tVal = tInp ? tInp.value.trim() : '';
+      const dVal = dInp ? dInp.value : '';
+      saveStBtn.textContent = 'Kaydediliyor...';
+      saveStBtn.disabled = true;
+      await updateStudentScreenTime(s.id, tVal, dVal);
+      saveStBtn.textContent = '💾 Kaydedildi';
+      setTimeout(() => { saveStBtn.textContent = '💾 Kaydet'; saveStBtn.disabled = false; }, 1500);
+      render();
+    };
+  }
   if(isCounselor(cls)){
     wireMeetingReportsSection(app, s);
     wireUniversityGoalsSection(app, s);
@@ -13099,10 +13694,19 @@ function renderDenemeList(app, examType){
   const label = examType==='tyt'?'TYT':'AYT';
   const exams = examType==='tyt'?state.cls.tytExams:state.cls.aytExams;
   const rows = exams.map(e=>{
-    return '<div class="listedit-row">' +
-      '<div style="flex:2;">' +
-        '<div style="font-weight:700;font-size:14px;">'+escapeHtml(e.label)+'</div>' +
-        '<div style="font-size:11.5px;color:var(--ink-soft);">'+ (e.subjects||[]).map(s=>escapeHtml(s)).join(', ') +'</div>' +
+    const meta = parseDenemeExamMeta(e);
+    return '<div class="listedit-row" style="align-items:center;">' +
+      '<div style="flex:2;min-width:170px;">' +
+        '<div style="font-weight:700;font-size:14px;">'+escapeHtml(meta.shortTitle)+'</div>' +
+        '<div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">'+ (e.subjects||[]).map(s=>escapeHtml(s)).join(', ') +'</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+        '<input type="date" class="dl-date-inp" data-exam-id="'+e.id+'" value="'+escapeHtml(meta.isoDate)+'" title="Sınav Tarihi" '+(state.isAdmin?'disabled readonly style="background:var(--surface-2);"':'')+' style="border:1px solid var(--line);border-radius:6px;padding:5px 6px;font-size:12px;font-weight:600;">' +
+        '<div style="display:inline-flex;align-items:center;gap:2px;">' +
+          '<input type="number" class="dl-dur-inp" data-exam-id="'+e.id+'" value="'+meta.duration+'" min="15" max="600" step="5" title="Sınav Süresi (dk)" '+(state.isAdmin?'disabled readonly style="background:var(--surface-2);"':'')+' style="width:56px;text-align:center;border:1px solid var(--line);border-radius:6px;padding:5px;font-size:12px;font-weight:700;">' +
+          '<span style="font-size:11px;color:var(--ink-soft);font-weight:700;">dk</span>' +
+        '</div>' +
+        (!state.isAdmin ? '<button type="button" class="btn btn-soft btn-sm dl-save-btn" data-exam-id="'+e.id+'" style="font-size:11px;padding:5px 8px;" title="Tarih ve Süreyi Kaydet">💾</button>' : '') +
       '</div>' +
       '<button class="btn btn-soft btn-sm" data-enter="'+e.id+'">'+(state.isAdmin ? 'Notları İncele' : 'Notları Gör')+'</button>' +
       (!state.isAdmin ? '<button class="iconbtn" data-del="'+e.id+'">'+ic('trash')+'</button>' : '') +
@@ -13122,9 +13726,10 @@ function renderDenemeList(app, examType){
       '<div class="section-title"><span>Var Olan Denemeler</span><span class="line"></span></div>' +
       '<div class="card">'+(rows||'<div class="empty">Henüz '+label+' denemesi eklenmedi.</div>')+'</div>' +
       '<div class="section-title"><span>Excel ile İçe / Dışa Aktar</span><span class="line"></span></div>' +
-      '<div style="display:flex;gap:8px;margin-bottom:6px;">' +
-        '<button class="btn btn-soft" id="addDenemeBtn" style="flex:1;justify-content:center;">'+ic('upload')+'Excel\'den '+label+' Denemesi Ekle</button>' +
-        '<button class="btn btn-outline" id="exportDenemeListBtn" style="flex:1;justify-content:center;">'+ic('download')+'Excel Takip Tablosu İndir</button>' +
+      '<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">' +
+        '<button class="btn btn-primary" id="addNewDenemeListBtn" style="flex:1;min-width:180px;justify-content:center;font-weight:800;">'+ic('plus')+'Yeni '+label+' Denemesi Ekle</button>' +
+        '<button class="btn btn-soft" id="addDenemeBtn" style="flex:1;min-width:180px;justify-content:center;">'+ic('upload')+'Excel\'den İçe Aktar</button>' +
+        '<button class="btn btn-outline" id="exportDenemeListBtn" style="flex:1;min-width:180px;justify-content:center;">'+ic('download')+'Excel Takip Tablosu İndir</button>' +
       '</div>' +
       '<input type="file" id="denemeExcelFile" accept=".xlsx,.xls,.csv" style="display:none;">' +
       '<p style="font-size:12px;color:var(--ink-faint);margin-top:6px;line-height:1.4;">💡 <strong>Esnek Excel Desteği:</strong> 11 ve 12. sınıflar için <em>"12D_TYT_Deneme_Takibi.xlsx"</em> formatındaki master takip tabloları (Ham Veri + Deneme Bilgileri içeren çoklu denemeler D1, D2, D3...), tek sınavlık net tabloları veya 3 sütunlu (Doğru, Yanlış, Boş) Excel dosyaları doğrudan yüklenebilir.</p>'
@@ -13146,6 +13751,33 @@ function renderDenemeList(app, examType){
     if(exportBtn) exportBtn.onclick = () => exportDenemeListToExcel(examType);
     app.querySelectorAll('[data-del]').forEach(btn=>{
       btn.onclick = ()=>{ if(confirm('Bu deneme silinsin mi? Tüm ders notları da silinir.')) deleteDenemeExam(btn.dataset.del, examType); };
+    });
+    const addManualBtn = app.querySelector('#addNewDenemeListBtn');
+    if(addManualBtn) addManualBtn.onclick = () => openNewDenemeExamModal(examType);
+
+    app.querySelectorAll('.dl-save-btn').forEach(btn => {
+      btn.onclick = async () => {
+        const row = btn.closest('.listedit-row');
+        const dateInp = row ? row.querySelector('.dl-date-inp') : null;
+        const durInp = row ? row.querySelector('.dl-dur-inp') : null;
+        const dVal = dateInp ? dateInp.value : '';
+        const durVal = durInp ? durInp.value : '';
+        btn.textContent = '...';
+        btn.disabled = true;
+        await saveDenemeMeta(btn.dataset.examId, examType, dVal, durVal);
+        btn.textContent = '💾';
+        btn.disabled = false;
+      };
+    });
+    app.querySelectorAll('.dl-date-inp, .dl-dur-inp').forEach(inp => {
+      inp.onchange = async () => {
+        const row = inp.closest('.listedit-row');
+        const dateInp = row ? row.querySelector('.dl-date-inp') : null;
+        const durInp = row ? row.querySelector('.dl-dur-inp') : null;
+        const dVal = dateInp ? dateInp.value : '';
+        const durVal = durInp ? durInp.value : '';
+        await saveDenemeMeta(inp.dataset.examId, examType, dVal, durVal);
+      };
     });
   }
   app.querySelectorAll('[data-enter]').forEach(btn=>{
