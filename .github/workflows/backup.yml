@@ -45,17 +45,21 @@ jobs:
 
       - name: Yedekleri backups dalına kaydet
         run: |
+          BACKUP_TEMP=$(mktemp -d)
+          cp -r backups/* "$BACKUP_TEMP/" 2>/dev/null || true
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git clean -fdx
           if git ls-remote --exit-code --heads origin backups; then
-            git fetch origin backups
-            git checkout -f backups --
+            git fetch origin backups:backups
+            git checkout -f backups
           else
             git checkout --orphan backups
             git rm -rf .
           fi
           mkdir -p arsiv
-          cp -r backups/* arsiv/ 2>/dev/null || true
+          cp -r "$BACKUP_TEMP"/* arsiv/ 2>/dev/null || true
+          rm -rf "$BACKUP_TEMP"
           echo -e "# Otomatik Sistem Yedekleri\nBu dalda Supabase veritabanından her gün alınan otomatik JSON ve Excel yedekleri güvenle arşivlenmektedir." > README.md
           git add arsiv README.md
           if git diff --staged --quiet; then

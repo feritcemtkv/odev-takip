@@ -19,6 +19,17 @@ if (!SUPABASE_SERVICE_ROLE_KEY) {
   process.exit(1);
 }
 
+const PREDEFINED_TEACHERS = [
+  { id: '8cec1a66-5554-437a-8c5a-dd74a402da34', username: 'feritcem', name: 'Ferit Cem (feritcem)', email: 'feritcem@takip.local' },
+  { id: '6d54dccb-66b4-41b0-b810-4c581591d2d6', username: 'candan', name: 'Candan Sarıkan (candan)', email: 'candan@takip.local' },
+  { id: 'bce1ad28-a1c6-48d9-b58f-1f2161c3334f', username: 'hasancem', name: 'Cem Gürakar (hasancem)', email: 'hasancem@takip.local' },
+  { id: '25e61bc6-8532-4210-ab1d-95e72f1862fe', username: 'fulya', name: 'Fulya Hoca (fulya)', email: 'fulya@takip.local' },
+  { id: '44e4e770-ecf5-4e9e-bf59-d89ebdd21237', username: 'murat', name: 'Murat Hoca (murat)', email: 'murat@takip.local' },
+  { id: 'ef944170-a470-4f1d-a2fe-55d0cbcee698', username: 'erdal', name: 'Erdal Hoca (erdal)', email: 'erdal@takip.local' },
+  { id: '8ec77d6a-dbea-41e1-801f-14659969906f', username: 'yunus', name: 'Yunus Hoca (yunus)', email: 'yunus@takip.local' },
+  { id: '17d43b79-1d72-4389-afb7-49b15d50678f', username: 'ozge', name: 'Özge Hoca (ozge)', email: 'ozge@takip.local' }
+];
+
 const hasServiceAccount = Boolean(GOOGLE_SERVICE_ACCOUNT_KEY);
 const hasOAuth = Boolean(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET && GOOGLE_REFRESH_TOKEN);
 const hasGoogleDrive = Boolean(GOOGLE_DRIVE_FOLDER_ID && (hasServiceAccount || hasOAuth));
@@ -64,25 +75,46 @@ async function fetchOwnerScopedTables(ownerId) {
   const dump = {};
 
   const { data: classes, error: classErr } = await sb.from('classes').select('*').eq('owner_id', ownerId);
-  if (classErr) throw new Error('classes: ' + classErr.message);
+  if (classErr) {
+    console.warn('  ⚠️ classes sorgu uyarısı:', classErr.message);
+  }
   dump.classes = classes || [];
-  const classIds = dump.classes.map(c => c.id);
+  const classIds = dump.classes.map(c => c.id).filter(Boolean);
 
   const byClassIds = async (table) => {
     if (!classIds.length) return [];
-    const { data, error } = await sb.from(table).select('*').in('class_id', classIds);
-    if (error) throw new Error(table + ': ' + error.message);
-    return data || [];
+    const results = [];
+    const CHUNK = 50;
+    for (let i = 0; i < classIds.length; i += CHUNK) {
+      const chunk = classIds.slice(i, i + CHUNK);
+      const { data, error } = await sb.from(table).select('*').in('class_id', chunk);
+      if (error) {
+        console.warn(`  ⚠️ ${table} (class_id chunk):`, error.message);
+      } else if (data) {
+        results.push(...data);
+      }
+    }
+    return results;
   };
+
   const byStudentIds = async (table, studentIds) => {
     if (!studentIds.length) return [];
-    const { data, error } = await sb.from(table).select('*').in('student_id', studentIds);
-    if (error) throw new Error(table + ': ' + error.message);
-    return data || [];
+    const results = [];
+    const CHUNK = 50;
+    for (let i = 0; i < studentIds.length; i += CHUNK) {
+      const chunk = studentIds.slice(i, i + CHUNK);
+      const { data, error } = await sb.from(table).select('*').in('student_id', chunk);
+      if (error) {
+        console.warn(`  ⚠️ ${table} (student_id chunk):`, error.message);
+      } else if (data) {
+        results.push(...data);
+      }
+    }
+    return results;
   };
 
   dump.students = await byClassIds('students');
-  const studentIds = dump.students.map(s => s.id);
+  const studentIds = dump.students.map(s => s.id).filter(Boolean);
 
   dump.homeworks = await byClassIds('homeworks');
   dump.homework_status = await byStudentIds('homework_status', studentIds);
@@ -95,11 +127,20 @@ async function fetchOwnerScopedTables(ownerId) {
   dump.rubric_scores = await byStudentIds('rubric_scores', studentIds);
 
   dump.deneme_exams = await byClassIds('deneme_exams');
-  const examIds = dump.deneme_exams.map(e => e.id);
+  const examIds = dump.deneme_exams.map(e => e.id).filter(Boolean);
   if (examIds.length) {
-    const { data, error } = await sb.from('deneme_scores').select('*').in('exam_id', examIds);
-    if (error) throw new Error('deneme_scores: ' + error.message);
-    dump.deneme_scores = data || [];
+    const results = [];
+    const CHUNK = 50;
+    for (let i = 0; i < examIds.length; i += CHUNK) {
+      const chunk = examIds.slice(i, i + CHUNK);
+      const { data, error } = await sb.from('deneme_scores').select('*').in('exam_id', chunk);
+      if (error) {
+        console.warn('  ⚠️ deneme_scores (exam_id chunk):', error.message);
+      } else if (data) {
+        results.push(...data);
+      }
+    }
+    dump.deneme_scores = results;
   } else {
     dump.deneme_scores = [];
   }
@@ -227,6 +268,10 @@ function buildExcelBackup(dump) {
     addSheet(ceRows, 'Sınıf Değerlendirme');
   }
 
+  if (!wb.SheetNames.length) {
+    addSheet([{ 'Durum': 'Kayıtlı veri bulunamadı' }], 'Özet');
+  }
+
   return wb;
 }
 
@@ -236,23 +281,96 @@ async function main() {
     fs.mkdirSync(backupDir, { recursive: true });
   }
 
-  console.log('Kullanıcı listesi Supabase\'den alınıyor...');
-  const res = await sb.auth.admin.listUsers({ page: 1, perPage: 1000 });
-  if (res.error) throw res.error;
-  const allUsers = res.data.users || [];
-  console.log('  Toplam ' + allUsers.length + ' kullanıcı bulundu.');
+  let allUsers = [];
+  try {
+    console.log('Kullanıcı listesi Supabase Auth API üzerinden sorgulanıyor...');
+    const res = await sb.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    if (res.error) {
+      console.warn('  ⚠️ Auth API hatası döndü:', res.error.message || res.error);
+    } else {
+      allUsers = res.data?.users || [];
+      console.log('  Auth API: ' + allUsers.length + ' kullanıcı bulundu.');
+    }
+  } catch (authErr) {
+    console.warn('  ⚠️ Supabase Auth listUsers çağrısı atlandı (' + (authErr.message || authErr) + ').');
+    console.log('  🔄 Veritabanındaki aktif sınıflar ve öğretmen katalogu üzerinden otomatik eşleme yapılıyor...');
+  }
 
-  let targetUsers = allUsers;
-  if (TEACHER_USERNAME) {
-    const filterEmail = TEACHER_USERNAME.includes('@') ? TEACHER_USERNAME : TEACHER_USERNAME + '@takip.local';
-    targetUsers = allUsers.filter(u => u.email === filterEmail || (u.user_metadata && u.user_metadata.username === TEACHER_USERNAME));
-    console.log('  Filtre uygulandı (' + TEACHER_USERNAME + '): ' + targetUsers.length + ' kullanıcı hedeflendi.');
-  } else {
-    targetUsers = allUsers.filter(u => {
-      const uName = (u.user_metadata?.username || u.email?.split('@')[0] || '').toLowerCase();
-      return uName !== 'admin' && u.email !== 'admin@takip.local';
+  // Veritabanında sınıfı olan tüm owner_id'leri bul
+  const { data: classRows, error: classListErr } = await sb.from('classes').select('owner_id');
+  if (classListErr) {
+    console.warn('  ⚠️ classes tablosu sorgu uyarısı:', classListErr.message);
+  }
+  const activeOwnerIds = [...new Set((classRows || []).map(c => c.owner_id).filter(Boolean))];
+  console.log('  Aktif sınıfı bulunan öğretmen sayısı (owner_id):', activeOwnerIds.length);
+
+  // Öğretmen haritası: owner_id -> { id, username, email }
+  const teacherMap = new Map();
+
+  // 1. Auth API'den gelen geçerli kullanıcılar
+  for (const u of allUsers) {
+    if (!u || !u.id) continue;
+    const uName = (u.user_metadata?.username || (u.email ? u.email.split('@')[0] : '')).toLowerCase();
+    if (uName === 'admin' || u.email === 'admin@takip.local') continue;
+    const username = u.user_metadata?.username || (u.email ? u.email.split('@')[0] : 'ogretmen_' + u.id.slice(0, 8));
+    teacherMap.set(u.id, {
+      id: u.id,
+      username,
+      email: u.email || `${username}@takip.local`
     });
-    console.log('  Yedeklenecek öğretmen sayısı: ' + targetUsers.length);
+  }
+
+  // 2. Önceden tanımlı öğretmen katalogu
+  for (const pt of PREDEFINED_TEACHERS) {
+    if (!teacherMap.has(pt.id)) {
+      teacherMap.set(pt.id, {
+        id: pt.id,
+        username: pt.username,
+        email: pt.email
+      });
+    }
+  }
+
+  // 3. Veritabanında sınıfı olan ancak henüz map'te olmayan owner_id'ler
+  for (const oid of activeOwnerIds) {
+    if (!teacherMap.has(oid)) {
+      try {
+        const { data: uData, error: uErr } = await sb.auth.admin.getUserById(oid);
+        if (!uErr && uData?.user) {
+          const u = uData.user;
+          const uName = (u.user_metadata?.username || (u.email ? u.email.split('@')[0] : '')).toLowerCase();
+          if (uName !== 'admin' && u.email !== 'admin@takip.local') {
+            const username = u.user_metadata?.username || (u.email ? u.email.split('@')[0] : 'ogretmen_' + oid.slice(0, 8));
+            teacherMap.set(oid, {
+              id: oid,
+              username,
+              email: u.email || `${username}@takip.local`
+            });
+            continue;
+          }
+        }
+      } catch (e) {
+        // yoksay
+      }
+      teacherMap.set(oid, {
+        id: oid,
+        username: 'ogretmen_' + oid.slice(0, 8),
+        email: `ogretmen_${oid.slice(0, 8)}@takip.local`
+      });
+    }
+  }
+
+  let targetUsers = Array.from(teacherMap.values());
+  if (TEACHER_USERNAME) {
+    const filterKey = TEACHER_USERNAME.toLowerCase().replace(/@takip\.local$/, '');
+    targetUsers = targetUsers.filter(u => {
+      const uName = (u.username || '').toLowerCase();
+      const uEmail = (u.email || '').toLowerCase();
+      return uName === filterKey || uEmail === filterKey || uEmail.startsWith(filterKey + '@');
+    });
+    console.log('  Filtre uygulandı (' + TEACHER_USERNAME + '): ' + targetUsers.length + ' öğretmen hedeflendi.');
+  } else {
+    console.log('  Toplam kontrol edilecek öğretmen sayısı: ' + targetUsers.length);
   }
 
   if (!targetUsers.length) {
@@ -265,69 +383,74 @@ async function main() {
   let completedCount = 0;
 
   for (const user of targetUsers) {
-    const teacherName = (user.user_metadata?.username || user.email.split('@')[0]).replace(/[\\/:*?"<>|]/g, '_');
+    const rawName = user.username || (user.email ? user.email.split('@')[0] : 'ogretmen_' + user.id.slice(0, 8));
+    const teacherName = rawName.replace(/[\\/:*?"<>|]/g, '_');
     console.log('\n----------------------------------------');
-    console.log('Öğretmen: ' + teacherName + ' (' + user.email + ') verileri çekiliyor...');
+    console.log('Öğretmen: ' + teacherName + ' (' + (user.email || 'belirtilmedi') + ') verileri çekiliyor...');
 
-    const dump = await fetchOwnerScopedTables(user.id);
-    const classCount = (dump.classes || []).length;
-    const studentCount = (dump.students || []).length;
-    console.log('  ' + classCount + ' sınıf, ' + studentCount + ' öğrenci bulundu.');
-
-    if (classCount === 0 && studentCount === 0) {
-      console.log('  Kayıtlı sınıf veya öğrenci bulunmadığı için bu öğretmen atlanıyor.');
-      continue;
-    }
-
-    const payload = {
-      teacher_username: teacherName,
-      teacher_email: user.email,
-      teacher_id: user.id,
-      generated_at: new Date().toISOString(),
-      ...dump,
-    };
-
-    // 1. JSON Yedeğini diske yaz
-    const jsonFilename = teacherName + '_yedek_' + dateStr + '.json';
-    const jsonPath = path.join(backupDir, jsonFilename);
-    const jsonBuf = Buffer.from(JSON.stringify(payload, null, 2), 'utf-8');
-    fs.writeFileSync(jsonPath, jsonBuf);
-    console.log('  ✓ JSON yedeği oluşturuldu: ' + jsonFilename + ' (' + jsonBuf.length + ' byte)');
-
-    // 2. Excel (.xlsx) Yedeğini diske yaz
-    const excelFilename = teacherName + '_yedek_' + dateStr + '.xlsx';
-    const excelPath = path.join(backupDir, excelFilename);
     try {
-      const wb = buildExcelBackup(dump);
-      XLSX.writeFile(wb, excelPath);
-      console.log('  ✓ Excel yedeği oluşturuldu: ' + excelFilename);
-    } catch (e) {
-      console.warn('  ⚠️ Excel yedeği oluşturulurken hata:', e.message);
-    }
+      const dump = await fetchOwnerScopedTables(user.id);
+      const classCount = (dump.classes || []).length;
+      const studentCount = (dump.students || []).length;
+      console.log('  ' + classCount + ' sınıf, ' + studentCount + ' öğrenci bulundu.');
 
-    // 3. İsteğe bağlı Google Drive yüklemesi (eğer ayarlıysa)
-    if (drive && GOOGLE_DRIVE_FOLDER_ID) {
-      try {
-        const stream = Readable.from(jsonBuf);
-        await drive.files.create({
-          requestBody: { name: jsonFilename, parents: [GOOGLE_DRIVE_FOLDER_ID] },
-          media: { mimeType: 'application/json', body: stream },
-          fields: 'id',
-        });
-        console.log('  ✓ Google Drive\'a yüklendi: ' + jsonFilename);
-      } catch (uploadErr) {
-        console.warn('  ⚠️ Google Drive yüklemesi atlandı (' + uploadErr.message + ')');
+      if (classCount === 0 && studentCount === 0) {
+        console.log('  Kayıtlı sınıf veya öğrenci bulunmadığı için bu öğretmen atlanıyor.');
+        continue;
       }
-    }
 
-    completedCount++;
+      const payload = {
+        teacher_username: teacherName,
+        teacher_email: user.email || `${teacherName}@takip.local`,
+        teacher_id: user.id,
+        generated_at: new Date().toISOString(),
+        ...dump,
+      };
+
+      // 1. JSON Yedeğini diske yaz
+      const jsonFilename = teacherName + '_yedek_' + dateStr + '.json';
+      const jsonPath = path.join(backupDir, jsonFilename);
+      const jsonBuf = Buffer.from(JSON.stringify(payload, null, 2), 'utf-8');
+      fs.writeFileSync(jsonPath, jsonBuf);
+      console.log('  ✓ JSON yedeği oluşturuldu: ' + jsonFilename + ' (' + jsonBuf.length + ' byte)');
+
+      // 2. Excel (.xlsx) Yedeğini diske yaz
+      const excelFilename = teacherName + '_yedek_' + dateStr + '.xlsx';
+      const excelPath = path.join(backupDir, excelFilename);
+      try {
+        const wb = buildExcelBackup(dump);
+        XLSX.writeFile(wb, excelPath);
+        console.log('  ✓ Excel yedeği oluşturuldu: ' + excelFilename);
+      } catch (e) {
+        console.warn('  ⚠️ Excel yedeği oluşturulurken hata:', e.message);
+      }
+
+      // 3. İsteğe bağlı Google Drive yüklemesi (eğer ayarlıysa)
+      if (drive && GOOGLE_DRIVE_FOLDER_ID) {
+        try {
+          const stream = Readable.from(jsonBuf);
+          await drive.files.create({
+            requestBody: { name: jsonFilename, parents: [GOOGLE_DRIVE_FOLDER_ID] },
+            media: { mimeType: 'application/json', body: stream },
+            fields: 'id',
+          });
+          console.log('  ✓ Google Drive\'a yüklendi: ' + jsonFilename);
+        } catch (uploadErr) {
+          console.warn('  ⚠️ Google Drive yüklemesi atlandı (' + uploadErr.message + ')');
+        }
+      }
+
+      completedCount++;
+    } catch (teacherErr) {
+      console.error(`  ❌ ${teacherName} yedeği alınırken hata oluştu:`, teacherErr.message || teacherErr);
+    }
   }
 
   console.log('\n========================================');
-  console.log('Tüm yedekleme başarıyla tamamlandı! Toplam ' + completedCount + ' öğretmenin yedeği hazırlandı.');
+  console.log('Tüm yedekleme süreci tamamlandı! Toplam ' + completedCount + ' öğretmenin yedeği başarıyla hazırlandı.');
 }
 
 main().catch(err => {
-  console.error('\nYedekleme işlemi sırasında hata:', err);
+  console.error('\nYedekleme işlemi sırasında kritik hata:', err);
   process.exit(1);
 });

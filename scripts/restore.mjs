@@ -45,6 +45,16 @@ async function restore() {
     console.log('Hedef Öğretmen (owner_id):', targetOwnerId);
   }
 
+  const upsertInChunks = async (table, rows, onConflict, label) => {
+    if (!rows || !rows.length) return;
+    const CHUNK = 50;
+    for (let i = 0; i < rows.length; i += CHUNK) {
+      const chunk = rows.slice(i, i + CHUNK);
+      const { error } = await sb.from(table).upsert(chunk, { onConflict });
+      if (error) console.error(`  Hata (${label || table}):`, error.message);
+    }
+  };
+
   // 1. Sınıflar
   if (data.classes && data.classes.length) {
     const classesToUpsert = data.classes.map(c => ({
@@ -52,95 +62,79 @@ async function restore() {
       owner_id: targetOwnerId || c.owner_id
     }));
     console.log('1. Sınıflar yükleniyor (' + classesToUpsert.length + ')...');
-    const { error } = await sb.from('classes').upsert(classesToUpsert, { onConflict: 'id' });
-    if (error) console.error('  Hata (classes):', error.message);
+    await upsertInChunks('classes', classesToUpsert, 'id', 'classes');
   }
 
   // 2. Öğrenciler
   if (data.students && data.students.length) {
     console.log('2. Öğrenciler yükleniyor (' + data.students.length + ')...');
-    const { error } = await sb.from('students').upsert(data.students, { onConflict: 'id' });
-    if (error) console.error('  Hata (students):', error.message);
+    await upsertInChunks('students', data.students, 'id', 'students');
   }
 
   // 3. Ödevler ve Ödev Durumları
   if (data.homeworks && data.homeworks.length) {
     console.log('3. Ödev tanımları yükleniyor (' + data.homeworks.length + ')...');
-    const { error } = await sb.from('homeworks').upsert(data.homeworks, { onConflict: 'class_id,slot_no' });
-    if (error) console.error('  Hata (homeworks):', error.message);
+    await upsertInChunks('homeworks', data.homeworks, 'class_id,slot_no', 'homeworks');
   }
   if (data.homework_status && data.homework_status.length) {
     console.log('   Ödev durumları yükleniyor (' + data.homework_status.length + ')...');
-    const { error } = await sb.from('homework_status').upsert(data.homework_status, { onConflict: 'student_id,slot_no' });
-    if (error) console.error('  Hata (homework_status):', error.message);
+    await upsertInChunks('homework_status', data.homework_status, 'student_id,slot_no', 'homework_status');
   }
 
   // 4. KDS Sınavları ve Puanları
   if (data.quizzes && data.quizzes.length) {
     console.log('4. KDS sınavları yükleniyor (' + data.quizzes.length + ')...');
-    const { error } = await sb.from('quizzes').upsert(data.quizzes, { onConflict: 'class_id,slot_no' });
-    if (error) console.error('  Hata (quizzes):', error.message);
+    await upsertInChunks('quizzes', data.quizzes, 'class_id,slot_no', 'quizzes');
   }
   if (data.quiz_scores && data.quiz_scores.length) {
     console.log('   KDS notları yükleniyor (' + data.quiz_scores.length + ')...');
-    const { error } = await sb.from('quiz_scores').upsert(data.quiz_scores, { onConflict: 'student_id,slot_no' });
-    if (error) console.error('  Hata (quiz_scores):', error.message);
+    await upsertInChunks('quiz_scores', data.quiz_scores, 'student_id,slot_no', 'quiz_scores');
   }
 
   // 5. Performans Görevleri ve Rubrikler
   if (data.performance_tasks && data.performance_tasks.length) {
     console.log('5. Performans ödevleri yükleniyor (' + data.performance_tasks.length + ')...');
-    const { error } = await sb.from('performance_tasks').upsert(data.performance_tasks, { onConflict: 'class_id,slot_no' });
-    if (error) console.error('  Hata (performance_tasks):', error.message);
+    await upsertInChunks('performance_tasks', data.performance_tasks, 'class_id,slot_no', 'performance_tasks');
   }
   if (data.rubrics && data.rubrics.length) {
     console.log('   Rubrik ölçütleri yükleniyor (' + data.rubrics.length + ')...');
-    const { error } = await sb.from('rubrics').upsert(data.rubrics, { onConflict: 'class_id,level' });
-    if (error) console.error('  Hata (rubrics):', error.message);
+    await upsertInChunks('rubrics', data.rubrics, 'class_id,level', 'rubrics');
   }
   if (data.rubric_scores && data.rubric_scores.length) {
     console.log('   Rubrik puanları yükleniyor (' + data.rubric_scores.length + ')...');
-    const { error } = await sb.from('rubric_scores').upsert(data.rubric_scores, { onConflict: 'student_id,level,criteria_index' });
-    if (error) console.error('  Hata (rubric_scores):', error.message);
+    await upsertInChunks('rubric_scores', data.rubric_scores, 'student_id,level,criteria_index', 'rubric_scores');
   }
 
   // 6. Deneme Sınavları (TYT/AYT)
   if (data.deneme_exams && data.deneme_exams.length) {
     console.log('6. Deneme sınavları yükleniyor (' + data.deneme_exams.length + ')...');
-    const { error } = await sb.from('deneme_exams').upsert(data.deneme_exams, { onConflict: 'id' });
-    if (error) console.error('  Hata (deneme_exams):', error.message);
+    await upsertInChunks('deneme_exams', data.deneme_exams, 'id', 'deneme_exams');
   }
   if (data.deneme_scores && data.deneme_scores.length) {
     console.log('   Deneme notları yükleniyor (' + data.deneme_scores.length + ')...');
-    const { error } = await sb.from('deneme_scores').upsert(data.deneme_scores, { onConflict: 'exam_id,student_id,subject' });
-    if (error) console.error('  Hata (deneme_scores):', error.message);
+    await upsertInChunks('deneme_scores', data.deneme_scores, 'exam_id,student_id,subject', 'deneme_scores');
   }
 
   // 7. Rehberlik ve Danışmanlık
   if (data.counseling_notes && data.counseling_notes.length) {
     console.log('7. Görüşme notları yükleniyor (' + data.counseling_notes.length + ')...');
-    const { error } = await sb.from('counseling_notes').upsert(data.counseling_notes, { onConflict: 'id' });
-    if (error) console.error('  Hata (counseling_notes):', error.message);
+    await upsertInChunks('counseling_notes', data.counseling_notes, 'id', 'counseling_notes');
   }
   if (data.university_goals && data.university_goals.length) {
     console.log('   Üniversite hedefleri yükleniyor (' + data.university_goals.length + ')...');
-    const { error } = await sb.from('university_goals').upsert(data.university_goals, { onConflict: 'id' });
-    if (error) console.error('  Hata (university_goals):', error.message);
+    await upsertInChunks('university_goals', data.university_goals, 'id', 'university_goals');
   }
   if (data.abroad_consulting && data.abroad_consulting.length) {
     console.log('   Yurtdışı danışmanlık yükleniyor (' + data.abroad_consulting.length + ')...');
-    const { error } = await sb.from('abroad_consulting').upsert(data.abroad_consulting, { onConflict: 'student_id' });
-    if (error) console.error('  Hata (abroad_consulting):', error.message);
+    await upsertInChunks('abroad_consulting', data.abroad_consulting, 'student_id', 'abroad_consulting');
   }
   if (data.class_evaluations && data.class_evaluations.length) {
     console.log('   Sınıf değerlendirmeleri yükleniyor (' + data.class_evaluations.length + ')...');
-    const { error } = await sb.from('class_evaluations').upsert(data.class_evaluations, { onConflict: 'id' });
-    if (error) console.error('  Hata (class_evaluations):', error.message);
+    await upsertInChunks('class_evaluations', data.class_evaluations, 'id', 'class_evaluations');
   }
   if (data.class_evaluation_marks && data.class_evaluation_marks.length) {
     console.log('   Sınıf değerlendirme işaretlemeleri yükleniyor (' + data.class_evaluation_marks.length + ')...');
-    const { error } = await sb.from('class_evaluation_marks').upsert(data.class_evaluation_marks, { onConflict: 'evaluation_id,student_id' });
-    if (error) console.error('  Hata (class_evaluation_marks):', error.message);
+    await upsertInChunks('class_evaluation_marks', data.class_evaluation_marks, 'evaluation_id,student_id', 'class_evaluation_marks');
   }
 
   console.log('\n✅ Geri yükleme işlemi başarıyla tamamlandı!');

@@ -1491,15 +1491,31 @@ async function downloadFullBackupJson(){
 
     if(classIds.length > 0){
       const byClassIds = async (table) => {
-        const { data, error } = await sb.from(table).select('*').in('class_id', classIds);
-        if(error) console.warn(table, error);
-        return data || [];
+        const results = [];
+        const CHUNK = 50;
+        for(let i = 0; i < classIds.length; i += CHUNK){
+          const chunk = classIds.slice(i, i + CHUNK);
+          try {
+            const { data, error } = await sb.from(table).select('*').in('class_id', chunk);
+            if(error) console.warn(table, error);
+            if(data) results.push(...data);
+          } catch(e) { console.warn(table, e); }
+        }
+        return results;
       };
       const byStudentIds = async (table, studentIds) => {
         if(!studentIds.length) return [];
-        const { data, error } = await sb.from(table).select('*').in('student_id', studentIds);
-        if(error) console.warn(table, error);
-        return data || [];
+        const results = [];
+        const CHUNK = 50;
+        for(let i = 0; i < studentIds.length; i += CHUNK){
+          const chunk = studentIds.slice(i, i + CHUNK);
+          try {
+            const { data, error } = await sb.from(table).select('*').in('student_id', chunk);
+            if(error) console.warn(table, error);
+            if(data) results.push(...data);
+          } catch(e) { console.warn(table, e); }
+        }
+        return results;
       };
 
       dump.students = await byClassIds('students');
@@ -1518,8 +1534,17 @@ async function downloadFullBackupJson(){
       dump.deneme_exams = await byClassIds('deneme_exams');
       const examIds = dump.deneme_exams.map(e => e.id);
       if(examIds.length){
-        const { data: dScores } = await sb.from('deneme_scores').select('*').in('exam_id', examIds);
-        dump.deneme_scores = dScores || [];
+        const dScores = [];
+        const CHUNK = 50;
+        for(let i = 0; i < examIds.length; i += CHUNK){
+          const chunk = examIds.slice(i, i + CHUNK);
+          try {
+            const { data, error } = await sb.from('deneme_scores').select('*').in('exam_id', chunk);
+            if(error) console.warn('deneme_scores', error);
+            if(data) dScores.push(...data);
+          } catch(e) { console.warn('deneme_scores', e); }
+        }
+        dump.deneme_scores = dScores;
       } else {
         dump.deneme_scores = [];
       }
@@ -1604,81 +1629,80 @@ async function restoreBackupFromFile(file){
 
     showToast('Yedek geri yükleniyor, lütfen bekleyin...');
 
+    const upsertInChunks = async (table, rows, onConflict) => {
+      if(!rows || !rows.length) return;
+      const CHUNK = 50;
+      for(let i = 0; i < rows.length; i += CHUNK){
+        const chunk = rows.slice(i, i + CHUNK);
+        const { error } = await sb.from(table).upsert(chunk, { onConflict });
+        if(error) console.warn(table + ' restore chunk error:', error.message || error);
+      }
+    };
+
     // 1. Sınıflar
     if(data.classes && data.classes.length > 0){
       const classesToUpsert = data.classes.map(c => ({
         ...c,
         owner_id: state.isAdmin ? (c.owner_id || state.userId) : state.userId
       }));
-      const { error } = await sb.from('classes').upsert(classesToUpsert, { onConflict: 'id' });
-      if(error) throw new Error('Sınıflar yüklenemedi: ' + error.message);
+      await upsertInChunks('classes', classesToUpsert, 'id');
     }
 
     // 2. Öğrenciler
     if(data.students && data.students.length > 0){
-      const { error } = await sb.from('students').upsert(data.students, { onConflict: 'id' });
-      if(error) throw new Error('Öğrenciler yüklenemedi: ' + error.message);
+      await upsertInChunks('students', data.students, 'id');
     }
 
     // 3. Ödevler ve Durumlar
     if(data.homeworks && data.homeworks.length > 0){
-      const { error } = await sb.from('homeworks').upsert(data.homeworks, { onConflict: 'class_id,slot_no' });
-      if(error) console.warn('homeworks restore:', error);
+      await upsertInChunks('homeworks', data.homeworks, 'class_id,slot_no');
     }
     if(data.homework_status && data.homework_status.length > 0){
-      const { error } = await sb.from('homework_status').upsert(data.homework_status, { onConflict: 'student_id,slot_no' });
-      if(error) console.warn('homework_status restore:', error);
+      await upsertInChunks('homework_status', data.homework_status, 'student_id,slot_no');
     }
 
     // 4. KDS Sınavları ve Notları
     if(data.quizzes && data.quizzes.length > 0){
-      const { error } = await sb.from('quizzes').upsert(data.quizzes, { onConflict: 'class_id,slot_no' });
-      if(error) console.warn('quizzes restore:', error);
+      await upsertInChunks('quizzes', data.quizzes, 'class_id,slot_no');
     }
     if(data.quiz_scores && data.quiz_scores.length > 0){
-      const { error } = await sb.from('quiz_scores').upsert(data.quiz_scores, { onConflict: 'student_id,slot_no' });
-      if(error) console.warn('quiz_scores restore:', error);
+      await upsertInChunks('quiz_scores', data.quiz_scores, 'student_id,slot_no');
     }
 
     // 5. Performans Görevleri, Rubrikler ve Notları
     if(data.performance_tasks && data.performance_tasks.length > 0){
-      const { error } = await sb.from('performance_tasks').upsert(data.performance_tasks, { onConflict: 'class_id,slot_no' });
-      if(error) console.warn('performance_tasks restore:', error);
+      await upsertInChunks('performance_tasks', data.performance_tasks, 'class_id,slot_no');
     }
     if(data.rubrics && data.rubrics.length > 0){
-      const { error } = await sb.from('rubrics').upsert(data.rubrics, { onConflict: 'class_id,level' });
-      if(error) console.warn('rubrics restore:', error);
+      await upsertInChunks('rubrics', data.rubrics, 'class_id,level');
     }
     if(data.rubric_scores && data.rubric_scores.length > 0){
-      const { error } = await sb.from('rubric_scores').upsert(data.rubric_scores, { onConflict: 'student_id,level,criteria_index' });
-      if(error) console.warn('rubric_scores restore:', error);
+      await upsertInChunks('rubric_scores', data.rubric_scores, 'student_id,level,criteria_index');
     }
 
     // 6. Deneme Sınavları
     if(data.deneme_exams && data.deneme_exams.length > 0){
-      const { error } = await sb.from('deneme_exams').upsert(data.deneme_exams, { onConflict: 'id' });
-      if(error) console.warn('deneme_exams restore:', error);
+      await upsertInChunks('deneme_exams', data.deneme_exams, 'id');
     }
     if(data.deneme_scores && data.deneme_scores.length > 0){
-      const { error } = await sb.from('deneme_scores').upsert(data.deneme_scores, { onConflict: 'exam_id,student_id,subject' });
-      if(error) console.warn('deneme_scores restore:', error);
+      await upsertInChunks('deneme_scores', data.deneme_scores, 'exam_id,student_id,subject');
     }
 
     // 7. Rehberlik ve Danışmanlık Kayıtları
     if(data.counseling_notes && data.counseling_notes.length > 0){
-      await sb.from('counseling_notes').upsert(data.counseling_notes, { onConflict: 'id' });
+      await upsertInChunks('counseling_notes', data.counseling_notes, 'id');
     }
     if(data.university_goals && data.university_goals.length > 0){
-      await sb.from('university_goals').upsert(data.university_goals, { onConflict: 'id' });
+      await upsertInChunks('university_goals', data.university_goals, 'id');
     }
     if(data.abroad_consulting && data.abroad_consulting.length > 0){
-      await sb.from('abroad_consulting').upsert(data.abroad_consulting, { onConflict: 'student_id' });
+      await upsertInChunks('abroad_consulting', data.abroad_consulting, 'student_id');
     }
     if(data.class_evaluations && data.class_evaluations.length > 0){
-      await sb.from('class_evaluations').upsert(data.class_evaluations, { onConflict: 'id' });
+      await upsertInChunks('class_evaluations', data.class_evaluations, 'id');
     }
     if(data.class_evaluation_marks && data.class_evaluation_marks.length > 0){
-      await sb.from('class_evaluation_marks').upsert(data.class_evaluation_marks, { onConflict: 'evaluation_id,student_id' });
+      await upsertInChunks('class_evaluation_marks', data.class_evaluation_marks, 'evaluation_id,student_id');
     }
 
     if(data.weekly_schedule){
