@@ -1298,38 +1298,38 @@ function renderDenemeRosterSection(cls, examType){
       }).length;
 
       const { totalNet } = (typeof calcDenemeAverages === 'function') ? calcDenemeAverages(ex.id, ex.subjects) : { totalNet: null };
-      const avgBadge = totalNet ? ('<span style="font-size:11.5px;font-weight:800;color:var(--teal);background:var(--teal-soft);padding:3px 8px;border-radius:6px;white-space:nowrap;">Ort: ' + totalNet + ' Net</span>') : '';
+      const avgBadge = totalNet ? ('<span style="font-size:9.5px;font-weight:800;color:var(--teal);background:var(--teal-soft);padding:1px 6px;border-radius:4px;white-space:nowrap;">Ort: ' + totalNet + ' Net</span>') : '';
 
-      return '<div class="card" style="padding:14px 16px;margin-bottom:12px;border-left:4px solid ' + (examType==='tyt'?'var(--amber)':'var(--primary)') + ';box-shadow:var(--shadow);">' +
-        '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:10px;">' +
-          '<div style="flex:1;min-width:210px;">' +
-            '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
-              '<span class="tag ' + (examType==='tyt'?'amber':'blue') + '" style="font-weight:800;font-size:11px;">' + label + ' #' + (ex.slot_no||1) + '</span>' +
-              '<span style="font-weight:800;font-size:15px;color:var(--ink);">' + escapeHtml(meta.shortTitle) + '</span>' +
+      return '<div class="card" style="padding:6px 10px;margin-bottom:6px;border-left:3px solid ' + (examType==='tyt'?'var(--amber)':'var(--primary)') + ';box-shadow:var(--shadow-sm);">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:4px;">' +
+          '<div style="flex:1;min-width:180px;">' +
+            '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+              '<span class="tag ' + (examType==='tyt'?'amber':'blue') + '" style="font-weight:800;font-size:9px;padding:1px 5px;line-height:1.2;">' + label + ' #' + (ex.slot_no||1) + '</span>' +
+              '<span style="font-weight:800;font-size:11.5px;color:var(--ink);">' + escapeHtml(meta.shortTitle) + '</span>' +
               avgBadge +
             '</div>' +
-            '<div style="font-size:11.5px;color:var(--ink-soft);margin-top:4px;">' +
+            '<div style="font-size:9.5px;color:var(--ink-soft);margin-top:1px;">' +
               (ex.subjects||[]).length + ' Ders &middot; ' + scoredStudents + '/' + studentsCount + ' Öğrenci Notu' +
             '</div>' +
           '</div>' +
-          '<div style="display:flex;align-items:center;gap:6px;">' +
-            '<button type="button" class="btn btn-primary btn-sm deneme-card-enter-btn" data-exam-id="' + ex.id + '" data-exam-type="' + examType + '" style="font-size:12px;padding:6px 12px;font-weight:700;">' +
+          '<div style="display:flex;align-items:center;gap:4px;">' +
+            '<button type="button" class="btn btn-primary btn-sm deneme-card-enter-btn" data-exam-id="' + ex.id + '" data-exam-type="' + examType + '" style="font-size:10px;padding:3px 8px;font-weight:700;border-radius:6px;">' +
               (state.isAdmin ? 'Notları İncele' : 'Notları Gör / Gir') + ' ➔' +
             '</button>' +
             (!state.isAdmin ? (
-              '<button type="button" class="iconbtn deneme-card-del-btn" data-exam-id="' + ex.id + '" data-exam-type="' + examType + '" title="Denemeyi Sil" style="color:var(--red);">' +
+              '<button type="button" class="iconbtn deneme-card-del-btn" data-exam-id="' + ex.id + '" data-exam-type="' + examType + '" title="Denemeyi Sil" style="color:var(--red);width:24px;height:24px;padding:2px;">' +
                 ic('trash') +
               '</button>'
             ) : '') +
           '</div>' +
         '</div>' +
-        '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--surface-2);padding:9px 12px;border-radius:8px;">' +
-          '<div style="display:flex;align-items:center;gap:6px;">' +
-            '<label style="font-size:12px;font-weight:800;color:var(--ink);white-space:nowrap;">📅 Sınav Tarihi:</label>' +
-            '<input type="date" class="deneme-card-date-inp" data-exam-id="' + ex.id + '" data-exam-type="' + examType + '" value="' + escapeHtml(meta.isoDate) + '" ' + (state.isAdmin ? 'disabled readonly style="background:var(--surface-2);"' : '') + ' style="border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:12.5px;font-weight:700;color:var(--ink);background:var(--surface);">' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface-2);padding:3px 8px;border-radius:5px;">' +
+          '<div style="display:flex;align-items:center;gap:4px;">' +
+            '<label style="font-size:9.5px;font-weight:700;color:var(--ink);white-space:nowrap;">📅 Sınav Tarihi:</label>' +
+            '<input type="date" class="deneme-card-date-inp" data-exam-id="' + ex.id + '" data-exam-type="' + examType + '" value="' + escapeHtml(meta.isoDate) + '" ' + (state.isAdmin ? 'disabled readonly style="background:var(--surface-2);"' : '') + ' style="border:1px solid var(--line);border-radius:4px;padding:2px 5px;font-size:10px;font-weight:600;color:var(--ink);background:var(--surface);height:22px;">' +
           '</div>' +
           (!state.isAdmin ? (
-            '<button type="button" class="btn btn-soft btn-sm deneme-card-save-btn" data-exam-id="' + ex.id + '" data-exam-type="' + examType + '" style="margin-left:auto;padding:5px 12px;font-size:12px;font-weight:700;">' +
+            '<button type="button" class="btn btn-soft btn-sm deneme-card-save-btn" data-exam-id="' + ex.id + '" data-exam-type="' + examType + '" style="margin-left:auto;padding:2px 8px;font-size:9.5px;font-weight:700;height:22px;border-radius:4px;">' +
               '💾 Tarihi Kaydet' +
             '</button>'
           ) : '') +
@@ -1339,11 +1339,11 @@ function renderDenemeRosterSection(cls, examType){
 
     if(!state.isAdmin){
       cardsHtml +=
-        '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">' +
-          '<button type="button" class="btn btn-outline btn-sm add-quick-deneme-btn" data-type="' + examType + '" style="flex:1;justify-content:center;font-weight:700;">' +
+        '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">' +
+          '<button type="button" class="btn btn-outline btn-sm add-quick-deneme-btn" data-type="' + examType + '" style="flex:1;justify-content:center;font-weight:700;font-size:11px;padding:4px 8px;">' +
             ic('plus') + 'Yeni ' + label + ' Denemesi Ekle' +
           '</button>' +
-          '<button type="button" class="btn btn-soft btn-sm open-deneme-mgmt-btn" data-type="' + examType + '" style="flex:1;justify-content:center;font-weight:700;">' +
+          '<button type="button" class="btn btn-soft btn-sm open-deneme-mgmt-btn" data-type="' + examType + '" style="flex:1;justify-content:center;font-weight:700;font-size:11px;padding:4px 8px;">' +
             ic('upload') + label + ' Deneme Yönetimi (PDF/Excel)' +
           '</button>' +
         '</div>';
