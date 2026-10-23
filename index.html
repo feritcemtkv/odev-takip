@@ -732,27 +732,91 @@ function shortenDenemeLabel(label, examType, fallbackNum){
   return cleaned || str;
 }
 function parseStudentScreenTime(s){
-  if(!s) return { time: '', date: '' };
-  if(s.screen_time !== undefined && s.screen_time_date !== undefined){
-    return { time: s.screen_time || '', date: s.screen_time_date || '' };
+  if(!s) return { time: '', date: '', history: [] };
+  if(Array.isArray(s.screen_time_history)){
+    return {
+      time: s.screen_time || (s.screen_time_history[0] ? s.screen_time_history[0].time : ''),
+      date: s.screen_time_date || (s.screen_time_history[0] ? s.screen_time_history[0].date : ''),
+      history: s.screen_time_history
+    };
   }
+
+  let hist = [];
+  let time = '';
+  let date = '';
+
   if(s.somestr){
     try {
       const parsed = JSON.parse(s.somestr);
       if(parsed && typeof parsed === 'object'){
-        return { time: parsed.time || parsed.screen_time || '', date: parsed.date || '' };
+        if(Array.isArray(parsed.history)){
+          hist = parsed.history.map(item => ({
+            id: item.id || ('st_' + Math.random().toString(36).slice(2, 9)),
+            time: String(item.time || '').trim(),
+            date: String(item.date || '').trim(),
+            created_at: item.created_at || item.date || ''
+          })).filter(item => item.time);
+        }
+        time = String(parsed.time || parsed.screen_time || '').trim();
+        date = String(parsed.date || '').trim();
+        if(!hist.length && time){
+          hist.push({
+            id: 'st_init_' + (date || '1'),
+            time: time,
+            date: date,
+            created_at: date || ''
+          });
+        }
       }
     } catch(e){
-      return { time: String(s.somestr).trim(), date: '' };
+      const rawStr = String(s.somestr).trim();
+      if(rawStr){
+        time = rawStr;
+        hist.push({ id: 'st_raw_1', time: rawStr, date: '', created_at: '' });
+      }
     }
   }
-  try {
-    const raw = localStorage.getItem('takip_st_screen_time_' + s.id);
-    if(raw){
-      return JSON.parse(raw);
-    }
-  } catch(e){}
-  return { time: '', date: '' };
+
+  if(!hist.length){
+    try {
+      const raw = localStorage.getItem('takip_st_screen_time_' + s.id);
+      if(raw){
+        const parsed = JSON.parse(raw);
+        if(parsed && typeof parsed === 'object'){
+          if(Array.isArray(parsed.history)){
+            hist = parsed.history.map(item => ({
+              id: item.id || ('st_' + Math.random().toString(36).slice(2, 9)),
+              time: String(item.time || '').trim(),
+              date: String(item.date || '').trim(),
+              created_at: item.created_at || item.date || ''
+            })).filter(item => item.time);
+          }
+          if(!time) time = String(parsed.time || parsed.screen_time || '').trim();
+          if(!date) date = String(parsed.date || '').trim();
+          if(!hist.length && time){
+            hist.push({ id: 'st_ls_1', time: time, date: date, created_at: date || '' });
+          }
+        }
+      }
+    } catch(e){}
+  }
+
+  if(hist.length > 0){
+    hist.sort((a, b) => {
+      const da = a.date || '';
+      const db = b.date || '';
+      if(da !== db) return db.localeCompare(da);
+      return String(b.created_at || '').localeCompare(String(a.created_at || ''));
+    });
+    time = hist[0].time;
+    date = hist[0].date;
+  }
+
+  s.screen_time = time;
+  s.screen_time_date = date;
+  s.screen_time_history = hist;
+
+  return { time, date, history: hist };
 }
 
 function fmtDateShort(d){
@@ -780,29 +844,103 @@ function classScreenTimeStats(cls){
 async function updateStudentScreenTime(sid, timeVal, dateVal, silent = false){
   if(state.isAdmin) return;
   const s = studentById(sid);
+  if(!s) return;
   timeVal = (timeVal || '').trim();
-  dateVal = (dateVal || '').trim();
+  dateVal = (dateVal || '').trim() || todayStr();
 
-  if(s){
-    s.screen_time = timeVal;
-    s.screen_time_date = dateVal;
-    const payload = JSON.stringify({ time: timeVal, date: dateVal });
-    s.somestr = payload;
-
-    try {
-      localStorage.setItem('takip_st_screen_time_' + sid, payload);
-    } catch(e){}
-
-    const { error } = await sb.from('students').update({ somestr: payload }).eq('id', sid);
-    if(error){
-      if(!silent) showToast('Kayıt hatası: ' + error.message);
-      return;
-    }
-    if(!silent){
-      logActivity('"' + s.name + '" öğrencisinin telefon ekran süresini güncelledi (' + (timeVal||'-') + ', ' + (dateVal||'-') + ')');
-      showToast('Telefon ekran süresi kaydedildi');
-    }
+  if(!timeVal){
+    if(!silent) showToast('Lütfen geçerli bir ekran süresi girin');
+    return;
   }
+
+  const st = parseStudentScreenTime(s);
+  const currentHistory = Array.isArray(st.history) ? [...st.history] : [];
+
+  if(currentHistory.length > 0 && currentHistory[0].time === timeVal && currentHistory[0].date === dateVal){
+    if(!silent) showToast('Bu tarih ve süre için kayıt zaten mevcut');
+    return;
+  }
+
+  const newEntry = {
+    id: 'st_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    time: timeVal,
+    date: dateVal,
+    created_at: new Date().toISOString()
+  };
+
+  currentHistory.unshift(newEntry);
+  currentHistory.sort((a, b) => {
+    const da = a.date || '';
+    const db = b.date || '';
+    if(da !== db) return db.localeCompare(da);
+    return String(b.created_at || '').localeCompare(String(a.created_at || ''));
+  });
+
+  const latestTime = currentHistory[0].time;
+  const latestDate = currentHistory[0].date;
+
+  s.screen_time = latestTime;
+  s.screen_time_date = latestDate;
+  s.screen_time_history = currentHistory;
+
+  const payload = JSON.stringify({
+    time: latestTime,
+    date: latestDate,
+    history: currentHistory
+  });
+  s.somestr = payload;
+
+  try {
+    localStorage.setItem('takip_st_screen_time_' + sid, payload);
+  } catch(e){}
+
+  const { error } = await sb.from('students').update({ somestr: payload }).eq('id', sid);
+  if(error){
+    if(!silent) showToast('Kayıt hatası: ' + error.message);
+    return;
+  }
+  if(!silent){
+    logActivity('"' + s.name + '" öğrencisine yeni telefon ekran süresi eklendi (' + timeVal + ', ' + fmtDate(dateVal) + ')');
+    showToast('Yeni ekran süresi kaydedildi');
+  }
+}
+
+async function deleteStudentScreenTimeEntry(sid, entryId){
+  if(state.isAdmin) return;
+  const s = studentById(sid);
+  if(!s) return;
+
+  if(!confirm('Bu ekran süresi kaydını silmek istediğinize emin misiniz?')) return;
+
+  const st = parseStudentScreenTime(s);
+  const updatedHistory = (st.history || []).filter(h => h.id !== entryId);
+
+  const latestTime = updatedHistory.length > 0 ? updatedHistory[0].time : '';
+  const latestDate = updatedHistory.length > 0 ? updatedHistory[0].date : '';
+
+  s.screen_time = latestTime;
+  s.screen_time_date = latestDate;
+  s.screen_time_history = updatedHistory;
+
+  const payload = JSON.stringify({
+    time: latestTime,
+    date: latestDate,
+    history: updatedHistory
+  });
+  s.somestr = payload;
+
+  try {
+    localStorage.setItem('takip_st_screen_time_' + sid, payload);
+  } catch(e){}
+
+  const { error } = await sb.from('students').update({ somestr: payload }).eq('id', sid);
+  if(error){
+    showToast('Silme hatası: ' + error.message);
+    return;
+  }
+  logActivity('"' + s.name + '" öğrencisinin ekran süresi kaydı silindi');
+  showToast('Ekran süresi kaydı silindi');
+  render();
 }
 
 function openScreenTimeModal(){
@@ -829,7 +967,7 @@ function openScreenTimeModal(){
       '<h3 style="margin:0;display:flex;align-items:center;gap:6px;">📱 ' + escapeHtml(cls.name) + ' Telefon Ekran Süresi Takibi</h3>' +
     '</div>' +
     '<div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:14px;line-height:1.45;">' +
-      '12. sınıf YKS maratonunda öğrencilerin haftalık veya günlük telefon ekran sürelerini (iOS Ekran Süresi / Android Dijital Denge) ve kontrol tarihlerini buradan topluca düzenleyin.' +
+      '12. sınıf YKS maratonunda öğrencilerin haftalık veya günlük telefon ekran sürelerini (iOS Ekran Süresi / Android Dijital Denge) ve kontrol tarihlerini buradan topluca düzenleyin. Girilen yeni süreler geçmiş kayıtlara eklenir.' +
     '</div>' +
     '<div style="max-height:420px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--surface);margin-bottom:14px;">' +
       (rows || '<div class="empty">Bu sınıfta öğrenci yok.</div>') +
@@ -854,7 +992,9 @@ function openScreenTimeModal(){
           const sid = timeInps[i].dataset.sid;
           const tVal = timeInps[i].value.trim();
           const dVal = dateInps[i] ? dateInps[i].value : '';
-          await updateStudentScreenTime(sid, tVal, dVal, true);
+          if(tVal){
+            await updateStudentScreenTime(sid, tVal, dVal, true);
+          }
         }
         closeModal();
         render();
@@ -882,30 +1022,52 @@ function openEditStudentScreenTimeModal(studentId){
   if(!s) return;
   const st = parseStudentScreenTime(s);
   const today = todayStr();
+  const hist = st.history || [];
+
+  const histRows = hist.length ? hist.map((h, idx) => (
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-bottom:1px solid var(--line);font-size:12px;">' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<span style="color:var(--ink-faint);font-weight:700;width:24px;">#' + (hist.length - idx) + '</span>' +
+        '<span style="font-weight:700;color:var(--ink);">' + (fmtDate(h.date) || h.date) + '</span>' +
+        (idx === 0 ? '<span style="font-size:10px;background:#7e22ce;color:#fff;padding:1px 6px;border-radius:999px;font-weight:800;">Son</span>' : '') +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<span style="font-weight:800;color:#7e22ce;background:#f3e8ff;padding:2px 8px;border-radius:6px;">' + escapeHtml(h.time) + '</span>' +
+        (!state.isAdmin ? '<button type="button" class="btn btn-soft btn-sm m-st-del-btn" data-entry-id="' + h.id + '" style="color:var(--red);padding:2px 6px;font-size:11px;" title="Sil">🗑️</button>' : '') +
+      '</div>' +
+    '</div>'
+  )).join('') : '<div style="font-size:12px;color:var(--ink-soft);text-align:center;padding:12px;">Henüz geçmiş kayıt yok.</div>';
 
   openModalHtml(
     '<h3>📱 ' + escapeHtml(s.name) + ' — Telefon Ekran Süresi</h3>' +
-    '<div style="font-size:12.5px;color:var(--ink-soft);margin:6px 0 14px;">Öğrencinin haftalık veya günlük telefon ekran süresini girin:</div>' +
+    '<div style="font-size:12.5px;color:var(--ink-soft);margin:6px 0 14px;">Öğrencinin yeni ekran süresini girin (geçmiş kayıtlar saklanır):</div>' +
     '<div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px;">' +
       '<div>' +
         '<label style="font-size:12px;font-weight:800;color:var(--ink-soft);display:block;margin-bottom:4px;">Ekran Süresi (Örn: 3 saat 15 dk veya 4s 30dk)</label>' +
-        '<input type="text" id="mSingleStTime" value="' + escapeHtml(st.time) + '" placeholder="Örn: 3 saat 30 dk" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-size:14px;font-weight:700;box-sizing:border-box;">' +
+        '<input type="text" id="mSingleStTime" value="" placeholder="Örn: 3 saat 30 dk" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-size:14px;font-weight:700;box-sizing:border-box;">' +
       '</div>' +
       '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
         '<span style="font-size:11.5px;color:var(--ink-soft);font-weight:700;margin-right:2px;align-self:center;">Hızlı Seçim:</span>' +
-        ['1.5 saat', '2 saat', '3 saat', '4 saat', '5 saat', '6+ saat'].map(preset =>
+        ['1.5 saat', '2 saat', '2.5 saat', '3 saat', '3.5 saat', '4 saat', '5 saat', '6+ saat'].map(preset =>
           '<button type="button" class="btn btn-outline btn-sm st-preset-btn" data-val="' + preset + '" style="padding:3px 8px;font-size:11.5px;">' + preset + '</button>'
         ).join('') +
       '</div>' +
       '<div>' +
         '<label style="font-size:12px;font-weight:800;color:var(--ink-soft);display:block;margin-bottom:4px;">📅 Kontrol Tarihi</label>' +
-        '<input type="date" id="mSingleStDate" value="' + escapeHtml(st.date || today) + '" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;box-sizing:border-box;">' +
+        '<input type="date" id="mSingleStDate" value="' + today + '" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;box-sizing:border-box;">' +
+      '</div>' +
+    '</div>' +
+    '<div style="margin-bottom:14px;">' +
+      '<div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:6px;">📋 Kayıt Geçmişi (' + hist.length + ' Kayıt)</div>' +
+      '<div style="max-height:160px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface);">' +
+        histRows +
       '</div>' +
     '</div>' +
     '<div class="modalactions">' +
-      '<button type="button" class="btn btn-outline" id="mCancelSingleSt">Vazgeç</button>' +
-      (!state.isAdmin ? '<button type="button" class="btn btn-primary" id="mSaveSingleSt" style="background:#7e22ce;border-color:#7e22ce;">💾 Kaydet</button>' : '') +
-    '</div>'
+      '<button type="button" class="btn btn-outline" id="mCancelSingleSt">Kapat</button>' +
+      (!state.isAdmin ? '<button type="button" class="btn btn-primary" id="mSaveSingleSt" style="background:#7e22ce;border-color:#7e22ce;font-weight:800;">➕ Yeni Kaydı Ekle</button>' : '') +
+    '</div>',
+    '520px'
   );
 
   document.getElementById('mCancelSingleSt').onclick = closeModal;
@@ -915,10 +1077,21 @@ function openEditStudentScreenTimeModal(studentId){
       if(inp) inp.value = btn.dataset.val;
     };
   });
+  document.querySelectorAll('.m-st-del-btn').forEach(btn => {
+    btn.onclick = async () => {
+      closeModal();
+      await deleteStudentScreenTimeEntry(s.id, btn.dataset.entryId);
+      openEditStudentScreenTimeModal(s.id);
+    };
+  });
   if(!state.isAdmin){
     document.getElementById('mSaveSingleSt').onclick = async () => {
       const tVal = document.getElementById('mSingleStTime').value.trim();
       const dVal = document.getElementById('mSingleStDate').value;
+      if(!tVal){
+        showToast('Lütfen bir ekran süresi girin');
+        return;
+      }
       closeModal();
       await updateStudentScreenTime(s.id, tVal, dVal);
       render();
@@ -970,8 +1143,7 @@ function parseDenemeExamMeta(exam){
   return { isoDate, dispDate, duration, shortTitle };
 }
 
-function formatUpdatedDenemeLabel(oldLabel, examType, slotNo, newDate, newDuration){
-  const dur = parseInt(newDuration, 10) || (examType === 'tyt' ? 165 : 180);
+function formatUpdatedDenemeLabel(oldLabel, examType, slotNo, newDate){
   const date = newDate ? String(newDate).trim() : '';
 
   let dateFormatted = '';
@@ -988,24 +1160,22 @@ function formatUpdatedDenemeLabel(oldLabel, examType, slotNo, newDate, newDurati
 
   let newLabel = baseTitle;
   if(dateFormatted) newLabel += ' (' + dateFormatted + ')';
-  if(dur) newLabel += ' (' + dur + ' dk)';
   return newLabel;
 }
 
-async function saveDenemeMeta(examId, examType, dateVal, durVal){
+async function saveDenemeMeta(examId, examType, dateVal){
   if(state.isAdmin) return;
   const list = examType === 'tyt' ? state.cls.tytExams : state.cls.aytExams;
   const exam = list.find(e => e.id === examId);
   if(!exam) return;
 
-  const dur = parseInt(durVal, 10) || (examType === 'tyt' ? 165 : 180);
   const date = dateVal ? String(dateVal).trim() : '';
-  const newLabel = formatUpdatedDenemeLabel(exam.label, examType, exam.slot_no, date, dur);
+  const newLabel = formatUpdatedDenemeLabel(exam.label, examType, exam.slot_no, date);
 
   exam.label = newLabel;
 
   try {
-    localStorage.setItem('takip_deneme_meta_' + examId, JSON.stringify({ date, duration: dur }));
+    localStorage.setItem('takip_deneme_meta_' + examId, JSON.stringify({ date }));
   } catch(e){}
 
   const { error } = await sb.from('deneme_exams').update({ label: newLabel }).eq('id', examId);
@@ -1014,8 +1184,8 @@ async function saveDenemeMeta(examId, examType, dateVal, durVal){
     return;
   }
   const sTitle = shortenDenemeLabel(newLabel, examType, exam.slot_no);
-  logActivity('"' + sTitle + '" deneme sınavı tarih ve süresini güncelledi (' + (date||'-') + ', ' + dur + ' dk)');
-  showToast('Sınav tarihi ve süresi kaydedildi');
+  logActivity('"' + sTitle + '" deneme sınavı tarihini güncelledi (' + (date||'-') + ')');
+  showToast('Sınav tarihi kaydedildi');
 }
 
 function openNewDenemeExamModal(examType){
@@ -1025,7 +1195,6 @@ function openNewDenemeExamModal(examType){
   const list = examType === 'tyt' ? state.cls.tytExams : state.cls.aytExams;
   const nextNum = (list.length || 0) + 1;
   const defaultTitle = label + ' ' + nextNum + '. Deneme';
-  const defaultDur = examType === 'tyt' ? 165 : 180;
   const today = todayStr();
 
   openModalHtml(
@@ -1035,15 +1204,9 @@ function openNewDenemeExamModal(examType){
         '<label style="font-size:12px;font-weight:800;color:var(--ink-soft);display:block;margin-bottom:4px;">Sınav Adı / Yayın</label>' +
         '<input type="text" id="mNewDenemeTitle" value="' + escapeHtml(defaultTitle) + '" placeholder="Örn: ' + label + ' ' + nextNum + '. Deneme - ÖZDEBİR" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-size:13.5px;box-sizing:border-box;">' +
       '</div>' +
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
-        '<div style="flex:1;min-width:140px;">' +
-          '<label style="font-size:12px;font-weight:800;color:var(--ink-soft);display:block;margin-bottom:4px;">📅 Sınav Tarihi</label>' +
-          '<input type="date" id="mNewDenemeDate" value="' + today + '" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;box-sizing:border-box;">' +
-        '</div>' +
-        '<div style="flex:1;min-width:140px;">' +
-          '<label style="font-size:12px;font-weight:800;color:var(--ink-soft);display:block;margin-bottom:4px;">⏱️ Sınav Süresi (dk)</label>' +
-          '<input type="number" min="15" max="600" step="5" id="mNewDenemeDur" value="' + defaultDur + '" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;box-sizing:border-box;">' +
-        '</div>' +
+      '<div>' +
+        '<label style="font-size:12px;font-weight:800;color:var(--ink-soft);display:block;margin-bottom:4px;">📅 Sınav Tarihi</label>' +
+        '<input type="date" id="mNewDenemeDate" value="' + today + '" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;box-sizing:border-box;">' +
       '</div>' +
       '<div style="font-size:12px;color:var(--ink-faint);line-height:1.4;">' +
         'Standart dersler (' + (examType==='tyt'?'Türkçe, Tarih, Coğrafya, Felsefe, Din, Matematik, Fizik, Kimya, Biyoloji':'Edebiyat, Tarih-1, Coğrafya-1, Matematik, Fizik, Kimya, Biyoloji') + ') otomatik atanacaktır.' +
@@ -1059,10 +1222,8 @@ function openNewDenemeExamModal(examType){
   document.getElementById('mSaveDeneme').onclick = async () => {
     const titleInp = document.getElementById('mNewDenemeTitle');
     const dateInp = document.getElementById('mNewDenemeDate');
-    const durInp = document.getElementById('mNewDenemeDur');
     const title = (titleInp ? titleInp.value : '').trim() || defaultTitle;
     const dateVal = dateInp ? dateInp.value : '';
-    const durVal = parseInt(durInp ? durInp.value : defaultDur, 10) || defaultDur;
 
     let dateFormatted = '';
     if(dateVal){
@@ -1073,7 +1234,6 @@ function openNewDenemeExamModal(examType){
 
     let fullLabel = title;
     if(dateFormatted) fullLabel += ' (' + dateFormatted + ')';
-    if(durVal) fullLabel += ' (' + durVal + ' dk)';
 
     const subjects = examType === 'tyt' ?
       ['TÜRKÇE', 'TARİH', 'COĞRAFYA', 'FELSEFE', 'DİN', 'MATEMATİK', 'FİZİK', 'KİMYA', 'BİYOLOJİ'] :
@@ -1098,7 +1258,7 @@ function openNewDenemeExamModal(examType){
     state.cls.denemeScoresByExam[examObj.id] = state.cls.denemeScoresByExam[examObj.id] || {};
 
     try {
-      localStorage.setItem('takip_deneme_meta_' + examObj.id, JSON.stringify({ date: dateVal, duration: durVal }));
+      localStorage.setItem('takip_deneme_meta_' + examObj.id, JSON.stringify({ date: dateVal }));
     } catch(e){}
 
     closeModal();
@@ -1168,16 +1328,9 @@ function renderDenemeRosterSection(cls, examType){
             '<label style="font-size:12px;font-weight:800;color:var(--ink);white-space:nowrap;">📅 Sınav Tarihi:</label>' +
             '<input type="date" class="deneme-card-date-inp" data-exam-id="' + ex.id + '" data-exam-type="' + examType + '" value="' + escapeHtml(meta.isoDate) + '" ' + (state.isAdmin ? 'disabled readonly style="background:var(--surface-2);"' : '') + ' style="border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:12.5px;font-weight:700;color:var(--ink);background:var(--surface);">' +
           '</div>' +
-          '<div style="display:flex;align-items:center;gap:6px;">' +
-            '<label style="font-size:12px;font-weight:800;color:var(--ink);white-space:nowrap;">⏱️ Sınav Süresi:</label>' +
-            '<div style="display:inline-flex;align-items:center;gap:3px;">' +
-              '<input type="number" min="15" max="600" step="5" class="deneme-card-dur-inp" data-exam-id="' + ex.id + '" data-exam-type="' + examType + '" value="' + meta.duration + '" ' + (state.isAdmin ? 'disabled readonly style="background:var(--surface-2);"' : '') + ' style="width:62px;text-align:center;border:1px solid var(--line);border-radius:6px;padding:5px 6px;font-size:12.5px;font-weight:700;color:var(--ink);background:var(--surface);">' +
-              '<span style="font-size:12px;font-weight:700;color:var(--ink-soft);">dk</span>' +
-            '</div>' +
-          '</div>' +
           (!state.isAdmin ? (
             '<button type="button" class="btn btn-soft btn-sm deneme-card-save-btn" data-exam-id="' + ex.id + '" data-exam-type="' + examType + '" style="margin-left:auto;padding:5px 12px;font-size:12px;font-weight:700;">' +
-              '💾 Kaydet' +
+              '💾 Tarihi Kaydet' +
             '</button>'
           ) : '') +
         '</div>' +
@@ -1299,6 +1452,8 @@ async function doLogin(username, password){
     ];
   } else if(lowerUser === 'admin'){
     emailsToTry = ['admin@takip.local'];
+  } else if(lowerUser === 'erdal' || lowerUser === 'erdalrencber' || lowerUser === 'erdalrençber'){
+    emailsToTry = ['erdal@takip.local'];
   }
 
   let finalError = null;
@@ -1443,7 +1598,9 @@ function openUserProfileModal(){
     '</div>' +
     '<div style="display:flex;flex-direction:column;gap:9px;">' +
       '<button class="btn btn-primary full" id="mChangePassBtn" style="justify-content:center;">'+ic('key')+'Şifre Değiştir</button>' +
+      (state.isAdmin ? '<button class="btn btn-outline full" id="mResetTeacherPassBtn" style="justify-content:center;">'+ic('key')+'Öğretmen Şifresi Sıfırla (Admin)</button>' : '') +
       (state.isAdmin ? '<button class="btn btn-outline full" id="mNewUserBtn" style="justify-content:center;">'+ic('plus')+'Yeni Kullanıcı Ekle</button>' : '') +
+      (state.isAdmin ? '<button class="btn btn-outline full" id="mDeleteUserBtn" style="justify-content:center;color:var(--red);">'+ic('trash')+'Kullanıcı Sil (Admin)</button>' : '') +
       '<button class="btn btn-soft full" id="mDownloadBackupBtn" style="justify-content:center;">'+ic('book')+'Tam Sistem Yedeği İndir (.json)</button>' +
       '<button class="btn btn-outline full" id="mRestoreBackupBtn" style="justify-content:center;">'+ic('upload')+'Yedekten Geri Yükle (.json)</button>' +
       '<input type="file" id="mBackupFileInput" accept=".json" style="display:none;" />' +
@@ -1453,8 +1610,12 @@ function openUserProfileModal(){
   );
   // Branş seçimi kaldırıldı, sistem tamamen Matematik odaklı
   document.getElementById('mChangePassBtn').onclick = ()=>{ closeModal(); openChangePasswordModal(); };
+  const $rtpBtn = document.getElementById('mResetTeacherPassBtn');
+  if($rtpBtn) $rtpBtn.onclick = ()=>{ closeModal(); openResetTeacherPasswordModal(); };
   const $nuBtn = document.getElementById('mNewUserBtn');
   if($nuBtn) $nuBtn.onclick = ()=>{ closeModal(); openCreateUserModal(); };
+  const $delUserBtn = document.getElementById('mDeleteUserBtn');
+  if($delUserBtn) $delUserBtn.onclick = ()=>{ closeModal(); openDeleteUserModal(); };
 
   const $dlBtn = document.getElementById('mDownloadBackupBtn');
   if($dlBtn) $dlBtn.onclick = ()=>{ closeModal(); downloadFullBackupJson(); };
@@ -1800,12 +1961,15 @@ function openCreateUserModal(){
   openModalHtml(
     '<h3>Yeni Kullanıcı / Öğretmen Ekle</h3>' +
     '<div style="margin-bottom:12px;">' +
-      '<label style="display:block;font-size:12.5px;font-weight:700;margin-bottom:4px;">Kullanıcı Adı (Örn: fulya, mehmet):</label>' +
+      '<label style="display:block;font-size:12.5px;font-weight:700;margin-bottom:4px;">Kullanıcı Adı (Örn: fulya, erdal):</label>' +
       '<input type="text" id="mNewUsername" placeholder="Kullanıcı adı" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;font-weight:700;">' +
     '</div>' +
-
+    '<div style="margin-bottom:12px;">' +
+      '<label style="display:block;font-size:12.5px;font-weight:700;margin-bottom:4px;">Başlangıç Şifresi:</label>' +
+      '<input type="text" id="mNewUserPass" value="123456" placeholder="Şifre" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;font-weight:700;">' +
+    '</div>' +
     '<div style="background:var(--surface-2);border-radius:10px;padding:12px;font-size:12px;line-height:1.5;margin-bottom:14px;">' +
-      '<strong>Bilgi:</strong> Kullanıcı oluşturulduğunda sistemde tanımlanır. Şifresini Supabase panelinden belirleyebilir veya kullanıcı doğrudan giriş yapabilir.' +
+      '<strong>Bilgi:</strong> Kullanıcı oluşturulduğunda sisteme tanımlanır ve şifresiyle giriş yapabilir.' +
     '</div>' +
     '<div style="display:flex;gap:8px;">' +
       '<button class="btn btn-outline full" id="mCloseCreateUser" style="justify-content:center;">Vazgeç</button>' +
@@ -1820,9 +1984,188 @@ function openCreateUserModal(){
   document.getElementById('mCloseCreateUser').onclick = closeModal;
   document.getElementById('mSaveNewUser').onclick = async () => {
     const u = (document.getElementById('mNewUsername').value || '').trim().toLowerCase();
+    const p = (document.getElementById('mNewUserPass').value || '123456').trim();
     if(!u){ showToast('Kullanıcı adı giriniz'); return; }
-    showToast('Kullanıcı "' + u + '" başarıyla tanımlandı');
+    try {
+      const { data, error } = await sb.rpc('create_user_admin', { new_username: u, new_password: p });
+      if(!error && data?.success){
+        showToast('✅ Kullanıcı "' + u + '" (' + p + ') başarıyla oluşturuldu');
+      } else {
+        showToast('Kullanıcı "' + u + '" sisteme tanımlandı');
+      }
+    } catch(e){
+      showToast('Kullanıcı "' + u + '" sisteme tanımlandı');
+    }
     closeModal();
+  };
+}
+
+async function openResetTeacherPasswordModal(){
+  if(!state.isAdmin){
+    showToast('Öğretmen şifresi sıfırlama yetkisi sadece yöneticidedir (Admin).');
+    return;
+  }
+  const teachers = await getAvailableTeachers();
+  openModalHtml(
+    '<h3>🔑 Öğretmen Şifresi Sıfırla (Admin)</h3>' +
+    '<div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;line-height:1.5;">' +
+      'Şifresini unutan veya giriş yapamayan öğretmenin şifresini güncelleyin (Örn: erdal için 123456).' +
+    '</div>' +
+    '<div style="margin-bottom:12px;">' +
+      '<label style="display:block;font-size:12.5px;font-weight:700;margin-bottom:4px;">Öğretmen Seçin:</label>' +
+      '<select id="mResetTeacherSelect" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-weight:700;background:var(--surface);">' +
+        teachers.map(t => '<option value="' + escapeHtml(t.username || '') + '"' + ((t.username === 'erdal') ? ' selected' : '') + '>' + escapeHtml(t.name) + '</option>').join('') +
+        '<option value="__custom__">+ Başka Kullanıcı Adı Yaz...</option>' +
+      '</select>' +
+    '</div>' +
+    '<div id="mCustomUserBox" style="display:none;margin-bottom:12px;">' +
+      '<label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;">Kullanıcı Adı:</label>' +
+      '<input type="text" id="mCustomUsername" placeholder="Örn: erdal" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;font-weight:700;">' +
+    '</div>' +
+    '<div style="margin-bottom:14px;">' +
+      '<label style="display:block;font-size:12.5px;font-weight:700;margin-bottom:4px;">Yeni Şifre:</label>' +
+      '<input type="text" id="mResetNewPass" value="123456" placeholder="Yeni şifre (en az 6 karakter)" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;font-weight:700;">' +
+    '</div>' +
+    '<div id="mResetNoticeBox" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px;font-size:12px;line-height:1.5;margin-bottom:14px;color:#1e40af;">' +
+      '<strong>Bilgi:</strong> SQL çalıştırmak için projenizdeki <code>sql/reset_erdal_password.sql</code> dosyasını kullanabilirsiniz.' +
+    '</div>' +
+    '<div id="mResetErr" style="color:var(--red);font-size:12px;font-weight:700;margin-bottom:10px;"></div>' +
+    '<div style="display:flex;gap:8px;">' +
+      '<button class="btn btn-outline full" id="mCloseResetPass" style="justify-content:center;">Kapat</button>' +
+      '<button class="btn btn-primary full" id="mDoResetPass" style="justify-content:center;">' + ic('check') + 'Şifreyi Güncelle</button>' +
+    '</div>' +
+    '<div style="margin-top:12px;text-align:center;">' +
+      '<a href="https://supabase.com/dashboard/project/miekldpkuclbinclnvvu/sql/new" target="_blank" rel="noopener" style="font-size:12px;color:var(--primary);text-decoration:none;font-weight:700;">' +
+        'Supabase SQL Editor Aç ↗' +
+      '</a>' +
+    '</div>'
+  );
+
+  const sel = document.getElementById('mResetTeacherSelect');
+  const customBox = document.getElementById('mCustomUserBox');
+  sel.onchange = () => {
+    if(sel.value === '__custom__'){
+      customBox.style.display = 'block';
+      document.getElementById('mCustomUsername').focus();
+    } else {
+      customBox.style.display = 'none';
+    }
+  };
+
+  document.getElementById('mCloseResetPass').onclick = closeModal;
+  document.getElementById('mDoResetPass').onclick = async () => {
+    let u = sel.value;
+    if(u === '__custom__') u = (document.getElementById('mCustomUsername').value || '').trim();
+    u = (u || '').trim().toLowerCase();
+    const pw = (document.getElementById('mResetNewPass').value || '').trim();
+    const $err = document.getElementById('mResetErr');
+    const $btn = document.getElementById('mDoResetPass');
+    $err.textContent = '';
+    if(!u){ $err.textContent = 'Lütfen bir öğretmen seçin veya kullanıcı adı girin.'; return; }
+    if(!pw || pw.length < 6){ $err.textContent = 'Şifre en az 6 karakter olmalıdır.'; return; }
+
+    $btn.disabled = true; $btn.textContent = 'Güncelleniyor...';
+    try {
+      const { data, error } = await sb.rpc('reset_user_password_admin', {
+        p_username: u,
+        p_password: pw
+      });
+      if(error){
+        $btn.disabled = false; $btn.textContent = 'Şifreyi Güncelle';
+        openSqlNoticeModal('sql/reset_erdal_password.sql');
+        return;
+      }
+      if(data && data.success === false){
+        $err.textContent = data.message || 'Hata oluştu.';
+        $btn.disabled = false; $btn.textContent = 'Şifreyi Güncelle';
+        return;
+      }
+      closeModal();
+      showToast('✅ "' + u + '" kullanıcısının şifresi başarıyla güncellendi!');
+      logActivity('"' + u + '" kullanıcısının şifresini sıfırladı');
+    } catch(err){
+      $btn.disabled = false; $btn.textContent = 'Şifreyi Güncelle';
+      openSqlNoticeModal('sql/reset_erdal_password.sql');
+    }
+  };
+}
+
+async function openDeleteUserModal(){
+  if(!state.isAdmin){
+    showToast('Kullanıcı silme yetkisi sadece yöneticidedir (Admin).');
+    return;
+  }
+  const teachers = await getAvailableTeachers();
+  openModalHtml(
+    '<h3>🗑️ Kullanıcı / Öğretmen Sil (Admin)</h3>' +
+    '<div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:10px;padding:12px;font-size:12px;line-height:1.5;margin-bottom:14px;color:#991b1b;">' +
+      '<strong>Bilgi:</strong> Bir öğretmen silindiğinde giriş hesabı kaldırılır. Sınıf ve öğrenci verileri silinmez, yeniden tanımlandığında hesaba otomatik bağlanır.' +
+    '</div>' +
+    '<div style="margin-bottom:14px;">' +
+      '<label style="display:block;font-size:12.5px;font-weight:700;margin-bottom:4px;">Silinecek Öğretmeni Seçin:</label>' +
+      '<select id="mDeleteTeacherSelect" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-weight:700;background:var(--surface);">' +
+        teachers.map(t => '<option value="' + escapeHtml(t.username || '') + '"' + ((t.username === 'erdal') ? ' selected' : '') + '>' + escapeHtml(t.name) + '</option>').join('') +
+        '<option value="__custom__">+ Başka Kullanıcı Adı Yaz...</option>' +
+      '</select>' +
+    '</div>' +
+    '<div id="mCustomDelBox" style="display:none;margin-bottom:14px;">' +
+      '<label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;">Kullanıcı Adı:</label>' +
+      '<input type="text" id="mCustomDelUsername" placeholder="Örn: fulya veya erdal" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;font-weight:700;">' +
+    '</div>' +
+    '<div id="mDeleteErr" style="color:var(--red);font-size:12px;font-weight:700;margin-bottom:10px;"></div>' +
+    '<div style="display:flex;gap:8px;">' +
+      '<button class="btn btn-outline full" id="mCloseDelUser" style="justify-content:center;">Vazgeç</button>' +
+      '<button class="btn btn-danger full" id="mDoDeleteUser" style="justify-content:center;">' + ic('trash') + 'Kullanıcıyı Sil</button>' +
+    '</div>' +
+    '<div style="margin-top:12px;text-align:center;">' +
+      '<a href="https://supabase.com/dashboard/project/miekldpkuclbinclnvvu/sql/new" target="_blank" rel="noopener" style="font-size:12px;color:var(--primary);text-decoration:none;font-weight:700;">' +
+        'Supabase SQL Editor Aç ↗' +
+      '</a>' +
+    '</div>'
+  );
+
+  const sel = document.getElementById('mDeleteTeacherSelect');
+  const customBox = document.getElementById('mCustomDelBox');
+  sel.onchange = () => {
+    if(sel.value === '__custom__'){
+      customBox.style.display = 'block';
+      document.getElementById('mCustomDelUsername').focus();
+    } else {
+      customBox.style.display = 'none';
+    }
+  };
+
+  document.getElementById('mCloseDelUser').onclick = closeModal;
+  document.getElementById('mDoDeleteUser').onclick = async () => {
+    let u = sel.value;
+    if(u === '__custom__') u = (document.getElementById('mCustomDelUsername').value || '').trim();
+    u = (u || '').trim().toLowerCase();
+    const $err = document.getElementById('mDeleteErr');
+    const $btn = document.getElementById('mDoDeleteUser');
+    $err.textContent = '';
+    if(!u){ $err.textContent = 'Lütfen bir öğretmen seçin veya kullanıcı adı girin.'; return; }
+    if(!confirm('"' + u + '" kullanıcısı silinsin mi?')){ return; }
+
+    $btn.disabled = true; $btn.textContent = 'Siliniyor...';
+    try {
+      const { data, error } = await sb.rpc('delete_user_admin', { p_username: u });
+      if(error){
+        $btn.disabled = false; $btn.textContent = 'Kullanıcıyı Sil';
+        openSqlNoticeModal('sql/delete_and_recreate_erdal_fulya.sql');
+        return;
+      }
+      if(data && data.success === false){
+        $err.textContent = data.message || 'Hata oluştu.';
+        $btn.disabled = false; $btn.textContent = 'Kullanıcıyı Sil';
+        return;
+      }
+      closeModal();
+      showToast('✅ "' + u + '" kullanıcısı başarıyla silindi!');
+      logActivity('"' + u + '" kullanıcısını sildi');
+    } catch(err){
+      $btn.disabled = false; $btn.textContent = 'Kullanıcıyı Sil';
+      openSqlNoticeModal('sql/delete_and_recreate_erdal_fulya.sql');
+    }
   };
 }
 
@@ -2093,14 +2436,18 @@ async function getAvailableTeachers(){
     if(profs && profs.length){
       profs.forEach(p => {
         if(!p.id || p.username === 'admin') return;
-        if(!map.has(p.id)){
-          let disp = p.username || 'Öğretmen';
-          if(disp === 'feritcem' || disp === 'ferit') disp = 'Ferit Cem (' + p.username + ')';
-          else if(disp === 'candan') disp = 'Candan Sarıkan (candan)';
-          else if(disp === 'hasancem') disp = 'Cem Gürakar (hasancem)';
-          else disp = disp.charAt(0).toUpperCase() + disp.slice(1) + ' (' + disp + ')';
-          map.set(p.id, { id: p.id, username: p.username, name: disp });
+        // Eski ID varsa ve profiles'taki ID farklıysa, eski ID kaydını temizle:
+        for(const [oldId, oldT] of Array.from(map.entries())){
+          if(oldT.username === p.username && oldId !== p.id){
+            map.delete(oldId);
+          }
         }
+        let disp = p.username || 'Öğretmen';
+        if(disp === 'feritcem' || disp === 'ferit') disp = 'Ferit Cem (' + p.username + ')';
+        else if(disp === 'candan') disp = 'Candan Sarıkan (candan)';
+        else if(disp === 'hasancem') disp = 'Cem Gürakar (hasancem)';
+        else disp = disp.charAt(0).toUpperCase() + disp.slice(1) + ' (' + disp + ')';
+        map.set(p.id, { id: p.id, username: p.username, name: disp });
       });
     }
   } catch(e){}
@@ -3319,7 +3666,18 @@ function exportParentReport(sid){
   infoRow['FL-27 Form Sayısı'] = fl27Count(s.id);
   infoRow['Performans Ort.'] = perfAvg;
   if(isCounselor(cls)){ infoRow['Dershane/Etüt'] = s.dershane||''; infoRow['Özel Ders'] = s.ozel_ders||''; }
+  const stReport = parseStudentScreenTime(s);
+  if(stReport.time){ infoRow['Son Ekran Süresi'] = stReport.time + (stReport.date ? (' (' + fmtDate(stReport.date) + ')') : ''); }
   addSheet(wb, [infoRow], 'Öğrenci Bilgisi');
+
+  if(stReport.history && stReport.history.length > 0){
+    const stRows = stReport.history.map((h, i) => ({
+      'Kayıt No': '#' + (stReport.history.length - i),
+      'Kontrol Tarihi': fmtDate(h.date) || h.date || '',
+      'Ekran Süresi': h.time || ''
+    }));
+    addSheet(wb, stRows, 'Ekran Süresi Geçmişi');
+  }
 
   const hwRows = cls.homeworks.map(h=>{
     const done = !!(cls.hwStatus[s.id]||{})[h.slot_no];
@@ -11805,24 +12163,20 @@ function renderRoster(app){
       btn.onclick = async () => {
         const card = btn.closest('.card');
         const dateInp = card ? card.querySelector('.deneme-card-date-inp') : null;
-        const durInp = card ? card.querySelector('.deneme-card-dur-inp') : null;
         const dVal = dateInp ? dateInp.value : '';
-        const durVal = durInp ? durInp.value : '';
         btn.textContent = 'Kaydediliyor...';
         btn.disabled = true;
-        await saveDenemeMeta(btn.dataset.examId, btn.dataset.examType, dVal, durVal);
-        btn.textContent = '💾 Kaydet';
+        await saveDenemeMeta(btn.dataset.examId, btn.dataset.examType, dVal);
+        btn.textContent = '💾 Tarihi Kaydet';
         btn.disabled = false;
       };
     });
-    app.querySelectorAll('.deneme-card-date-inp, .deneme-card-dur-inp').forEach(inp => {
+    app.querySelectorAll('.deneme-card-date-inp').forEach(inp => {
       inp.onchange = async () => {
         const card = inp.closest('.card');
         const dateInp = card ? card.querySelector('.deneme-card-date-inp') : null;
-        const durInp = card ? card.querySelector('.deneme-card-dur-inp') : null;
         const dVal = dateInp ? dateInp.value : '';
-        const durVal = durInp ? durInp.value : '';
-        await saveDenemeMeta(inp.dataset.examId, inp.dataset.examType, dVal, durVal);
+        await saveDenemeMeta(inp.dataset.examId, inp.dataset.examType, dVal);
       };
     });
     app.querySelectorAll('.add-quick-deneme-btn').forEach(btn => {
@@ -11876,6 +12230,8 @@ function renderStudentDetail(app){
   const g11 = isGrade11(cls.name);
   const showTytAyt = g12 || g11 || ((cls.tytExams && cls.tytExams.length > 0) || (cls.aytExams && cls.aytExams.length > 0));
   const today = todayStr();
+  const stData = parseStudentScreenTime(s);
+  const stHistory = stData.history || [];
 
   const hwP = hwPct(s.id);
   const mCount = missedCount(s.id);
@@ -12191,7 +12547,7 @@ function renderStudentDetail(app){
       '<div class="item"><div class="v" style="'+(mCount>0?'color:var(--red);':'')+'">'+mCount+'</div><div class="k">Yapılmayan Ödev</div></div>' +
       '<div class="item"><div class="v" style="'+(flCount>0?'color:var(--red);font-weight:800;':(mCount===2?'color:var(--amber);':'color:var(--teal);'))+'">'+(flCount>0 ? (flCount+' Adet') : (mCount===2 ? 'Sınırda (2/3)' : '0'))+'</div><div class="k">FL-27 Durumu</div></div>' +
       (tytAvgNetBadge ? '<div class="item"><div class="v" style="color:var(--primary-deep);font-weight:900;">'+tytAvgNetBadge+'</div><div class="k">TYT Net Ort. ('+tytExamsCount+' Sınav)</div></div>' : '') +
-      (g12 ? ('<div class="item"><div class="v" style="color:#7e22ce;font-weight:900;">' + (parseStudentScreenTime(s).time || '—') + '</div><div class="k" style="color:#7e22ce;">📱 Ekran Süresi</div></div>') : '') +
+      (g12 || stData.time ? ('<div class="item"><div class="v" style="color:#7e22ce;font-weight:900;">' + (stData.time || '—') + '</div><div class="k" style="color:#7e22ce;">📱 Ekran Süresi' + (stHistory.length > 1 ? (' (' + stHistory.length + ')') : '') + '</div></div>') : '') +
     '</div>' +
     (!g12 && cls.quizzes.length ? '<div class="section-title"><span>'+escapeHtml(examWord(cls.name))+' Notları</span><span class="line"></span></div><div class="detail-grid">'+quizHtml+'</div>' : '') +
     (!g12 && cls.perfTasks.length ? '<div class="section-title"><span>Performans</span><span class="line"></span></div><div class="detail-grid">'+perfHtml+'</div>' : '') +
@@ -12200,34 +12556,96 @@ function renderStudentDetail(app){
     (isCounselor(cls) ? renderMeetingReportsSection(s) : '') +
     (isCounselor(cls) ? renderUniversityGoalsSection(s) : '') +
     (isCounselor(cls) ? renderAbroadConsultingSection(s) : '') +
-    (g12 ? (
+    (g12 || stHistory.length > 0 || true ? (
       '<div class="section-title"><span>📱 Telefon Ekran Süresi &amp; Dijital Denge</span><span class="line"></span></div>' +
-      '<div class="card" style="padding:16px;background:var(--surface);border-left:4px solid #9333ea;margin-bottom:16px;">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">' +
-          '<div style="flex:1;min-width:210px;">' +
-            '<div style="font-weight:800;font-size:14.5px;color:var(--ink);display:flex;align-items:center;gap:8px;">' +
+      '<div class="card" style="padding:16px 18px;background:var(--surface);border-left:4px solid #9333ea;margin-bottom:16px;">' +
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px;border-bottom:1px solid var(--line);padding-bottom:12px;">' +
+          '<div>' +
+            '<div style="font-weight:800;font-size:15px;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
               '<span>Haftalık / Günlük Telefon Ekran Süresi</span>' +
-              (parseStudentScreenTime(s).time ? ('<span class="tag purple" style="font-weight:800;background:#f3e8ff;color:#7e22ce;">' + escapeHtml(parseStudentScreenTime(s).time) + '</span>') : '<span class="tag gray">Girilmedi</span>') +
+              (stData.time ? ('<span class="tag purple" style="font-weight:800;background:#f3e8ff;color:#7e22ce;font-size:12.5px;padding:3px 10px;border-radius:8px;">📱 Son: ' + escapeHtml(stData.time) + (stData.date ? (' (' + fmtDateShort(stData.date) + ')') : '') + '</span>') : '<span class="tag gray" style="font-size:12px;">Henüz Kayıt Yok</span>') +
+              (stHistory.length > 0 ? ('<span style="font-size:12px;color:var(--ink-soft);font-weight:700;">(Toplam ' + stHistory.length + ' Kayıt)</span>') : '') +
             '</div>' +
-            '<div style="font-size:12px;color:var(--ink-soft);margin-top:4px;">' +
-              'YKS sınav senesinde telefon/tablet bağımlılığı ve odak süresini kontrol etmek için öğrencinin ekran süresini takip edin.' +
+            '<div style="font-size:12px;color:var(--ink-soft);margin-top:4px;line-height:1.45;">' +
+              'Öğrencinin haftalık telefon ekran sürelerini (iOS Ekran Süresi / Android Dijital Denge) kaydedin. Girilen her yeni süre geçmişe eklenir, önceki kayıtlar asla kaybolmaz ve aşağıda listelenir.' +
             '</div>' +
           '</div>' +
-          '<div style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;">' +
-            '<div>' +
-              '<label style="font-size:11.5px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:3px;">📱 Ekran Süresi:</label>' +
-              '<input type="text" id="stDetailScreenTime" value="' + escapeHtml(parseStudentScreenTime(s).time) + '" placeholder="Örn: 3 saat 15 dk" ' + (state.isAdmin ? 'disabled readonly style="background:var(--surface-2);"' : '') + ' style="width:130px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700;">' +
+        '</div>' +
+        (!state.isAdmin ? (
+          '<div style="background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:16px;">' +
+            '<div style="font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:8px;display:flex;align-items:center;gap:6px;">' +
+              '<span>➕ Yeni Ekran Süresi Ekle</span>' +
             '</div>' +
-            '<div>' +
-              '<label style="font-size:11.5px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:3px;">📅 Kontrol Tarihi:</label>' +
-              '<input type="date" id="stDetailScreenDate" value="' + escapeHtml(parseStudentScreenTime(s).date || todayStr()) + '" ' + (state.isAdmin ? 'disabled readonly style="background:var(--surface-2);"' : '') + ' style="border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:12.5px;font-weight:600;">' +
+            '<div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;">' +
+              '<div style="flex:1;min-width:180px;">' +
+                '<label style="font-size:11.5px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:3px;">📱 Ekran Süresi:</label>' +
+                '<input type="text" id="stDetailScreenTime" placeholder="Örn: 3 saat 15 dk veya 4s 30dk" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;font-weight:700;box-sizing:border-box;">' +
+              '</div>' +
+              '<div style="width:150px;">' +
+                '<label style="font-size:11.5px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:3px;">📅 Kontrol Tarihi:</label>' +
+                '<input type="date" id="stDetailScreenDate" value="' + todayStr() + '" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12.5px;font-weight:600;box-sizing:border-box;">' +
+              '</div>' +
+              '<button type="button" class="btn btn-primary" id="stDetailSaveScreenTime" style="padding:8px 16px;font-weight:800;background:#7e22ce;border-color:#7e22ce;display:inline-flex;align-items:center;gap:6px;height:38px;">' +
+                '💾 Kaydet &amp; Ekle' +
+              '</button>' +
             '</div>' +
-            (!state.isAdmin ? (
-              '<button type="button" class="btn btn-primary btn-sm" id="stDetailSaveScreenTime" style="padding:7px 14px;font-weight:700;background:#7e22ce;border-color:#7e22ce;">' +
-                '💾 Kaydet' +
-              '</button>'
-            ) : '') +
+            '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px;">' +
+              '<span style="font-size:11px;color:var(--ink-soft);font-weight:700;">Hızlı Seçim:</span>' +
+              ['1.5 saat', '2 saat', '2.5 saat', '3 saat', '3.5 saat', '4 saat', '5 saat', '6+ saat'].map(preset =>
+                '<button type="button" class="btn btn-outline btn-sm st-detail-preset" data-val="' + preset + '" style="padding:2px 8px;font-size:11px;border-radius:6px;background:var(--surface);">' + preset + '</button>'
+              ).join('') +
+            '</div>' +
+          '</div>'
+        ) : '') +
+        '<div>' +
+          '<div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">' +
+            '<span style="display:flex;align-items:center;gap:6px;">' +
+              '📊 Ekran Süresi Kayıt Geçmişi ' +
+              '<span style="font-size:11.5px;font-weight:600;color:var(--ink-faint);">(' + stHistory.length + ' Kayıt)</span>' +
+            '</span>' +
           '</div>' +
+          (stHistory.length === 0 ? (
+            '<div style="text-align:center;padding:16px;background:var(--surface-2);border-radius:8px;border:1px dashed var(--line);font-size:12.5px;color:var(--ink-soft);">' +
+              'Henüz kaydedilmiş ekran süresi bulunmuyor. Yeni bir kayıt eklemek için yukarıdaki formu kullanabilirsiniz.' +
+            '</div>'
+          ) : (
+            '<div style="border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface);">' +
+              '<table style="width:100%;border-collapse:collapse;font-size:12.5px;">' +
+                '<thead>' +
+                  '<tr style="background:var(--surface-2);border-bottom:1px solid var(--line);text-align:left;">' +
+                    '<th style="padding:8px 10px;font-weight:800;color:var(--ink-soft);width:45px;">#</th>' +
+                    '<th style="padding:8px 10px;font-weight:800;color:var(--ink-soft);">📅 Kontrol Tarihi</th>' +
+                    '<th style="padding:8px 10px;font-weight:800;color:var(--ink-soft);">📱 Ekran Süresi</th>' +
+                    '<th style="padding:8px 10px;font-weight:800;color:var(--ink-soft);width:85px;">Durum</th>' +
+                    (!state.isAdmin ? '<th style="padding:8px 10px;font-weight:800;color:var(--ink-soft);text-align:right;width:70px;">İşlem</th>' : '') +
+                  '</tr>' +
+                '</thead>' +
+                '<tbody>' +
+                  stHistory.map((h, idx) => (
+                    '<tr style="border-bottom:1px solid var(--line);background:' + (idx === 0 ? 'rgba(147, 51, 234, 0.03)' : 'transparent') + ';">' +
+                      '<td style="padding:8px 10px;color:var(--ink-faint);font-weight:700;">#' + (stHistory.length - idx) + '</td>' +
+                      '<td style="padding:8px 10px;font-weight:700;color:var(--ink);">' + (fmtDate(h.date) || h.date || 'Tarih Belirtilmedi') + '</td>' +
+                      '<td style="padding:8px 10px;">' +
+                        '<span style="font-weight:800;color:#7e22ce;background:#f3e8ff;padding:3px 9px;border-radius:6px;font-size:12.5px;display:inline-block;">' +
+                          escapeHtml(h.time) +
+                        '</span>' +
+                      '</td>' +
+                      '<td style="padding:8px 10px;">' +
+                        (idx === 0 ? '<span style="font-size:10.5px;background:#7e22ce;color:#fff;padding:2px 7px;border-radius:999px;font-weight:800;">En Son</span>' : '<span style="font-size:11px;color:var(--ink-faint);font-weight:600;">Geçmiş</span>') +
+                      '</td>' +
+                      (!state.isAdmin ? (
+                        '<td style="padding:8px 10px;text-align:right;">' +
+                          '<button type="button" class="btn btn-soft btn-sm st-detail-del-btn" data-entry-id="' + h.id + '" title="Bu kaydı sil" style="color:var(--red);padding:2px 8px;font-size:11px;font-weight:700;">' +
+                            '🗑️ Sil' +
+                          '</button>' +
+                        '</td>'
+                      ) : '') +
+                    '</tr>'
+                  )).join('') +
+                '</tbody>' +
+              '</table>' +
+            '</div>'
+          )) +
         '</div>' +
       '</div>'
     ) : '') +
@@ -12260,14 +12678,28 @@ function renderStudentDetail(app){
       const dInp = document.getElementById('stDetailScreenDate');
       const tVal = tInp ? tInp.value.trim() : '';
       const dVal = dInp ? dInp.value : '';
+      if(!tVal){
+        showToast('Lütfen bir ekran süresi girin');
+        if(tInp) tInp.focus();
+        return;
+      }
       saveStBtn.textContent = 'Kaydediliyor...';
       saveStBtn.disabled = true;
       await updateStudentScreenTime(s.id, tVal, dVal);
-      saveStBtn.textContent = '💾 Kaydedildi';
-      setTimeout(() => { saveStBtn.textContent = '💾 Kaydet'; saveStBtn.disabled = false; }, 1500);
       render();
     };
   }
+  app.querySelectorAll('.st-detail-preset').forEach(btn => {
+    btn.onclick = () => {
+      const inp = document.getElementById('stDetailScreenTime');
+      if(inp) inp.value = btn.dataset.val;
+    };
+  });
+  app.querySelectorAll('.st-detail-del-btn').forEach(btn => {
+    btn.onclick = async () => {
+      await deleteStudentScreenTimeEntry(s.id, btn.dataset.entryId);
+    };
+  });
   if(isCounselor(cls)){
     wireMeetingReportsSection(app, s);
     wireUniversityGoalsSection(app, s);
@@ -13726,11 +14158,7 @@ function renderDenemeList(app, examType){
       '</div>' +
       '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
         '<input type="date" class="dl-date-inp" data-exam-id="'+e.id+'" value="'+escapeHtml(meta.isoDate)+'" title="Sınav Tarihi" '+(state.isAdmin?'disabled readonly style="background:var(--surface-2);"':'')+' style="border:1px solid var(--line);border-radius:6px;padding:5px 6px;font-size:12px;font-weight:600;">' +
-        '<div style="display:inline-flex;align-items:center;gap:2px;">' +
-          '<input type="number" class="dl-dur-inp" data-exam-id="'+e.id+'" value="'+meta.duration+'" min="15" max="600" step="5" title="Sınav Süresi (dk)" '+(state.isAdmin?'disabled readonly style="background:var(--surface-2);"':'')+' style="width:56px;text-align:center;border:1px solid var(--line);border-radius:6px;padding:5px;font-size:12px;font-weight:700;">' +
-          '<span style="font-size:11px;color:var(--ink-soft);font-weight:700;">dk</span>' +
-        '</div>' +
-        (!state.isAdmin ? '<button type="button" class="btn btn-soft btn-sm dl-save-btn" data-exam-id="'+e.id+'" style="font-size:11px;padding:5px 8px;" title="Tarih ve Süreyi Kaydet">💾</button>' : '') +
+        (!state.isAdmin ? '<button type="button" class="btn btn-soft btn-sm dl-save-btn" data-exam-id="'+e.id+'" style="font-size:11px;padding:5px 8px;" title="Tarihi Kaydet">💾</button>' : '') +
       '</div>' +
       '<button class="btn btn-soft btn-sm" data-enter="'+e.id+'">'+(state.isAdmin ? 'Notları İncele' : 'Notları Gör')+'</button>' +
       (!state.isAdmin ? '<button class="iconbtn" data-del="'+e.id+'">'+ic('trash')+'</button>' : '') +
@@ -13783,24 +14211,20 @@ function renderDenemeList(app, examType){
       btn.onclick = async () => {
         const row = btn.closest('.listedit-row');
         const dateInp = row ? row.querySelector('.dl-date-inp') : null;
-        const durInp = row ? row.querySelector('.dl-dur-inp') : null;
         const dVal = dateInp ? dateInp.value : '';
-        const durVal = durInp ? durInp.value : '';
         btn.textContent = '...';
         btn.disabled = true;
-        await saveDenemeMeta(btn.dataset.examId, examType, dVal, durVal);
+        await saveDenemeMeta(btn.dataset.examId, examType, dVal);
         btn.textContent = '💾';
         btn.disabled = false;
       };
     });
-    app.querySelectorAll('.dl-date-inp, .dl-dur-inp').forEach(inp => {
+    app.querySelectorAll('.dl-date-inp').forEach(inp => {
       inp.onchange = async () => {
         const row = inp.closest('.listedit-row');
         const dateInp = row ? row.querySelector('.dl-date-inp') : null;
-        const durInp = row ? row.querySelector('.dl-dur-inp') : null;
         const dVal = dateInp ? dateInp.value : '';
-        const durVal = durInp ? durInp.value : '';
-        await saveDenemeMeta(inp.dataset.examId, examType, dVal, durVal);
+        await saveDenemeMeta(inp.dataset.examId, examType, dVal);
       };
     });
   }
