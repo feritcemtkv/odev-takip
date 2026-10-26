@@ -134,6 +134,12 @@
   body.home-mode{overflow-x:hidden;}
   body.home-mode main#app{padding-top:0;padding-bottom:120px;}
   .home-hero{margin:0 calc(50% - 50vw);background:linear-gradient(120deg,#1f6fe5 0%,#2d86f0 55%,#4cd4b0 100%);color:#fff;padding:18px 0 78px;position:relative;overflow:hidden;}
+  .home-hero.no-quick{padding-bottom:30px;}
+  /* Okul fotoğrafı: img/okul-arkaplan.jpg varsa mavi geçişin altında bulanık görünür */
+  .home-hero::before{content:"";position:absolute;inset:-30px;background:url("img/okul-arkaplan.jpg") center/cover no-repeat;filter:blur(6px);opacity:.38;pointer-events:none;}
+  .home-h-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:26px 0 14px;}
+  .home-h-row .home-h{margin:0;}
+  .h-add{border-radius:999px;padding:8px 14px;box-shadow:0 6px 16px -8px rgba(52,87,213,.6);}
   .home-hero::after{content:"";position:absolute;right:-120px;top:-140px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.18),transparent 65%);pointer-events:none;}
   .hh-inner{max-width:1180px;margin:0 auto;padding:0 30px;position:relative;z-index:1;}
   .hh-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;}
@@ -11535,13 +11541,13 @@ function renderHome(app){
   const todayLabel = new Date().toLocaleDateString('tr-TR', { weekday:'long', day:'numeric', month:'long' });
   const classCount = state.classes.length;
 
-  // Üstteki mavi alanın üzerine taşan hızlı erişim kutuları
+  // Yöneticide mavi alanın üzerine taşan hızlı erişim kutuları; öğretmende Sınıf Ekle başlığın yanında
   const quick = state.isAdmin
     ? [['adminQuickAddClassBtn','plus','Sınıf Ekle'], ['adminBulkClassExcelBtn','upload','Excel Yükle'], ['adminNewUserBtn','user','Yeni Kullanıcı']]
-    : [['topAddClassBtn','plus','Sınıf Ekle'], ['quickScheduleBtn','clock','Ders Programı'], ['quickCalendarBtn','calendar','Ajanda']];
+    : [];
 
   const hero =
-    '<section class="home-hero">' +
+    '<section class="home-hero' + (quick.length ? '' : ' no-quick') + '">' +
       '<div class="hh-inner">' +
         '<div class="hh-bar">' +
           '<span class="hh-app">' + ic('book') + 'Ödev Takip</span>' +
@@ -11557,10 +11563,11 @@ function renderHome(app){
         '</div>' +
       '</div>' +
     '</section>' +
-    '<div class="hh-quick">' +
-      quick.map(([id, icon, label]) => '<button type="button" class="app-tile" id="' + id + '">' + ic(icon) + '<span>' + label + '</span></button>').join('') +
-      (state.isAdmin ? '<input type="file" id="adminBulkClassExcelFile" accept=".xlsx,.xls,.csv" hidden>' : '') +
-    '</div>';
+    (quick.length ?
+      '<div class="hh-quick">' +
+        quick.map(([id, icon, label]) => '<button type="button" class="app-tile" id="' + id + '">' + ic(icon) + '<span>' + label + '</span></button>').join('') +
+        '<input type="file" id="adminBulkClassExcelFile" accept=".xlsx,.xls,.csv" hidden>' +
+      '</div>' : '');
 
   let toolbar = '';
   if(activeTab === 'classes' && (state.isAdmin || classCount > 6)){
@@ -11599,7 +11606,10 @@ function renderHome(app){
   let tabBodyHtml = '';
   if(activeTab === 'classes'){
     tabBodyHtml =
-      '<h2 class="home-h">' + (state.isAdmin ? 'Tüm Sınıflar' : 'Sınıflarım') + '</h2>' +
+      '<div class="home-h-row">' +
+        '<h2 class="home-h">' + (state.isAdmin ? 'Tüm Sınıflar' : 'Sınıflarım') + '</h2>' +
+        (!state.isAdmin ? '<button type="button" class="btn btn-primary btn-sm h-add" id="topAddClassBtn">' + ic('plus') + 'Sınıf Ekle</button>' : '') +
+      '</div>' +
       toolbar + classGridHtml() +
       (!state.isAdmin ? '<h2 class="home-h" id="homeScheduleTitle">Ders Programı</h2><div class="home-schedule">' + scheduleViewHtml() + '</div>' : '');
   } else if(activeTab === 'annual_plans'){
@@ -11655,9 +11665,8 @@ function renderHome(app){
       };
     }
   } else {
-    document.getElementById('topAddClassBtn').onclick = openNewClassModal;
-    document.getElementById('quickScheduleBtn').onclick = goSchedule;
-    document.getElementById('quickCalendarBtn').onclick = () => goTab('calendar');
+    const topAdd = document.getElementById('topAddClassBtn');
+    if(topAdd) topAdd.onclick = openNewClassModal;
   }
 
   if(activeTab === 'classes'){
