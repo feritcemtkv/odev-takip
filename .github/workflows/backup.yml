@@ -5,7 +5,7 @@ on:
     - cron: '0 20 * * *'   # Her gün 20:00 UTC = 23:00 Türkiye saati
   workflow_dispatch: {}     # "Run workflow" ile elle tetikleme
 
-# Yedekler öğrenci verisi içerdiği için depoya yazılmaz; sadece okuma izni yeterli.
+# Yedekler öğrenci verisi içerdiği için depoya veya Artifact'a yazılmaz, sadece Google Drive'a gider.
 permissions:
   contents: read
 
@@ -40,13 +40,3 @@ jobs:
           GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
           GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
         run: node .github/scripts/backup.mjs
-
-      # Script hata verse bile o ana kadar alınan yedekler kaybolmasın.
-      - name: Yedekleri GitHub Artifact olarak sakla
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: gunluk-yedekler
-          path: backups/
-          retention-days: 90
-          if-no-files-found: warn

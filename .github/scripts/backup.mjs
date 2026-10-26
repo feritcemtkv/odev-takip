@@ -375,6 +375,11 @@ async function main() {
   const drive = getDriveClient();
   let completedCount = 0;
   const failures = [];
+  // GitHub Actions'ta yedeğin tek kalıcı yeri Drive; Drive yoksa yedek kaybolur.
+  if (process.env.CI && !drive) {
+    console.error('❌ Google Drive istemcisi kurulamadı; yedekler hiçbir yere kaydedilemeyecek.');
+    failures.push('Drive yapılandırması');
+  }
 
   for (const user of targetUsers) {
     const rawName = user.username || (user.email ? user.email.split('@')[0] : 'ogretmen_' + user.id.slice(0, 8));
