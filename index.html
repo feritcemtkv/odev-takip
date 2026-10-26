@@ -2482,6 +2482,47 @@ function parseSchoolRosterExcel(buffer){
   };
 }
 
+function classKey(name){
+  return normalizeClassName(shortClassLabel(name)).toLocaleUpperCase('tr');
+}
+
+// Excel'deki her sınıfı sistemdeki aynı adlı sınıflarla (her öğretmenin kopyası ayrı) eşleştirir,
+// sınıfta zaten olan öğrencileri ayıklar. Mevcut öğrencilere dokunulmaz, sadece eksik no tamamlanır.
+function planRosterImport(catalog, classes, existingStudents){
+  const byClass = {};
+  existingStudents.forEach(s => { (byClass[s.class_id] = byClass[s.class_id] || []).push(s); });
+  const plan = [];
+  sortClassesList(Object.keys(catalog).map(name => ({ name }))).forEach(({ name: excelCls }) => {
+    const targets = classes.filter(c => classKey(c.name) === classKey(excelCls));
+    const entry = { excelCls, students: catalog[excelCls], targets: [] };
+    targets.forEach(c => {
+      const current = byClass[c.id] || [];
+      const inserts = [], noUpdates = [];
+      let existing = 0;
+      catalog[excelCls].forEach(st => {
+        const same = current.find(cs =>
+          (st.no && cs.no && String(cs.no).trim() === String(st.no).trim()) ||
+          cleanTr(cs.name) === cleanTr(st.name));
+        if(same){
+          existing++;
+          if(st.no && !same.no && cleanTr(same.name) === cleanTr(st.name)) noUpdates.push({ id: same.id, no: st.no });
+        } else {
+          inserts.push(st);
+        }
+      });
+      const maxOrder = Math.max(0, ...current.map(cs => cs.sort_order || 0));
+      entry.targets.push({
+        cls: c,
+        existing,
+        noUpdates,
+        inserts: inserts.map((st, i) => ({ class_id: c.id, name: st.name, no: st.no || null, sort_order: maxOrder + i + 1 }))
+      });
+    });
+    plan.push(entry);
+  });
+  return plan;
+}
+
 async function openAdminBulkClassImportModal(file){
   if(!state.isAdmin){
     showToast('Bu işlem yalnızca yönetici (Admin) tarafından yapılabilir.');
@@ -2489,50 +2530,115 @@ async function openAdminBulkClassImportModal(file){
   }
   try{
     const buffer = await file.arrayBuffer();
-    const result = parseSchoolRosterExcel(buffer);
-    const { catalog, classCount, studentCount, classList } = result;
+    const { catalog, classCount, studentCount } = parseSchoolRosterExcel(buffer);
 
     if(!classCount || !studentCount){
       showToast('Excel dosyasında geçerli sınıf veya öğrenci bulunamadı. Lütfen "Sınıf", "No", "Ad Soyad" sütunlarını kontrol edin.');
       return;
     }
 
-    const classBadges = classList.map(c =>
-      '<div style="background:#fff;border:1px solid #cbd5e1;padding:7px 12px;border-radius:8px;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:space-between;min-width:130px;">' +
-        '<span>🏫 ' + escapeHtml(c) + '</span>' +
-        '<span style="background:var(--primary-soft);color:var(--primary-deep);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800;">' + catalog[c].length + ' Öğrenci</span>' +
-      '</div>'
-    ).join('');
+    showToast('Sınıflar kontrol ediliyor...');
+    const classIds = state.classes.map(c => c.id);
+    let existingStudents = [];
+    // Supabase tek seferde en fazla 1000 satır döndürür; sayfa sayfa oku
+    for(let i = 0; i < classIds.length; i += 50){
+      const ids = classIds.slice(i, i + 50);
+      for(let from = 0; ; from += 1000){
+        const { data, error } = await sb.from('students').select('id, class_id, name, no, sort_order').in('class_id', ids).order('id').range(from, from + 999);
+        if(error) throw new Error('Mevcut öğrenciler okunamadı: ' + error.message);
+        existingStudents = existingStudents.concat(data || []);
+        if(!data || data.length < 1000) break;
+      }
+    }
+
+    const plan = planRosterImport(catalog, state.classes, existingStudents);
+    const totalInserts = plan.reduce((n, p) => n + p.targets.reduce((m, t) => m + t.inserts.length, 0), 0);
+    const totalNoUpdates = plan.reduce((n, p) => n + p.targets.reduce((m, t) => m + t.noUpdates.length, 0), 0);
+    const missingClasses = plan.filter(p => !p.targets.length);
+
+    const rowsHtml = plan.map(p => {
+      const targetsHtml = p.targets.length
+        ? p.targets.map(t =>
+            '<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:2px 0;">' +
+              '<span>' + ic('user') + ' ' + escapeHtml(getTeacherDisplayName(t.cls.owner_id)) + '</span>' +
+              '<span style="white-space:nowrap;">' +
+                (t.inserts.length ? '<b style="color:var(--emerald);">+' + t.inserts.length + ' yeni</b>' : '<span style="color:var(--ink-faint);">yeni yok</span>') +
+                ' <span style="color:var(--ink-soft);">· ' + t.existing + ' zaten var</span>' +
+              '</span>' +
+            '</div>').join('')
+        : '<div style="font-size:12px;color:#8a4d05;">Sistemde bu sınıf yok, atlanacak</div>';
+      return '<div style="border-bottom:1px solid var(--line);padding:8px 10px;">' +
+        '<div style="display:flex;justify-content:space-between;font-weight:800;font-size:13px;margin-bottom:2px;">' +
+          '<span>' + escapeHtml(shortClassLabel(p.excelCls)) + '</span>' +
+          '<span style="color:var(--ink-soft);font-weight:600;font-size:12px;">Excel\'de ' + p.students.length + ' öğrenci</span>' +
+        '</div>' + targetsHtml +
+      '</div>';
+    }).join('');
 
     openModalHtml(
-      '<h3>📥 Okul Sınıf & Öğrenci Listesi Algılandı</h3>' +
-      '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:12px 14px;margin-bottom:14px;">' +
-        '<div style="font-size:13.5px;font-weight:800;color:#166534;">Excel Başarıyla Okundu!</div>' +
-        '<div style="font-size:12.5px;color:#15803d;margin-top:2px;">Toplam <b>' + classCount + ' Sınıf</b> ve <b>' + studentCount + ' Öğrenci</b> ayrıştırıldı.</div>' +
+      '<h3>' + ic('upload') + ' Öğrenci Listesini Sınıflara Aktar</h3>' +
+      '<div style="background:var(--surface-2);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12.5px;line-height:1.5;">' +
+        'Excel\'de <b>' + classCount + ' sınıf, ' + studentCount + ' öğrenci</b> bulundu. ' +
+        'Öğrenciler sistemdeki aynı adlı sınıfların hepsine (o sınıfa giren her öğretmenin listesine) eklenir. ' +
+        'Sınıfta zaten olan öğrenciler tekrar eklenmez, mevcut öğrenciler ve notları değişmez.' +
       '</div>' +
-      '<div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;">Bulunan Sınıflar ve Öğrenci Sayıları:</div>' +
-      '<div style="max-height:160px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:8px;padding:8px;background:var(--surface-2);border-radius:8px;margin-bottom:16px;">' +
-        classBadges +
-      '</div>' +
-      '<div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;line-height:1.55;color:var(--ink);">' +
-        '<b>📌 Nasıl Çalışır?</b><br>' +
-        '• Bu liste kaydedildiğinde <b>mevcut sınıflarınız ve kayıtlı öğrenci notlarınız tamamen korunur, hiçbir veriniz değişmez</b>.<br>' +
-        '• Yeni atanan öğretmenler veya mevcut öğretmenler sisteme giriş yapıp <b>"Sınıf Ekle"</b> butonuna bastıklarında, bu listeden kendi sınıflarını (örneğin 9-A, 10-B...) tek tıkla seçecek ve o sınıfa ait öğrenciler <b>otomatik olarak sınıflarına yüklenecektir</b>.' +
-      '</div>' +
-      '<div style="display:flex;flex-direction:column;gap:8px;">' +
-        '<button type="button" class="btn btn-primary full" id="mSaveCatalogBtn" style="justify-content:center;font-weight:800;padding:11px;font-size:13.5px;">' +
-          '💾 Okul Listesini Kaydet ve Aktif Et (' + classCount + ' Sınıf, ' + studentCount + ' Öğrenci)' +
+      '<div style="max-height:46vh;overflow-y:auto;border:1px solid var(--line);border-radius:10px;margin-bottom:12px;">' + rowsHtml + '</div>' +
+      (missingClasses.length
+        ? '<div style="background:var(--amber-soft);border:1px solid var(--amber);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#8a4d05;">' +
+            '<b>' + missingClasses.length + ' sınıf sistemde yok:</b> ' + escapeHtml(missingClasses.map(p => shortClassLabel(p.excelCls)).join(', ')) +
+            '. Bu sınıfları "Sınıf Ekle" ile bir öğretmene açtığınızda öğrencileri listeden otomatik gelir.' +
+          '</div>'
+        : '') +
+      '<div class="modalactions">' +
+        '<button type="button" class="btn btn-outline" id="mCancelBulkClass">Vazgeç</button>' +
+        '<button type="button" class="btn btn-primary" id="mSaveCatalogBtn"' + (totalInserts || totalNoUpdates ? '' : ' disabled') + '>' +
+          (totalInserts ? totalInserts + ' öğrenciyi ekle' : (totalNoUpdates ? 'Numaraları tamamla' : 'Eklenecek öğrenci yok')) +
         '</button>' +
-        '<button type="button" class="btn btn-soft full" id="mCancelBulkClass" style="justify-content:center;">Vazgeç</button>' +
       '</div>'
-    );
+    , '640px');
 
     document.getElementById('mCancelBulkClass').onclick = closeModal;
 
     document.getElementById('mSaveCatalogBtn').onclick = async () => {
+      const btn = document.getElementById('mSaveCatalogBtn');
+      btn.disabled = true;
+      btn.textContent = 'Ekleniyor...';
+      // Sistemde henüz olmayan sınıflar için liste, admin "Sınıf Ekle" dediğinde kullanılır
       await saveSchoolRosterCatalog(catalog);
+
+      const allInserts = plan.flatMap(p => p.targets.flatMap(t => t.inserts));
+      const allNoUpdates = plan.flatMap(p => p.targets.flatMap(t => t.noUpdates));
+      let added = 0;
+      try{
+        for(let i = 0; i < allInserts.length; i += 500){
+          const chunk = allInserts.slice(i, i + 500);
+          const { error } = await sb.from('students').insert(chunk);
+          if(error){
+            if(error.code === '42501' || (error.message || '').includes('row-level security')){
+              closeModal();
+              openSqlNoticeModal('sql/admin_quick_class_assign.sql');
+              return;
+            }
+            throw new Error(error.message);
+          }
+          added += chunk.length;
+        }
+        for(const u of allNoUpdates){
+          await sb.from('students').update({ no: u.no }).eq('id', u.id);
+        }
+      }catch(err){
+        btn.disabled = false;
+        btn.textContent = 'Tekrar dene';
+        showToast('Hata (' + added + ' öğrenci eklendi): ' + err.message);
+        await loadClasses();
+        return;
+      }
+
       closeModal();
-      showToast('✅ ' + classCount + ' sınıf ve ' + studentCount + ' öğrenci okul listesine kaydedildi! Öğretmenler "Sınıf Ekle" dediklerinde bu sınıfları doğrudan seçebilir.');
+      logActivity('Okul listesinden ' + added + ' öğrenciyi sınıflara aktardı');
+      await loadClasses();
+      render();
+      showToast(added + ' öğrenci sınıflara eklendi' + (allNoUpdates.length ? ', ' + allNoUpdates.length + ' numara tamamlandı' : ''));
     };
 
   }catch(err){
