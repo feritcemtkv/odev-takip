@@ -133,7 +133,7 @@
   body.home-mode header.top{display:none;}
   body.home-mode{overflow-x:hidden;}
   body.home-mode main#app{padding-top:0;padding-bottom:120px;}
-  .home-hero{margin:0 calc(50% - 50vw);background:linear-gradient(120deg,#1f6fe5 0%,#2d86f0 55%,#4cd4b0 100%);color:#fff;padding:18px 0 78px;position:relative;overflow:hidden;}
+  .home-hero{margin:0 calc(50% - 50vw);background:linear-gradient(120deg,#1f6fe5 0%,#2d86f0 55%,#4cd4b0 100%);color:#fff;padding:30px 0 78px;position:relative;overflow:hidden;}
   .home-hero.no-quick{padding-bottom:30px;}
   /* Okul fotoğrafı: img/okul-arkaplan.jpg varsa mavi geçişin altında bulanık görünür */
   .home-hero::before{content:"";position:absolute;inset:-30px;background:url("img/okul-arkaplan.jpg") center/cover no-repeat;filter:blur(6px);opacity:.38;pointer-events:none;}
@@ -142,17 +142,13 @@
   .h-add{border-radius:999px;padding:8px 14px;box-shadow:0 6px 16px -8px rgba(52,87,213,.6);}
   .home-hero::after{content:"";position:absolute;right:-120px;top:-140px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.18),transparent 65%);pointer-events:none;}
   .hh-inner{max-width:1180px;margin:0 auto;padding:0 30px;position:relative;z-index:1;}
-  .hh-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;}
-  .hh-app{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:800;letter-spacing:.2px;}
-  .hh-app .ic{width:20px;height:20px;stroke:#fff;}
-  .hh-menu{border:none;background:rgba(255,255,255,.16);color:#fff;width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;}
-  .hh-menu:hover{background:rgba(255,255,255,.26);}
-  .hh-menu .ic{width:22px;height:22px;stroke:#fff;}
-  .hh-user{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:22px;}
+  .hh-user{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:6px;}
   .hh-name{font-size:26px;font-weight:800;line-height:1.2;}
   .hh-role{font-size:15px;opacity:.92;margin-top:4px;}
   .hh-meta{font-size:13px;opacity:.8;margin-top:3px;}
-  .hh-av{flex-shrink:0;width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.22);border:2px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;}
+  .hh-logo{flex-shrink:0;width:84px;height:84px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;padding:12px;}
+  .hh-logo[hidden]{display:none;}
+  .hh-logo img{max-width:100%;max-height:100%;object-fit:contain;}
   .hh-quick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:560px;margin:-58px 0 8px;position:relative;z-index:2;}
   .app-tile{aspect-ratio:1/1;max-height:150px;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:0 8px 24px -12px rgba(20,25,40,.25);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--ink);font-size:14px;font-weight:600;transition:transform .15s ease,border-color .15s ease;}
   .app-tile:hover{transform:translateY(-2px);border-color:#2d86f0;}
@@ -473,7 +469,7 @@
     .cc-grade{top:8px;left:8px;font-size:9.5px;padding:1px 6px;}
     .hh-inner{padding:0 18px;}
     .hh-name{font-size:22px;}
-    .hh-av{width:60px;height:60px;font-size:24px;}
+    .hh-logo{width:68px;height:68px;padding:10px;}
     .hh-quick{gap:10px;}
     .app-tile{border-radius:16px;font-size:12.5px;gap:8px;}
     .app-tile .ic{width:32px;height:32px;}
@@ -11549,17 +11545,14 @@ function renderHome(app){
   const hero =
     '<section class="home-hero' + (quick.length ? '' : ' no-quick') + '">' +
       '<div class="hh-inner">' +
-        '<div class="hh-bar">' +
-          '<span class="hh-app">' + ic('book') + 'Ödev Takip</span>' +
-          '<button type="button" class="hh-menu" id="heroMenuBtn" aria-label="Hesap menüsü">' + ic('menu') + '</button>' +
-        '</div>' +
         '<div class="hh-user">' +
           '<div>' +
             '<div class="hh-name">' + escapeHtml(displayName) + '</div>' +
             '<div class="hh-role">' + (state.isAdmin ? 'Yönetici · İzleme modu' : 'Matematik Öğretmeni') + '</div>' +
             '<div class="hh-meta">' + escapeHtml(todayLabel) + ' · ' + classCount + ' sınıf</div>' +
           '</div>' +
-          '<div class="hh-av">' + escapeHtml((displayName || '?').trim().charAt(0).toLocaleUpperCase('tr')) + '</div>' +
+          // Logo dosyası yoksa daire tamamen gizlenir
+          '<div class="hh-logo"><img src="img/takev-logo.png" alt="TAKEV Okulları" onerror="this.parentNode.hidden=true"></div>' +
         '</div>' +
       '</div>' +
     '</section>' +
@@ -11637,7 +11630,6 @@ function renderHome(app){
     if(activeTab !== 'classes'){ state.homeTab = 'classes'; render(); setTimeout(scroll, 50); } else scroll();
   };
 
-  document.getElementById('heroMenuBtn').onclick = openUserProfileModal;
   app.querySelectorAll('[data-bnav]').forEach(btn => {
     btn.onclick = () => {
       const key = btn.dataset.bnav;
