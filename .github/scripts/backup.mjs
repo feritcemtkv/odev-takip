@@ -269,7 +269,8 @@ function buildExcelBackup(dump) {
 }
 
 async function main() {
-  const backupDir = path.join(process.cwd(), 'backups');
+  // Bilgisayardaki otomatik yedek (scripts/yerel_yedek.ps1) BACKUP_DIR ile kendi klasörünü verir
+  const backupDir = (process.env.BACKUP_DIR || '').trim() || path.join(process.cwd(), 'backups');
   if (!fs.existsSync(backupDir)) {
     fs.mkdirSync(backupDir, { recursive: true });
   }
@@ -407,14 +408,15 @@ async function main() {
       };
 
       // 1. JSON Yedeğini diske yaz
-      const jsonFilename = teacherName + '_yedek_' + dateStr + '.json';
+      // Dosya adı kayıt tarihiyle başlar; böylece klasörde tarihe göre sıralanır
+      const jsonFilename = dateStr + '_' + teacherName + '.json';
       const jsonPath = path.join(backupDir, jsonFilename);
       const jsonBuf = Buffer.from(JSON.stringify(payload, null, 2), 'utf-8');
       fs.writeFileSync(jsonPath, jsonBuf);
       console.log('  ✓ JSON yedeği oluşturuldu: ' + jsonFilename + ' (' + jsonBuf.length + ' byte)');
 
       // 2. Excel (.xlsx) Yedeğini diske yaz
-      const excelFilename = teacherName + '_yedek_' + dateStr + '.xlsx';
+      const excelFilename = dateStr + '_' + teacherName + '.xlsx';
       const excelPath = path.join(backupDir, excelFilename);
       try {
         const wb = buildExcelBackup(dump);

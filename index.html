@@ -103,9 +103,6 @@
   .cc-meta{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-soft);font-weight:600;}
   .cc-meta span{display:inline-flex;align-items:center;gap:5px;}
   .cc-meta .ic{width:14px;height:14px;}
-  .cc-foot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--line);font-size:12.5px;font-weight:700;color:var(--primary-deep);}
-  .cc-foot .ic{width:16px;height:16px;transition:transform .15s ease;}
-  .classcard:hover .cc-foot .ic{transform:translateX(3px);}
   .cc-del{border:1px solid transparent;background:transparent;color:var(--ink-faint);border-radius:8px;padding:5px;display:inline-flex;margin:-4px -6px 0 0;}
   .cc-del:hover,.cc-del:focus-visible{background:var(--red-soft);color:var(--red);border-color:#f3c9c9;}
   .cc-del .ic{width:16px;height:16px;}
@@ -1668,6 +1665,16 @@ function openUserProfileModal(){
       (state.isAdmin ? '<button class="btn btn-outline full" id="mResetTeacherPassBtn" style="justify-content:center;">'+ic('key')+'Öğretmen Şifresi Sıfırla (Admin)</button>' : '') +
       (state.isAdmin ? '<button class="btn btn-outline full" id="mNewUserBtn" style="justify-content:center;">'+ic('plus')+'Yeni Kullanıcı Ekle</button>' : '') +
       (state.isAdmin ? '<button class="btn btn-outline full" id="mDeleteUserBtn" style="justify-content:center;color:var(--red);">'+ic('trash')+'Kullanıcı Sil (Admin)</button>' : '') +
+      (!state.isAdmin ? (
+        '<div style="font-size:11px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin-top:6px;">Ders Programı</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+          '<button class="btn btn-outline btn-sm" id="mSchPresetBtn" style="justify-content:center;">'+ic('clipboard')+'Şablon Seç</button>' +
+          '<button class="btn btn-outline btn-sm" id="mSchEditBtn" style="justify-content:center;">'+ic('edit')+'Tabloyu Düzenle</button>' +
+          '<button class="btn btn-outline btn-sm" id="mSchResetBtn" style="justify-content:center;">'+ic('clock')+'Varsayılana Dön</button>' +
+          '<button class="btn btn-outline btn-sm" id="mSchClearBtn" style="justify-content:center;color:var(--red);">'+ic('trash')+'Programı Temizle</button>' +
+        '</div>' +
+        '<div style="font-size:11px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin-top:6px;">Yedek</div>'
+      ) : '') +
       '<button class="btn btn-soft full" id="mDownloadBackupBtn" style="justify-content:center;">'+ic('book')+'Tam Sistem Yedeği İndir (.json)</button>' +
       '<button class="btn btn-outline full" id="mRestoreBackupBtn" style="justify-content:center;">'+ic('upload')+'Yedekten Geri Yükle (.json)</button>' +
       '<input type="file" id="mBackupFileInput" accept=".json" style="display:none;" />' +
@@ -1683,6 +1690,17 @@ function openUserProfileModal(){
   if($nuBtn) $nuBtn.onclick = ()=>{ closeModal(); openCreateUserModal(); };
   const $delUserBtn = document.getElementById('mDeleteUserBtn');
   if($delUserBtn) $delUserBtn.onclick = ()=>{ closeModal(); openDeleteUserModal(); };
+
+  const schActions = {
+    mSchPresetBtn: () => openPresetScheduleModal(),
+    mSchEditBtn: () => openScheduleMatrixEditModal(),
+    mSchResetBtn: resetTeacherScheduleConfirm,
+    mSchClearBtn: clearTeacherScheduleConfirm
+  };
+  Object.entries(schActions).forEach(([id, fn]) => {
+    const b = document.getElementById(id);
+    if(b) b.onclick = () => { closeModal(); fn(); };
+  });
 
   const $dlBtn = document.getElementById('mDownloadBackupBtn');
   if($dlBtn) $dlBtn.onclick = ()=>{ closeModal(); downloadFullBackupJson(); };
@@ -9596,12 +9614,6 @@ function scheduleViewHtml(){
         '<span class="schedule-badge hours">Haftalık: '+totalHours+' Saat</span>' +
         '<span class="schedule-badge">08:25 – 16:25 · 9 Ders</span>' +
       '</div>' +
-      '<div class="schedule-actions">' +
-        '<button class="btn btn-primary btn-sm" id="presetScheduleBtn">📋 Şablon Seç</button>' +
-        '<button class="btn btn-outline btn-sm" id="editScheduleMatrixBtn">✏️ Tabloyu Düzenle</button>' +
-        '<button class="btn btn-outline btn-sm" id="clearScheduleBtn" title="Ders programını tamamen boşalt">🗑️ Programı Temizle</button>' +
-        '<button class="btn btn-soft btn-sm" id="resetScheduleBtn">'+ic('upload')+'Varsayılana Dön</button>' +
-      '</div>' +
     '</div>' +
     todayBannerHtml +
     '<div class="schedule-table-wrap">' +
@@ -9622,47 +9634,35 @@ function wireScheduleView(app){
     };
   });
 
-  const presetBtn = document.getElementById('presetScheduleBtn');
-  if(presetBtn) presetBtn.onclick = () => openPresetScheduleModal();
-
-  const editMatrixBtn = document.getElementById('editScheduleMatrixBtn');
-  if(editMatrixBtn) editMatrixBtn.onclick = () => openScheduleMatrixEditModal();
-
   const livePlanBtn = document.getElementById('liveOpenAnnualPlanBtn');
   if(livePlanBtn) livePlanBtn.onclick = () => openCurriculumModal();
+}
 
-  const clearBtn = document.getElementById('clearScheduleBtn');
-  if(clearBtn){
-    clearBtn.onclick = () => {
-      if(confirm('Haftalık ders programınızdaki tüm dersler temizlensin mi (boşaltılsın mı)?')){
-        const emptySched = {
-          pazartesi: [null, null, null, null, null, null, null, null, null, null],
-          sali:      [null, null, null, null, null, null, null, null, null, null],
-          carsamba:  [null, null, null, null, null, null, null, null, null, null],
-          persembe:  [null, null, null, null, null, null, null, null, null, null],
-          cuma:      [null, null, null, null, null, null, null, null, null, null]
-        };
-        saveTeacherSchedule(emptySched);
-        showToast('Ders programı temizlendi (boşaltıldı)');
-        render();
-      }
+// Ders programı işlemleri sağ üstteki kullanıcı menüsünden çağrılır
+function clearTeacherScheduleConfirm(){
+  if(confirm('Haftalık ders programınızdaki tüm dersler temizlensin mi (boşaltılsın mı)?')){
+    const emptySched = {
+      pazartesi: [null, null, null, null, null, null, null, null, null, null],
+      sali:      [null, null, null, null, null, null, null, null, null, null],
+      carsamba:  [null, null, null, null, null, null, null, null, null, null],
+      persembe:  [null, null, null, null, null, null, null, null, null, null],
+      cuma:      [null, null, null, null, null, null, null, null, null, null]
     };
+    saveTeacherSchedule(emptySched);
+    showToast('Ders programı temizlendi (boşaltıldı)');
+    render();
   }
-
-  const resetBtn = document.getElementById('resetScheduleBtn');
-  if(resetBtn){
-    resetBtn.onclick = () => {
-      const defSched = getDefaultScheduleForUser();
-      const defHours = getScheduleTotalHours(defSched);
-      let teacherTitle = 'Ferit Cem (' + defHours + ' Saat)';
-      if(isCandanUser()) teacherTitle = 'Candan Sarıkan (' + defHours + ' Saat)';
-      else if(isHasanCemUser()) teacherTitle = 'Cem Gürakar (' + defHours + ' Saat)';
-      if(confirm('Haftalık ders programınız okulunuzun ' + teacherTitle + ' varsayılan çizelgesine sıfırlansın mı?')){
-        saveTeacherSchedule(defSched);
-        showToast('Ders programı varsayılana sıfırlandı');
-        render();
-      }
-    };
+}
+function resetTeacherScheduleConfirm(){
+  const defSched = getDefaultScheduleForUser();
+  const defHours = getScheduleTotalHours(defSched);
+  let teacherTitle = 'Ferit Cem (' + defHours + ' Saat)';
+  if(isCandanUser()) teacherTitle = 'Candan Sarıkan (' + defHours + ' Saat)';
+  else if(isHasanCemUser()) teacherTitle = 'Cem Gürakar (' + defHours + ' Saat)';
+  if(confirm('Haftalık ders programınız okulunuzun ' + teacherTitle + ' varsayılan çizelgesine sıfırlansın mı?')){
+    saveTeacherSchedule(defSched);
+    showToast('Ders programı varsayılana sıfırlandı');
+    render();
   }
 }
 
@@ -11697,7 +11697,6 @@ function classGridHtml(){
     html += '<div class="classcard" role="button" tabindex="0" data-grade="' + grade + '" data-name="' + escapeHtml(String(c.name||'').toLocaleLowerCase('tr')) + '" data-openclass="'+c.id+'">' +
       '<div class="cc-head"><h3>'+escapeHtml(c.name)+'</h3>' + delBtn + '</div>' +
       meta +
-      '<div class="cc-foot"><span>Sınıfı aç</span>' + ic('chevron') + '</div>' +
     '</div>';
   });
   html += '</div>';
