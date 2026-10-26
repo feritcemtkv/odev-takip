@@ -11808,6 +11808,12 @@ function wireClassSearch(app){
   };
 }
 
+// Kart üzerinde kısa ad: "Hazırlık A" / "HAZIRLIK-A" -> "Hz-A"
+function shortClassLabel(name){
+  const m = String(name || '').trim().match(/^HAZ[IİıiI]RL[IİıiI]K[\s\-\/]*([A-ZÇĞİÖŞÜa-zçğıöşü])$/i);
+  return m ? 'Hz-' + m[1].toLocaleUpperCase('tr') : String(name || '');
+}
+
 function classGridHtml(){
   let classes = state.isAdmin ? sortClassesList(state.classes) : state.classes;
   if(state.isAdmin){
@@ -11849,7 +11855,7 @@ function classGridHtml(){
 
     html += '<div class="classcard" role="button" tabindex="0" data-grade="' + grade + '" data-name="' + escapeHtml(String(c.name||'').toLocaleLowerCase('tr')) + '" data-openclass="'+c.id+'">' +
       delBtn +
-      '<h3>'+escapeHtml(c.name)+'</h3>' +
+      '<h3>'+escapeHtml(shortClassLabel(c.name))+'</h3>' +
       meta +
     '</div>';
   });
