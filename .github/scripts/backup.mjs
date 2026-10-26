@@ -3,7 +3,10 @@ import { google } from 'googleapis';
 import { Readable } from 'stream';
 import fs from 'fs';
 import path from 'path';
-import XLSX from 'xlsx';
+import * as XLSX from 'xlsx';
+
+// xlsx 0.20 ESM sürümü dosya yazmak için fs modülünü ister
+XLSX.set_fs(fs);
 
 const SUPABASE_URL = 'https://miekldpkuclbinclnvvu.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();

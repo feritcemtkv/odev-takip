@@ -1,4 +1,4 @@
-const CACHE_NAME = 'odev-takip-v1.0.8';
+const CACHE_NAME = 'odev-takip-v1.0.9';
 
 const PRECACHE_ASSETS = [
   './',
@@ -10,7 +10,8 @@ const PRECACHE_ASSETS = [
   './icons/icon-maskable-192.png',
   './icons/icon-maskable-512.png',
   './icons/apple-touch-icon.png',
-  './icons/favicon.png'
+  './icons/favicon.png',
+  './lib/xlsx.full.min.js'
 ];
 
 // Install: Cache essential assets
