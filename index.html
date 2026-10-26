@@ -5630,14 +5630,84 @@ function toIntOrNull(s){
   return Math.round(v);
 }
 
+// Rapordaki isim alanından sıra no, şube, sınıf ve okul adını ayıklar
+// ("3 D TİBET SAVTAK" / "EFE S. ÖZCAN ÖZEL TAKEV ANADOLU LİSESİ 26- 12D")
+const PDF_NAME_NOISE = new Set(['OZEL','TAKEV','ANADOLU','LISESI','LISE','KOLEJI','KOLEJ','OKULLARI','OKULU','OKUL','FEN','TEMEL','LISELERI','KURUMU','KURUMLARI','DERSHANESI']);
+function pdfNameParts(rawName){
+  const words = String(rawName || '').trim().split(/\s+/).filter(w => cleanTr(w));
+  if(words.length && /^\d+$/.test(cleanTr(words[0]))){
+    words.shift();
+    if(words.length && cleanTr(words[0]).length === 1) words.shift();
+  }
+  return words.filter(w => { const c = cleanTr(w); return !/\d/.test(c) && !PDF_NAME_NOISE.has(c); });
+}
+function pdfNameTokens(rawName){
+  return cleanTr(pdfNameParts(rawName).join(' ')).split(' ').filter(Boolean);
+}
+
+function editDistance(a, b){
+  const prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for(let i = 1; i <= a.length; i++){
+    let diag = prev[0];
+    prev[0] = i;
+    for(let j = 1; j <= b.length; j++){
+      const tmp = prev[j];
+      prev[j] = Math.min(prev[j] + 1, prev[j - 1] + 1, diag + (a[i - 1] === b[j - 1] ? 0 : 1));
+      diag = tmp;
+    }
+  }
+  return prev[b.length];
+}
+
+// 0 = eşleşmez. Tam kelime, kısaltma (S. -> SARP), küçük yazım hatası ve eksik ikinci adı tolere eder.
+function nameMatchScore(rToks, sToks){
+  if(!rToks.length || !sToks.length) return 0;
+  const used = new Array(sToks.length).fill(false);
+  const take = pred => { const i = sToks.findIndex((t, k) => !used[k] && pred(t)); if(i >= 0) used[i] = true; return i >= 0; };
+  let full = 0, fuzzy = 0, init = 0, extra = 0;
+  const pending = [];
+  for(const t of rToks){ if(t.length > 1 && take(s => s === t)) full++; else pending.push(t); }
+  for(const t of pending){
+    if(t.length === 1){ if(take(s => s.startsWith(t))) init++; else extra++; }
+    else if(t.length >= 4 && take(s => s.length >= 4 && editDistance(s, t) <= 1)) fuzzy++;
+    else extra++;
+  }
+  // En az iki kelime birebir tutmalı (ÖZCAN/ÖZKAN gibi farklı soyadları karışmasın)
+  if(full < Math.min(2, sToks.length)) return 0;
+  const missing = used.filter(u => !u).length;
+  return full * 10 + fuzzy * 7 + init * 3 - missing * 2 - extra * 4;
+}
+
+// Her rapor satırını en iyi öğrenciye bağlar; bir öğrenci yalnızca bir satıra verilir.
+// Eşit puanlı iki aday varsa satır otomatik eşleştirilmez, öğretmen seçer.
+function matchDenemeRows(dataRows, students){
+  const sToks = (students || []).map(s => cleanTr(s.name).split(' ').filter(Boolean));
+  const pairs = [];
+  const ambiguous = new Set();
+  dataRows.forEach((row, ri) => {
+    const rToks = pdfNameTokens(row.name);
+    const scores = sToks.map((st, si) => ({ ri, si, score: nameMatchScore(rToks, st) })).filter(p => p.score > 0);
+    scores.sort((a, b) => b.score - a.score);
+    if(scores.length > 1 && scores[0].score === scores[1].score) ambiguous.add(ri);
+    pairs.push(...scores);
+  });
+  pairs.sort((a, b) => b.score - a.score);
+  const rowTaken = new Map(), studentTaken = new Set();
+  for(const p of pairs){
+    if(ambiguous.has(p.ri) || rowTaken.has(p.ri) || studentTaken.has(p.si)) continue;
+    rowTaken.set(p.ri, p.si);
+    studentTaken.add(p.si);
+  }
+  return dataRows.map((row, ri) => ({ row, student: rowTaken.has(ri) ? students[rowTaken.get(ri)] : null }));
+}
+
 function openDenemeImportPreviewModal({
   defaultLabel,
   examType,
   chosenSubjects,
   totals,
-  matchedList,
-  missingInReport,
-  unmatchedPdfRows,
+  entries,
+  students,
   onConfirm
 }){
   const subjPills = chosenSubjects.map((s, idx) => {
@@ -5648,33 +5718,32 @@ function openDenemeImportPreviewModal({
     '</span>';
   }).join('');
 
-  const previewRows = matchedList.slice(0, 3).map(m => {
-    const cells = chosenSubjects.map(subj => {
-      const sc = m.scores.find(x => x.subject === subj) || {};
-      return '<td style="padding:4px 6px;text-align:center;font-size:11px;border-bottom:1px solid var(--line);white-space:nowrap;">' +
-        '<span style="color:var(--emerald);font-weight:700;">'+(sc.dogru!=null?sc.dogru:'-')+'D</span> ' +
-        '<span style="color:var(--rose);font-weight:700;">'+(sc.yanlis!=null?sc.yanlis:'-')+'Y</span> ' +
-        '<span style="color:var(--ink-soft);">'+(sc.bos!=null?sc.bos:'-')+'B</span>' +
-      '</td>';
-    }).join('');
-    return '<tr>' +
-      '<td style="padding:5px 8px;font-weight:700;font-size:12px;border-bottom:1px solid var(--line);white-space:nowrap;">'+escapeHtml(m.student.name)+'</td>' +
-      cells +
+  // Seçimler: satır sırası -> öğrenci id ('' = atla)
+  const picks = entries.map(e => e.student ? String(e.student.id) : '');
+  const sortedStudents = [...(students || [])].sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+  const studentOptions = sortedStudents.map(s => '<option value="' + escapeHtml(String(s.id)) + '">' + escapeHtml(s.name) + '</option>').join('');
+
+  const rowsHtml = entries.map((e, i) => {
+    const net = e.scores.reduce((sum, sc) => sum + ((sc.dogru || 0) - (sc.yanlis || 0) / 4), 0);
+    const dTot = e.scores.reduce((sum, sc) => sum + (sc.dogru || 0), 0);
+    const yTot = e.scores.reduce((sum, sc) => sum + (sc.yanlis || 0), 0);
+    return '<tr data-prow="' + i + '">' +
+      '<td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:12px;">' +
+        (e.label ? '<span style="font-weight:700;">' + escapeHtml(e.label) + '</span>' : '<span style="color:var(--ink-faint);font-style:italic;">İsimsiz satır</span>') +
+        (e.warn ? '<div style="color:#8a4d05;font-size:11px;margin-top:2px;">⚠️ ' + escapeHtml(e.warn) + '</div>' : '') +
+      '</td>' +
+      '<td style="padding:4px 6px;border-bottom:1px solid var(--line);">' +
+        '<select data-pick="' + i + '" style="width:100%;min-width:140px;border:1px solid var(--line);border-radius:6px;padding:5px 6px;font-size:12.5px;">' +
+          '<option value="">— Atla —</option>' + studentOptions +
+        '</select>' +
+      '</td>' +
+      '<td style="padding:6px 8px;border-bottom:1px solid var(--line);font-size:11.5px;white-space:nowrap;text-align:right;">' +
+        '<span style="color:var(--emerald);font-weight:700;">' + dTot + 'D</span> ' +
+        '<span style="color:var(--rose);font-weight:700;">' + yTot + 'Y</span> ' +
+        '<span style="color:var(--ink-soft);">' + (Math.round(net * 100) / 100) + ' net</span>' +
+      '</td>' +
     '</tr>';
   }).join('');
-
-  const previewHeaders = chosenSubjects.map(s => '<th style="padding:6px;font-size:11px;text-align:center;border-bottom:2px solid var(--line);white-space:nowrap;background:var(--surface-2);">'+escapeHtml(s)+'</th>').join('');
-
-  const missingHtml = missingInReport.length ?
-    '<div style="background:var(--amber-soft);border:1px solid var(--amber);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#8a4d05;">' +
-      '<strong>Raporda adı yer almayan / girmeyen ('+missingInReport.length+' öğrenci):</strong> ' +
-      escapeHtml(missingInReport.map(s=>s.name).join(', ')) +
-    '</div>' : '';
-
-  const unnamedHtml = (unmatchedPdfRows && unmatchedPdfRows.length) ?
-    '<div style="background:var(--surface-2);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--ink-soft);">' +
-      'ℹ️ Raporda adı veya numarası sınıfla eşleşmeyen '+unmatchedPdfRows.length+' satır atlandı.' +
-    '</div>' : '';
 
   const modalHtml =
     '<div style="max-height:85vh;overflow-y:auto;padding-right:2px;">' +
@@ -5688,42 +5757,73 @@ function openDenemeImportPreviewModal({
       '<div style="margin-bottom:14px;">' +
         '<div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;">Algılanan Sütunlar ve Soldan Sağa Sıralaması ('+chosenSubjects.length+' Ders):</div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:6px;">' + subjPills + '</div>' +
-        '<div style="font-size:11px;color:var(--ink-faint);margin-top:4px;">* Bu rapordaki sol-sağ sütun sırasına göre otomatik eşleştirilmiştir.</div>' +
       '</div>' +
-      '<div style="margin-bottom:14px;">' +
-        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
-          '<span style="background:var(--emerald-soft);color:var(--emerald);font-weight:800;font-size:12px;padding:3px 10px;border-radius:6px;">✓ '+matchedList.length+' Öğrenci Eşleşti</span>' +
-        '</div>' +
-        missingHtml +
-        unnamedHtml +
+      '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px;">' +
+        '<span id="mImpMatchedBadge" style="background:var(--emerald-soft);color:var(--emerald);font-weight:800;font-size:12px;padding:3px 10px;border-radius:6px;"></span>' +
+        '<span id="mImpSkipBadge" style="background:var(--surface-2);color:var(--ink-soft);font-weight:700;font-size:12px;padding:3px 10px;border-radius:6px;"></span>' +
       '</div>' +
-      (previewRows ? (
-        '<div style="margin-bottom:16px;">' +
-          '<div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;">Örnek Not Önizlemesi (İlk Öğrenciler):</div>' +
-          '<div style="overflow-x:auto;border:1px solid var(--line);border-radius:8px;">' +
-            '<table style="width:100%;border-collapse:collapse;">' +
-              '<thead><tr><th style="padding:6px 8px;font-size:11px;text-align:left;border-bottom:2px solid var(--line);background:var(--surface-2);">Öğrenci</th>'+previewHeaders+'</tr></thead>' +
-              '<tbody>'+previewRows+'</tbody>' +
-            '</table>' +
-          '</div>' +
-        '</div>'
-      ) : '') +
+      '<div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;">Eşleşmeyen veya yanlış eşleşen satırda listeden doğru öğrenciyi seçin. "Atla" seçilen satırlar kaydedilmez.</div>' +
+      '<div style="overflow-x:auto;border:1px solid var(--line);border-radius:8px;margin-bottom:10px;">' +
+        '<table style="width:100%;border-collapse:collapse;">' +
+          '<thead><tr>' +
+            '<th style="padding:6px 8px;font-size:11px;text-align:left;border-bottom:2px solid var(--line);background:var(--surface-2);">Rapordaki İsim</th>' +
+            '<th style="padding:6px 8px;font-size:11px;text-align:left;border-bottom:2px solid var(--line);background:var(--surface-2);">Sınıftaki Öğrenci</th>' +
+            '<th style="padding:6px 8px;font-size:11px;text-align:right;border-bottom:2px solid var(--line);background:var(--surface-2);">Toplam</th>' +
+          '</tr></thead>' +
+          '<tbody>' + rowsHtml + '</tbody>' +
+        '</table>' +
+      '</div>' +
+      '<div id="mImpMissing"></div>' +
       '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;">' +
         '<button class="btn btn-outline" id="mCancelImportBtn">Vazgeç</button>' +
         '<button class="btn btn-primary" id="mConfirmImportBtn">'+ic('clipboard')+'Onayla ve Notları Kaydet</button>' +
       '</div>' +
     '</div>';
 
-  openModalHtml(modalHtml);
+  openModalHtml(modalHtml, '720px');
+
+  const selects = [...document.querySelectorAll('#modalRoot [data-pick]')];
+  const refresh = () => {
+    selects.forEach((sel, i) => {
+      sel.value = picks[i];
+      const tr = sel.closest('tr');
+      tr.style.background = picks[i] ? '' : 'var(--amber-soft)';
+    });
+    const chosen = new Set(picks.filter(Boolean));
+    document.getElementById('mImpMatchedBadge').textContent = '✓ ' + chosen.size + ' öğrenci eşleşti';
+    const skipped = picks.filter(p => !p).length;
+    document.getElementById('mImpSkipBadge').textContent = skipped ? (skipped + ' satır atlanacak') : 'Atlanan satır yok';
+    const missing = sortedStudents.filter(s => !chosen.has(String(s.id)));
+    document.getElementById('mImpMissing').innerHTML = missing.length ?
+      '<div style="background:var(--amber-soft);border:1px solid var(--amber);border-radius:8px;padding:8px 12px;font-size:12px;color:#8a4d05;">' +
+        '<strong>Raporda karşılığı olmayan / sınava girmeyen ('+missing.length+' öğrenci):</strong> ' +
+        escapeHtml(missing.map(s => s.name).join(', ')) +
+      '</div>' : '';
+  };
+  selects.forEach((sel, i) => {
+    sel.onchange = () => {
+      // Bir öğrenci yalnızca bir satırda olabilir; önceki satırı boşa düşür
+      if(sel.value) picks.forEach((p, k) => { if(k !== i && p === sel.value) picks[k] = ''; });
+      picks[i] = sel.value;
+      refresh();
+    };
+  });
+  refresh();
 
   document.getElementById('mCancelImportBtn').onclick = closeModal;
   document.getElementById('mConfirmImportBtn').onclick = async ()=>{
     const finalLabel = (document.getElementById('mExamLabelInp').value||'').trim() || defaultLabel;
+    const matchedList = [];
+    picks.forEach((id, i) => {
+      const student = id && sortedStudents.find(s => String(s.id) === id);
+      if(student) matchedList.push({ student, scores: entries[i].scores });
+    });
+    if(!matchedList.length){ showToast('Kaydedilecek öğrenci seçilmedi'); return; }
     const btn = document.getElementById('mConfirmImportBtn');
     btn.disabled = true;
     btn.textContent = 'Kaydediliyor...';
     try {
-      await onConfirm(finalLabel);
+      await onConfirm(finalLabel, matchedList);
       closeModal();
     } catch(err){
       btn.disabled = false;
@@ -5740,6 +5840,15 @@ async function importDenemeFromPdf(file, examType){
   showToast('PDF okunuyor...');
   try{
     const rows = await extractPdfRows(file);
+    if(rows.join('').replace(/\s/g, '').length < 50){
+      openModalHtml(
+        '<h3>PDF okunamadı</h3>' +
+        '<p style="font-size:13.5px;line-height:1.5;margin-bottom:10px;">Bu PDF\'de okunabilir yazı yok; büyük ihtimalle <b>yazdırılarak</b> ("Microsoft Print to PDF") veya <b>taranarak</b> oluşturulmuş. Böyle dosyalarda isimler ve puanlar resim olarak durur.</p>' +
+        '<p style="font-size:13.5px;line-height:1.5;margin-bottom:14px;">Deneme sitesinden raporu <b>"PDF indir / Dışa aktar"</b> ile alıp o dosyayı yükleyin.</p>' +
+        '<div style="display:flex;justify-content:flex-end;"><button class="btn btn-primary" id="mPdfNoTextOk">Tamam</button></div>', '420px');
+      document.getElementById('mPdfNoTextOk').onclick = closeModal;
+      return;
+    }
     const subjInfo = detectDenemeSubjects(rows);
     if(!subjInfo || !subjInfo.subjectCount){ showToast('Rapor formatı tanınamadı'); return; }
     const subjectCount = subjInfo.subjectCount, subjNames = subjInfo.subjNames;
@@ -5791,31 +5900,28 @@ async function importDenemeFromPdf(file, examType){
     if(!chosenSubjects.length){ showToast('Bu raporda '+(examType==='tyt'?'TYT':'AYT')+' dersi bulunamadı'); return; }
 
     const defaultLabel = detectExamLabel(rows);
-    const matchedList = [];
-    const unmatchedPdfRows = [];
-    const matchedStudentIds = new Set();
+    const toNum = s => { const v = parseFloat(String(s).replace(',', '.')); return isNaN(v) ? null : v; };
 
-    for(const row of dataRows){
-      const student = matchStudent(row.name, state.cls.students);
-      if(!student){
-        unmatchedPdfRows.push(row.name);
-        continue;
-      }
-      matchedStudentIds.add(student.id);
-      const studentScores = [];
-      for(let i = 0; i < chosenSubjects.length; i++){
+    // Net = D - Y/4 tutmayan satırlarda boş hücre yüzünden sütunlar kaymış olabilir
+    const netOk = dataRows.map(row => chosenSubjects.every((_, i) => {
+      const gi = startIdx + i;
+      const d = toNum(row.nums[gi * 3]), y = toNum(row.nums[gi * 3 + 1]), n = toNum(row.nums[gi * 3 + 2]);
+      return d != null && y != null && n != null && Math.abs(n - (d - y / 4)) < 0.05;
+    }));
+    const checkNets = netOk.filter(Boolean).length >= dataRows.length * 0.6;
+
+    const entries = matchDenemeRows(dataRows, state.cls.students).map(({ row, student }, ri) => {
+      const scores = chosenSubjects.map((subjName, i) => {
         const gi = startIdx + i;
         const d = toIntOrNull(row.nums[gi * 3]);
         const y = toIntOrNull(row.nums[gi * 3 + 1]);
-        const subjName = chosenSubjects[i];
         const tot = totals[subjName];
         const b = (tot != null && d != null && y != null) ? Math.max(0, tot - d - y) : null;
-        studentScores.push({ subject: subjName, dogru: d, yanlis: y, bos: b });
-      }
-      matchedList.push({ student, scores: studentScores });
-    }
-
-    const missingInReport = (state.cls.students || []).filter(s => !matchedStudentIds.has(s.id));
+        return { subject: subjName, dogru: d, yanlis: y, bos: b };
+      });
+      const warn = (checkNets && !netOk[ri]) ? 'Sütunlar kaymış olabilir, puanları kontrol edin' : '';
+      return { row, label: pdfNameParts(row.name).join(' '), student, scores, warn };
+    });
 
     // Open confirmation preview modal
     openDenemeImportPreviewModal({
@@ -5823,10 +5929,9 @@ async function importDenemeFromPdf(file, examType){
       examType,
       chosenSubjects,
       totals,
-      matchedList,
-      missingInReport,
-      unmatchedPdfRows,
-      onConfirm: async (finalLabel)=>{
+      entries,
+      students: state.cls.students,
+      onConfirm: async (finalLabel, matchedList)=>{
         const list = examType==='tyt' ? state.cls.tytExams : state.cls.aytExams;
         let exam = list.find(e => e.label === finalLabel);
         if(!exam){
