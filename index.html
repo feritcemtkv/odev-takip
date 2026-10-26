@@ -130,6 +130,16 @@
   .dn-add{border:1.5px dashed var(--line);border-top:1.5px dashed var(--line);background:transparent;color:var(--ink-soft);font-weight:700;font-size:12px;align-items:center;justify-content:center;min-height:110px;cursor:pointer;}
   .dn-add:hover{border-color:var(--primary);color:var(--primary-deep);background:var(--primary-soft);}
 
+  .home-schedule{margin-top:26px;}
+  .track-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px;max-width:560px;}
+  .track-tile{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:var(--radius-sm);padding:10px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:700;text-align:center;line-height:1.25;min-height:68px;position:relative;box-shadow:var(--shadow);transition:border-color .15s ease,background .15s ease;}
+  .track-tile .ic{width:20px;height:20px;color:var(--primary);}
+  .track-tile:hover{border-color:var(--primary);background:var(--primary-soft);}
+  .track-tile.alert{border-color:var(--red);color:var(--red);}
+  .track-tile.alert .ic{color:var(--red);}
+  .track-tile.purple .ic{color:#7e22ce;}
+  .track-tile .count{position:absolute;top:5px;right:6px;background:var(--red);color:#fff;border-radius:999px;font-size:10px;padding:1px 6px;font-weight:800;}
+
   .home-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
   .home-head h2{font-size:22px;font-weight:800;}
   .home-head .sub{font-size:13px;color:var(--ink-soft);margin-top:4px;font-weight:600;}
@@ -11476,8 +11486,13 @@ function wireAdminAnnualPlans(app){
 
 function renderHome(app){
   // Adminde Ders Programı ve Ajanda & Takvim kaldırıldı; yerine Yıllık Planlar eklendi
+  // Ders programı ayrı sekme değil, Sınıflarım'ın altında gösterilir
   let activeTab = state.homeTab || 'classes';
-  if(state.isAdmin && (activeTab === 'schedule' || activeTab === 'calendar')){
+  if(activeTab === 'schedule'){
+    activeTab = 'classes';
+    state.homeTab = 'classes';
+  }
+  if(state.isAdmin && activeTab === 'calendar'){
     activeTab = 'classes';
     state.homeTab = 'classes';
   }
@@ -11532,7 +11547,7 @@ function renderHome(app){
 
   const tabs = state.isAdmin
     ? [['classes','school','Sınıflar'], ['annual_plans','file','Yıllık Planlar']]
-    : [['classes','school','Sınıflarım'], ['schedule','clock','Ders Programı'], ['calendar','calendar','Ajanda & Takvim']];
+    : [['classes','school','Sınıflarım'], ['calendar','calendar','Ajanda & Takvim']];
   const navTabsHtml =
     '<div class="home-nav-tabs" role="tablist">' +
       tabs.map(([key, icon, label]) =>
@@ -11542,11 +11557,10 @@ function renderHome(app){
 
   let tabBodyHtml = '';
   if(activeTab === 'classes'){
-    tabBodyHtml = toolbar + classGridHtml();
+    tabBodyHtml = toolbar + classGridHtml() +
+      (!state.isAdmin ? '<div class="home-schedule">' + scheduleViewHtml() + '</div>' : '');
   } else if(activeTab === 'annual_plans'){
     tabBodyHtml = adminAnnualPlansViewHtml();
-  } else if(activeTab === 'schedule'){
-    tabBodyHtml = scheduleViewHtml();
   } else if(activeTab === 'calendar'){
     tabBodyHtml = calendarViewHtml();
   }
@@ -11616,10 +11630,9 @@ function renderHome(app){
     if(topAdd) topAdd.onclick = openNewClassModal;
     wireClassSearch(app);
     wireClassCards(app);
+    if(!state.isAdmin) wireScheduleView(app);
   } else if(activeTab === 'annual_plans'){
     wireAdminAnnualPlans(app);
-  } else if(activeTab === 'schedule'){
-    wireScheduleView(app);
   } else if(activeTab === 'calendar'){
     wireCalendarView(app);
   }
@@ -11665,8 +11678,6 @@ function classGridHtml(){
   }
   let html = '<div class="classgrid">';
   classes.forEach(c=>{
-    const g12 = isGrade12(c.name);
-    const g11 = isGrade11(c.name);
     const grade = getGradeLevel(c.name) || '';
 
     let meta = '';
@@ -11679,11 +11690,6 @@ function classGridHtml(){
         '</div>';
     }
 
-    let tags = '';
-    if(!g12) tags += '<span class="tag teal">Performans</span><span class="tag amber">KDS · Quiz · Sınav</span>';
-    if(g12 || g11) tags += '<span class="tag amber">TYT · AYT</span>';
-    if(isCounselor(c)) tags += '<span class="tag blue">Danışmanlık</span>';
-
     const delBtn = state.isAdmin
       ? '<button type="button" class="cc-del admin-card-del-btn" data-delclassid="' + c.id + '" data-delclassname="' + escapeHtml(c.name) + '" title="Sınıfı sil" aria-label="' + escapeHtml(c.name) + ' sınıfını sil">' + ic('trash') + '</button>'
       : '';
@@ -11691,7 +11697,6 @@ function classGridHtml(){
     html += '<div class="classcard" role="button" tabindex="0" data-grade="' + grade + '" data-name="' + escapeHtml(String(c.name||'').toLocaleLowerCase('tr')) + '" data-openclass="'+c.id+'">' +
       '<div class="cc-head"><h3>'+escapeHtml(c.name)+'</h3>' + delBtn + '</div>' +
       meta +
-      (tags ? '<div class="tags">'+tags+'</div>' : '') +
       '<div class="cc-foot"><span>Sınıfı aç</span>' + ic('chevron') + '</div>' +
     '</div>';
   });
@@ -12069,13 +12074,6 @@ function renderRoster(app){
     '</div>' : '';
 
   let midSections = '';
-  if(!g12){
-    midSections +=
-      '<div class="actionrow">' +
-        '<button class="btn btn-primary" id="quizMenuBtn">'+ic('file')+'KDS & Quiz & Sınav</button>' +
-        '<button class="btn btn-primary" id="perfMenuBtn">'+ic('target')+'Performans</button>' +
-      '</div>';
-  }
   if(showTytAyt){
     midSections += renderDenemeRosterSection(cls, 'tyt') + renderDenemeRosterSection(cls, 'ayt');
   }
@@ -12104,14 +12102,14 @@ function renderRoster(app){
       (!g12 ? ('<div class="item"><div class="v">'+(perfClassAvg()!=null?perfClassAvg():'-')+'</div><div class="k">Performans Ort.</div></div>') : '') +
     '</div>' +
     '<div class="section-title"><span>Takip</span><span class="line"></span></div>' +
-    '<div class="actionrow">' +
-      '<button class="btn btn-primary" id="hwMenuBtn">'+ic('flag')+'Ödevler</button>' +
-      '<button class="btn btn-outline" id="fl27QuickBtn" style="flex:1;justify-content:center;'+(totalFl>0?'border-color:var(--red);color:var(--red);font-weight:700;':'')+'">' +
-        ic('file') + 'FL-27 Takip' + (totalFl > 0 ? (' <span class="tag red" style="margin-left:4px;padding:2px 7px;">' + totalFl + '</span>') : '') +
+    '<div class="track-grid">' +
+      '<button type="button" class="track-tile" id="hwMenuBtn">'+ic('flag')+'Ödevler</button>' +
+      (!g12 ? '<button type="button" class="track-tile" id="quizMenuBtn">'+ic('file')+'KDS &amp; Quiz &amp; Sınav</button>' : '') +
+      (!g12 ? '<button type="button" class="track-tile" id="perfMenuBtn">'+ic('target')+'Performans</button>' : '') +
+      '<button type="button" class="track-tile'+(totalFl>0?' alert':'')+'" id="fl27QuickBtn">' +
+        ic('clipboard') + 'FL-27 Takip' + (totalFl > 0 ? '<span class="count">' + totalFl + '</span>' : '') +
       '</button>' +
-      (stOn ? ('<button class="btn btn-outline" id="screenTimeQuickBtn" style="flex:1;justify-content:center;border-color:#c084fc;color:#7e22ce;font-weight:800;background:#faf5ff;">' +
-        '📱 Ekran Süresi Takibi' +
-      '</button>') : '') +
+      (stOn ? '<button type="button" class="track-tile purple" id="screenTimeQuickBtn">'+ic('clock')+'Ekran Süresi</button>' : '') +
     '</div>' +
     midSections +
     '<div class="section-title"><span>Öğrenciler</span><span class="line"></span>' +
