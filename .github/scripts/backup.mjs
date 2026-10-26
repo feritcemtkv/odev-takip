@@ -71,47 +71,49 @@ function getDriveClient() {
   return null;
 }
 
+// Supabase tek sorguda en fazla 1000 satır döndürür; sayfa sayfa okuyup
+// toplam satır sayısıyla karşılaştırarak eksik yedek alınmasını engeller.
+const PAGE_SIZE = 1000;
+async function fetchAllPages(table, column, values) {
+  const results = [];
+  let expected = null;
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error, count } = await sb.from(table)
+      .select('*', { count: 'exact' })
+      .in(column, values)
+      .order(column)
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw new Error(`${table} (${column}) okunamadı: ${error.message}`);
+    if (expected === null) expected = count;
+    results.push(...(data || []));
+    if (!data || data.length < PAGE_SIZE) break;
+  }
+  if (expected !== null && results.length !== expected) {
+    throw new Error(`${table} eksik okundu: ${results.length}/${expected} satır`);
+  }
+  return results;
+}
+
+async function fetchByIds(table, column, ids) {
+  if (!ids.length) return [];
+  const results = [];
+  const CHUNK = 50;
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    results.push(...await fetchAllPages(table, column, ids.slice(i, i + CHUNK)));
+  }
+  return results;
+}
+
 async function fetchOwnerScopedTables(ownerId) {
   const dump = {};
 
   const { data: classes, error: classErr } = await sb.from('classes').select('*').eq('owner_id', ownerId);
-  if (classErr) {
-    console.warn('  ⚠️ classes sorgu uyarısı:', classErr.message);
-  }
+  if (classErr) throw new Error('classes okunamadı: ' + classErr.message);
   dump.classes = classes || [];
   const classIds = dump.classes.map(c => c.id).filter(Boolean);
 
-  const byClassIds = async (table) => {
-    if (!classIds.length) return [];
-    const results = [];
-    const CHUNK = 50;
-    for (let i = 0; i < classIds.length; i += CHUNK) {
-      const chunk = classIds.slice(i, i + CHUNK);
-      const { data, error } = await sb.from(table).select('*').in('class_id', chunk);
-      if (error) {
-        console.warn(`  ⚠️ ${table} (class_id chunk):`, error.message);
-      } else if (data) {
-        results.push(...data);
-      }
-    }
-    return results;
-  };
-
-  const byStudentIds = async (table, studentIds) => {
-    if (!studentIds.length) return [];
-    const results = [];
-    const CHUNK = 50;
-    for (let i = 0; i < studentIds.length; i += CHUNK) {
-      const chunk = studentIds.slice(i, i + CHUNK);
-      const { data, error } = await sb.from(table).select('*').in('student_id', chunk);
-      if (error) {
-        console.warn(`  ⚠️ ${table} (student_id chunk):`, error.message);
-      } else if (data) {
-        results.push(...data);
-      }
-    }
-    return results;
-  };
+  const byClassIds = (table) => fetchByIds(table, 'class_id', classIds);
+  const byStudentIds = (table, studentIds) => fetchByIds(table, 'student_id', studentIds);
 
   dump.students = await byClassIds('students');
   const studentIds = dump.students.map(s => s.id).filter(Boolean);
@@ -128,22 +130,7 @@ async function fetchOwnerScopedTables(ownerId) {
 
   dump.deneme_exams = await byClassIds('deneme_exams');
   const examIds = dump.deneme_exams.map(e => e.id).filter(Boolean);
-  if (examIds.length) {
-    const results = [];
-    const CHUNK = 50;
-    for (let i = 0; i < examIds.length; i += CHUNK) {
-      const chunk = examIds.slice(i, i + CHUNK);
-      const { data, error } = await sb.from('deneme_scores').select('*').in('exam_id', chunk);
-      if (error) {
-        console.warn('  ⚠️ deneme_scores (exam_id chunk):', error.message);
-      } else if (data) {
-        results.push(...data);
-      }
-    }
-    dump.deneme_scores = results;
-  } else {
-    dump.deneme_scores = [];
-  }
+  dump.deneme_scores = await fetchByIds('deneme_scores', 'exam_id', examIds);
 
   dump.counseling_notes = await byStudentIds('counseling_notes', studentIds);
   dump.university_goals = await byStudentIds('university_goals', studentIds);
@@ -253,16 +240,22 @@ function buildExcelBackup(dump) {
   }
 
   // 9. Sınıf Durum Değerlendirmeleri
+  // class_evaluation_marks her kriter için ayrı satırdır; criteria_index = -1 öğrencinin özel notudur.
   if (dump.class_evaluations && dump.class_evaluations.length) {
+    const evalMap = {};
+    dump.class_evaluations.forEach(ev => { evalMap[ev.id] = ev; });
     const ceRows = [];
-    (dump.class_evaluations || []).forEach(ev => {
-      (dump.class_evaluation_marks || []).forEach(m => {
-        ceRows.push({
-          'Sınıf': classMap[ev.class_id] || '',
-          'Dönem': ev.period,
-          'Öğrenci': studentMap[m.student_id] || m.student_id,
-          'Özel Not': (m.marks && m.marks[-1] && m.marks[-1].note) || ''
-        });
+    (dump.class_evaluation_marks || []).forEach(m => {
+      const ev = evalMap[m.evaluation_id];
+      if (!ev) return;
+      const isNote = m.criteria_index === -1;
+      ceRows.push({
+        'Sınıf': classMap[ev.class_id] || '',
+        'Dönem': ev.period,
+        'Öğrenci': studentMap[m.student_id] || m.student_id,
+        'Kriter': isNote ? 'Özel Not' : ((ev.criteria || [])[m.criteria_index] || ''),
+        'İşaretli': isNote ? '' : (m.checked ? 'Evet' : 'Hayır'),
+        'Not': m.note || ''
       });
     });
     addSheet(ceRows, 'Sınıf Değerlendirme');
@@ -381,6 +374,7 @@ async function main() {
   const dateStr = timestampStrTR();
   const drive = getDriveClient();
   let completedCount = 0;
+  const failures = [];
 
   for (const user of targetUsers) {
     const rawName = user.username || (user.email ? user.email.split('@')[0] : 'ogretmen_' + user.id.slice(0, 8));
@@ -423,6 +417,7 @@ async function main() {
         console.log('  ✓ Excel yedeği oluşturuldu: ' + excelFilename);
       } catch (e) {
         console.warn('  ⚠️ Excel yedeği oluşturulurken hata:', e.message);
+        failures.push(teacherName + ' (Excel)');
       }
 
       // 3. İsteğe bağlı Google Drive yüklemesi (eğer ayarlıysa)
@@ -436,18 +431,24 @@ async function main() {
           });
           console.log('  ✓ Google Drive\'a yüklendi: ' + jsonFilename);
         } catch (uploadErr) {
-          console.warn('  ⚠️ Google Drive yüklemesi atlandı (' + uploadErr.message + ')');
+          console.warn('  ⚠️ Google Drive yüklemesi başarısız (' + uploadErr.message + ')');
+          failures.push(teacherName + ' (Drive)');
         }
       }
 
       completedCount++;
     } catch (teacherErr) {
       console.error(`  ❌ ${teacherName} yedeği alınırken hata oluştu:`, teacherErr.message || teacherErr);
+      failures.push(teacherName);
     }
   }
 
   console.log('\n========================================');
-  console.log('Tüm yedekleme süreci tamamlandı! Toplam ' + completedCount + ' öğretmenin yedeği başarıyla hazırlandı.');
+  console.log('Yedekleme süreci tamamlandı. Toplam ' + completedCount + ' öğretmenin yedeği hazırlandı.');
+  if (failures.length) {
+    console.error('❌ Sorunlu yedekler: ' + failures.join(', '));
+    process.exitCode = 1;
+  }
 }
 
 main().catch(err => {

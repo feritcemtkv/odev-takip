@@ -5,25 +5,30 @@ on:
     - cron: '0 20 * * *'   # Her gün 20:00 UTC = 23:00 Türkiye saati
   workflow_dispatch: {}     # "Run workflow" ile elle tetikleme
 
+# Yedekler öğrenci verisi içerdiği için depoya yazılmaz; sadece okuma izni yeterli.
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
 
 jobs:
   backup:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Repoyu indir
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Node.js kur
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
 
       - name: Paketleri kur
-        run: npm install @supabase/supabase-js xlsx googleapis --no-audit --no-fund --no-save
+        run: npm ci --no-audit --no-fund
 
       - name: Yedekleme scriptini çalıştır
         env:
@@ -36,35 +41,12 @@ jobs:
           GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
         run: node .github/scripts/backup.mjs
 
+      # Script hata verse bile o ana kadar alınan yedekler kaybolmasın.
       - name: Yedekleri GitHub Artifact olarak sakla
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gunluk-yedekler
           path: backups/
           retention-days: 90
-
-      - name: Yedekleri backups dalına kaydet
-        run: |
-          BACKUP_TEMP=$(mktemp -d)
-          cp -r backups/* "$BACKUP_TEMP/" 2>/dev/null || true
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git clean -fdx
-          if git ls-remote --exit-code --heads origin backups; then
-            git fetch origin backups:backups
-            git checkout -f backups
-          else
-            git checkout --orphan backups
-            git rm -rf .
-          fi
-          mkdir -p arsiv
-          cp -r "$BACKUP_TEMP"/* arsiv/ 2>/dev/null || true
-          rm -rf "$BACKUP_TEMP"
-          echo -e "# Otomatik Sistem Yedekleri\nBu dalda Supabase veritabanından her gün alınan otomatik JSON ve Excel yedekleri güvenle arşivlenmektedir." > README.md
-          git add arsiv README.md
-          if git diff --staged --quiet; then
-            echo "Yeni değişiklik yok, commit atlanıyor."
-          else
-            git commit -m "Otomatik yedek: $(date -u '+%Y-%m-%d %H:%M UTC')"
-            git push origin backups
-          fi
+          if-no-files-found: warn
