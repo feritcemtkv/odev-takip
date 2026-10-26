@@ -146,9 +146,9 @@
   .hh-name{font-size:26px;font-weight:800;line-height:1.2;}
   .hh-role{font-size:15px;opacity:.92;margin-top:4px;}
   .hh-meta{font-size:13px;opacity:.8;margin-top:3px;}
-  .hh-logo{flex-shrink:0;width:84px;height:84px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;padding:12px;}
+  .hh-logo{flex-shrink:0;width:84px;height:84px;border-radius:50%;box-shadow:0 6px 18px -6px rgba(0,0,0,.3);}
   .hh-logo[hidden]{display:none;}
-  .hh-logo img{max-width:100%;max-height:100%;object-fit:contain;}
+  .hh-logo img{display:block;width:100%;height:100%;}
   .hh-quick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:560px;margin:-58px 0 8px;position:relative;z-index:2;}
   .app-tile{aspect-ratio:1/1;max-height:150px;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:0 8px 24px -12px rgba(20,25,40,.25);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--ink);font-size:14px;font-weight:600;transition:transform .15s ease,border-color .15s ease;}
   .app-tile:hover{transform:translateY(-2px);border-color:#2d86f0;}
@@ -469,7 +469,7 @@
     .cc-grade{top:8px;left:8px;font-size:9.5px;padding:1px 6px;}
     .hh-inner{padding:0 18px;}
     .hh-name{font-size:22px;}
-    .hh-logo{width:68px;height:68px;padding:10px;}
+    .hh-logo{width:68px;height:68px;}
     .hh-quick{gap:10px;}
     .app-tile{border-radius:16px;font-size:12.5px;gap:8px;}
     .app-tile .ic{width:32px;height:32px;}
@@ -11552,7 +11552,7 @@ function renderHome(app){
             '<div class="hh-meta">' + escapeHtml(todayLabel) + '</div>' +
           '</div>' +
           // Logo dosyası yoksa daire tamamen gizlenir
-          '<div class="hh-logo"><img src="img/takev-logo.png" alt="TAKEV Okulları" onerror="this.parentNode.hidden=true"></div>' +
+          '<div class="hh-logo"><img src="img/takev-logo.svg" alt="TAKEV Okulları" onerror="this.parentNode.hidden=true"></div>' +
         '</div>' +
       '</div>' +
     '</section>' +
