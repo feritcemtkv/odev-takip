@@ -98,8 +98,7 @@
   .classcard[data-grade="11"]{--g:var(--amber);}
   .classcard[data-grade="12"]{--g:var(--red);}
   .classcard[hidden],.addcard[hidden],.classgrid-noresult[hidden]{display:none;}
-  .classcard h3{font-size:30px;font-weight:900;margin:0;color:var(--g);letter-spacing:-.5px;line-height:1.1;word-break:break-word;}
-  .cc-grade{position:absolute;top:12px;left:14px;font-size:11px;font-weight:800;color:var(--g);background:color-mix(in srgb,var(--g) 12%,transparent);padding:2px 8px;border-radius:999px;}
+  .classcard h3{font-size:40px;font-weight:900;margin:0;color:var(--g);letter-spacing:-.5px;line-height:1.1;word-break:break-word;}
   .cc-meta{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;color:var(--ink-soft);font-weight:600;max-width:100%;}
   .cc-meta span{display:inline-flex;align-items:center;gap:4px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .cc-meta .ic{width:13px;height:13px;}
@@ -465,8 +464,7 @@
     .home-toolbar select{width:100%;}
     .classgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
     .classcard{padding:10px;border-radius:16px;}
-    .classcard h3{font-size:24px;}
-    .cc-grade{top:8px;left:8px;font-size:9.5px;padding:1px 6px;}
+    .classcard h3{font-size:31px;}
     .hh-inner{padding:0 18px;}
     .hh-name{font-size:22px;}
     .hh-logo{width:68px;height:68px;}
@@ -11745,7 +11743,6 @@ function classGridHtml(){
       : '';
 
     html += '<div class="classcard" role="button" tabindex="0" data-grade="' + grade + '" data-name="' + escapeHtml(String(c.name||'').toLocaleLowerCase('tr')) + '" data-openclass="'+c.id+'">' +
-      (grade ? '<span class="cc-grade">' + grade + '. sınıf</span>' : '') +
       delBtn +
       '<h3>'+escapeHtml(c.name)+'</h3>' +
       meta +
