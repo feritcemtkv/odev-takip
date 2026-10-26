@@ -92,8 +92,10 @@
   /* Kare sınıf kutuları: seviye rengi --g ile verilir */
   .classgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;}
   .classcard{--g:var(--primary);position:relative;aspect-ratio:1/1;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:14px;cursor:pointer;box-shadow:0 2px 10px -4px rgba(20,25,40,.12);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;min-width:0;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;}
+  .classcard{background:color-mix(in srgb, var(--g) 9%, var(--surface));border-color:color-mix(in srgb, var(--g) 30%, var(--line));}
   .classcard:hover{transform:translateY(-2px);border-color:var(--g);box-shadow:0 14px 30px -16px rgba(20,25,40,.3);}
   .classcard:focus-visible{outline:3px solid var(--primary-soft);outline-offset:2px;}
+  .classcard[data-grade="hz"]{--g:#7c4dcc;}
   .classcard[data-grade="10"]{--g:var(--teal);}
   .classcard[data-grade="11"]{--g:var(--amber);}
   .classcard[data-grade="12"]{--g:var(--red);}
@@ -755,8 +757,8 @@ function sortClassesList(classes){
   return [...classes].sort((a, b)=>{
     const nameA = (a.name || '').trim();
     const nameB = (b.name || '').trim();
-    const normA = normalizeClassName(nameA);
-    const normB = normalizeClassName(nameB);
+    const normA = normalizeClassName(shortClassLabel(nameA));
+    const normB = normalizeClassName(shortClassLabel(nameB));
     const gradeA = getGradeLevel(normA);
     const gradeB = getGradeLevel(normB);
     const numA = gradeA ? parseInt(gradeA, 10) : (normA.toLowerCase().startsWith('hz') ? 8 : 999);
@@ -11815,7 +11817,7 @@ function shortClassLabel(name){
 }
 
 function classGridHtml(){
-  let classes = state.isAdmin ? sortClassesList(state.classes) : state.classes;
+  let classes = sortClassesList(state.classes);
   if(state.isAdmin){
     if(state.adminGradeFilter && state.adminGradeFilter !== 'all'){
       classes = classes.filter(c => getGradeLevel(c.name) === state.adminGradeFilter);
@@ -11837,7 +11839,7 @@ function classGridHtml(){
   }
   let html = '<div class="classgrid">';
   classes.forEach(c=>{
-    const grade = getGradeLevel(c.name) || '';
+    const grade = getGradeLevel(c.name) || (/^hz/i.test(normalizeClassName(shortClassLabel(c.name))) ? 'hz' : '');
 
     let meta = '';
     if(state.isAdmin){
