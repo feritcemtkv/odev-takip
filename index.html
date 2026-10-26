@@ -89,21 +89,21 @@
   .section-title .line{flex:1;height:1px;background:var(--line);}
   .section-title:first-child{margin-top:0;}
 
-  .classgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;}
-  .classcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px 18px 14px;cursor:pointer;box-shadow:var(--shadow);border-top:4px solid var(--primary);display:flex;flex-direction:column;gap:10px;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;}
-  .classcard:hover{transform:translateY(-2px);border-color:#cdd5e6;box-shadow:0 1px 2px rgba(20,25,40,.05),0 14px 30px -16px rgba(20,25,40,.28);}
+  /* Kare sınıf kutuları: seviye rengi --g ile verilir */
+  .classgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;}
+  .classcard{--g:var(--primary);position:relative;aspect-ratio:1/1;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:14px;cursor:pointer;box-shadow:0 2px 10px -4px rgba(20,25,40,.12);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;min-width:0;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;}
+  .classcard:hover{transform:translateY(-2px);border-color:var(--g);box-shadow:0 14px 30px -16px rgba(20,25,40,.3);}
   .classcard:focus-visible{outline:3px solid var(--primary-soft);outline-offset:2px;}
-  .classcard[data-grade="10"]{border-top-color:var(--teal);}
-  .classcard[data-grade="11"]{border-top-color:var(--amber);}
-  .classcard[data-grade="12"]{border-top-color:var(--red);}
+  .classcard[data-grade="10"]{--g:var(--teal);}
+  .classcard[data-grade="11"]{--g:var(--amber);}
+  .classcard[data-grade="12"]{--g:var(--red);}
   .classcard[hidden],.addcard[hidden],.classgrid-noresult[hidden]{display:none;}
-  .classcard h3{font-size:19px;margin:0;}
-  .classcard .tags{display:flex;gap:6px;flex-wrap:wrap;}
-  .cc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
-  .cc-meta{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-soft);font-weight:600;}
-  .cc-meta span{display:inline-flex;align-items:center;gap:5px;}
-  .cc-meta .ic{width:14px;height:14px;}
-  .cc-del{border:1px solid transparent;background:transparent;color:var(--ink-faint);border-radius:8px;padding:5px;display:inline-flex;margin:-4px -6px 0 0;}
+  .classcard h3{font-size:30px;font-weight:900;margin:0;color:var(--g);letter-spacing:-.5px;line-height:1.1;word-break:break-word;}
+  .cc-grade{position:absolute;top:12px;left:14px;font-size:11px;font-weight:800;color:var(--g);background:color-mix(in srgb,var(--g) 12%,transparent);padding:2px 8px;border-radius:999px;}
+  .cc-meta{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;color:var(--ink-soft);font-weight:600;max-width:100%;}
+  .cc-meta span{display:inline-flex;align-items:center;gap:4px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cc-meta .ic{width:13px;height:13px;}
+  .cc-del{position:absolute;top:8px;right:8px;border:1px solid transparent;background:transparent;color:var(--ink-faint);border-radius:8px;padding:5px;display:inline-flex;}
   .cc-del:hover,.cc-del:focus-visible{background:var(--red-soft);color:var(--red);border-color:#f3c9c9;}
   .cc-del .ic{width:16px;height:16px;}
 
@@ -127,7 +127,36 @@
   .dn-add{border:1.5px dashed var(--line);border-top:1.5px dashed var(--line);background:transparent;color:var(--ink-soft);font-weight:700;font-size:12px;align-items:center;justify-content:center;min-height:110px;cursor:pointer;}
   .dn-add:hover{border-color:var(--primary);color:var(--primary-deep);background:var(--primary-soft);}
 
-  .home-schedule{margin-top:26px;}
+  .home-schedule{margin-top:6px;}
+
+  /* Ana sayfa: mavi başlık, taşan hızlı kutular, alt menü çubuğu */
+  body.home-mode header.top{display:none;}
+  body.home-mode{overflow-x:hidden;}
+  body.home-mode main#app{padding-top:0;padding-bottom:120px;}
+  .home-hero{margin:0 calc(50% - 50vw);background:linear-gradient(120deg,#1f6fe5 0%,#2d86f0 55%,#4cd4b0 100%);color:#fff;padding:18px 0 78px;position:relative;overflow:hidden;}
+  .home-hero::after{content:"";position:absolute;right:-120px;top:-140px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.18),transparent 65%);pointer-events:none;}
+  .hh-inner{max-width:1180px;margin:0 auto;padding:0 30px;position:relative;z-index:1;}
+  .hh-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .hh-app{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:800;letter-spacing:.2px;}
+  .hh-app .ic{width:20px;height:20px;stroke:#fff;}
+  .hh-menu{border:none;background:rgba(255,255,255,.16);color:#fff;width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;}
+  .hh-menu:hover{background:rgba(255,255,255,.26);}
+  .hh-menu .ic{width:22px;height:22px;stroke:#fff;}
+  .hh-user{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:22px;}
+  .hh-name{font-size:26px;font-weight:800;line-height:1.2;}
+  .hh-role{font-size:15px;opacity:.92;margin-top:4px;}
+  .hh-meta{font-size:13px;opacity:.8;margin-top:3px;}
+  .hh-av{flex-shrink:0;width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.22);border:2px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;}
+  .hh-quick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:560px;margin:-58px 0 8px;position:relative;z-index:2;}
+  .app-tile{aspect-ratio:1/1;max-height:150px;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:0 8px 24px -12px rgba(20,25,40,.25);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--ink);font-size:14px;font-weight:600;transition:transform .15s ease,border-color .15s ease;}
+  .app-tile:hover{transform:translateY(-2px);border-color:#2d86f0;}
+  .app-tile .ic{width:38px;height:38px;stroke:#2d7ff0;stroke-width:1.7;}
+  .home-h{font-size:24px;font-weight:800;margin:26px 0 14px;letter-spacing:-.3px;}
+  .bottom-nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom, 0px));width:calc(100% - 28px);max-width:520px;background:linear-gradient(120deg,#1f6fe5,#2d86f0);border-radius:999px;padding:8px 10px;display:flex;justify-content:space-around;box-shadow:0 12px 30px -10px rgba(31,111,229,.55);z-index:45;}
+  .bn-item{border:none;background:transparent;color:rgba(255,255,255,.78);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:700;padding:6px 10px;border-radius:999px;min-width:60px;}
+  .bn-item .ic{width:24px;height:24px;stroke:currentColor;}
+  .bn-item:hover{color:#fff;}
+  .bn-item.active{color:#fff;background:rgba(255,255,255,.18);}
   .track-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px;max-width:560px;}
   .track-tile{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:var(--radius-sm);padding:10px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:700;text-align:center;line-height:1.25;min-height:68px;position:relative;box-shadow:var(--shadow);transition:border-color .15s ease,background .15s ease;}
   .track-tile .ic{width:20px;height:20px;color:var(--primary);}
@@ -431,12 +460,18 @@
     .teacherbox .who{display:none;}
   }
   @media(max-width:600px){
-    .home-nav-tabs{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;}
-    .home-tab-btn{white-space:nowrap;padding:8px 14px;}
-    .admin-panel .ap-actions{width:100%;}
-    .admin-panel .ap-actions .btn{flex:1 1 auto;justify-content:center;}
     .home-toolbar select{width:100%;}
-    .classgrid{grid-template-columns:1fr;gap:12px;}
+    .classgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+    .classcard{padding:10px;border-radius:16px;}
+    .classcard h3{font-size:24px;}
+    .cc-grade{top:8px;left:8px;font-size:9.5px;padding:1px 6px;}
+    .hh-inner{padding:0 18px;}
+    .hh-name{font-size:22px;}
+    .hh-av{width:60px;height:60px;font-size:24px;}
+    .hh-quick{gap:10px;}
+    .app-tile{border-radius:16px;font-size:12.5px;gap:8px;}
+    .app-tile .ic{width:32px;height:32px;}
+    .home-h{font-size:21px;}
   }
 
   /* Schedule Image Import & Preview Styles */
@@ -530,6 +565,8 @@ const ICONS = {
   clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
   check:'<polyline points="20 6 9 17 4 12"/>',
   search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  menu:'<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
+  grid:'<rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/>',
   printer:'<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>',
   bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
   camera:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
@@ -6677,6 +6714,8 @@ async function updateDenemeScore(sid, examId, subject, field, value){
 
 function render(){
   const app = document.getElementById('app');
+  // Ana sayfa kendi mavi başlığını ve alt menüsünü çizer; üst çubuk diğer sayfalarda kalır
+  document.body.classList.toggle('home-mode', state.page==='home' && !state.loading);
   if(state.page==='login') return renderLogin(app);
   if(state.loading){ app.innerHTML = '<div class="empty"><div class="big">⏳</div>Yükleniyor...</div>'; return; }
   if(state.page==='home') return renderHome(app);
@@ -11485,36 +11524,48 @@ function wireAdminAnnualPlans(app){
 }
 
 function renderHome(app){
-  // Adminde Ders Programı ve Ajanda & Takvim kaldırıldı; yerine Yıllık Planlar eklendi
-  // Ders programı ayrı sekme değil, Sınıflarım'ın altında gösterilir
+  // Ders programı ayrı sekme değil, Sınıflarım'ın altında gösterilir; adminde Ajanda yok
   let activeTab = state.homeTab || 'classes';
-  if(activeTab === 'schedule'){
-    activeTab = 'classes';
-    state.homeTab = 'classes';
-  }
-  if(state.isAdmin && activeTab === 'calendar'){
+  if(activeTab === 'schedule' || (state.isAdmin && activeTab === 'calendar')){
     activeTab = 'classes';
     state.homeTab = 'classes';
   }
 
-  const adminPanel = state.isAdmin ?
-    '<div class="admin-panel">' +
-      '<div>' +
-        '<div class="ap-title">' + ic('eye') + 'Yönetici Kontrol Paneli</div>' +
-        '<div class="ap-desc">Tüm öğretmenlerin sınıflarını izleyin, yeni sınıf atayın ve kullanıcıları yönetin.</div>' +
+  const displayName = (document.getElementById('teacherNameLbl') || {}).textContent || state.username || '';
+  const todayLabel = new Date().toLocaleDateString('tr-TR', { weekday:'long', day:'numeric', month:'long' });
+  const classCount = state.classes.length;
+
+  // Üstteki mavi alanın üzerine taşan hızlı erişim kutuları
+  const quick = state.isAdmin
+    ? [['adminQuickAddClassBtn','plus','Sınıf Ekle'], ['adminBulkClassExcelBtn','upload','Excel Yükle'], ['adminNewUserBtn','user','Yeni Kullanıcı']]
+    : [['topAddClassBtn','plus','Sınıf Ekle'], ['quickScheduleBtn','clock','Ders Programı'], ['quickCalendarBtn','calendar','Ajanda']];
+
+  const hero =
+    '<section class="home-hero">' +
+      '<div class="hh-inner">' +
+        '<div class="hh-bar">' +
+          '<span class="hh-app">' + ic('book') + 'Ödev Takip</span>' +
+          '<button type="button" class="hh-menu" id="heroMenuBtn" aria-label="Hesap menüsü">' + ic('menu') + '</button>' +
+        '</div>' +
+        '<div class="hh-user">' +
+          '<div>' +
+            '<div class="hh-name">' + escapeHtml(displayName) + '</div>' +
+            '<div class="hh-role">' + (state.isAdmin ? 'Yönetici · İzleme modu' : 'Matematik Öğretmeni') + '</div>' +
+            '<div class="hh-meta">' + escapeHtml(todayLabel) + ' · ' + classCount + ' sınıf</div>' +
+          '</div>' +
+          '<div class="hh-av">' + escapeHtml((displayName || '?').trim().charAt(0).toLocaleUpperCase('tr')) + '</div>' +
+        '</div>' +
       '</div>' +
-      '<div class="ap-actions">' +
-        '<button class="btn btn-primary btn-sm" id="adminQuickAddClassBtn">' + ic('plus') + 'Sınıf Ekle &amp; Ata</button>' +
-        '<button class="btn btn-outline btn-sm" id="adminBulkClassExcelBtn">' + ic('upload') + 'Excel ile Toplu Yükle</button>' +
-        '<input type="file" id="adminBulkClassExcelFile" accept=".xlsx,.xls,.csv" hidden>' +
-        '<button class="btn btn-outline btn-sm" id="adminNewUserBtn">' + ic('user') + 'Yeni Kullanıcı</button>' +
-      '</div>' +
-    '</div>' : '';
+    '</section>' +
+    '<div class="hh-quick">' +
+      quick.map(([id, icon, label]) => '<button type="button" class="app-tile" id="' + id + '">' + ic(icon) + '<span>' + label + '</span></button>').join('') +
+      (state.isAdmin ? '<input type="file" id="adminBulkClassExcelFile" accept=".xlsx,.xls,.csv" hidden>' : '') +
+    '</div>';
 
   let toolbar = '';
-  if(activeTab === 'classes' && (state.isAdmin || state.classes.length > 6)){
+  if(activeTab === 'classes' && (state.isAdmin || classCount > 6)){
     let filters = '';
-    if(state.isAdmin && state.classes.length > 0){
+    if(state.isAdmin && classCount > 0){
       const grades = [...new Set(state.classes.map(c=>getGradeLevel(c.name)).filter(Boolean))].sort((a,b)=>parseInt(a,10)-parseInt(b,10));
       const activeF = state.adminGradeFilter || 'all';
       const activeTeacher = state.adminTeacherFilter || 'all';
@@ -11528,7 +11579,7 @@ function renderHome(app){
           }).join('') +
         '</select>' +
         '</div><div class="row chip-row">' +
-        '<button class="chip '+(activeF==='all'?'active':'')+'" data-filtergrade="all">Tümü<span class="n">'+state.classes.length+'</span></button>' +
+        '<button class="chip '+(activeF==='all'?'active':'')+'" data-filtergrade="all">Tümü<span class="n">'+classCount+'</span></button>' +
         grades.map(g=>{
           const count = state.classes.filter(c=>getGradeLevel(c.name)===g).length;
           return '<button class="chip '+(activeF===g?'active':'')+'" data-filtergrade="'+g+'">'+g+'. sınıflar<span class="n">'+count+'</span></button>';
@@ -11545,51 +11596,47 @@ function renderHome(app){
       '</div>';
   }
 
-  const tabs = state.isAdmin
-    ? [['classes','school','Sınıflar'], ['annual_plans','file','Yıllık Planlar']]
-    : [['classes','school','Sınıflarım'], ['calendar','calendar','Ajanda & Takvim']];
-  const navTabsHtml =
-    '<div class="home-nav-tabs" role="tablist">' +
-      tabs.map(([key, icon, label]) =>
-        '<button class="home-tab-btn '+(activeTab===key?'active':'')+'" role="tab" aria-selected="'+(activeTab===key)+'" data-hometab="'+key+'">'+ic(icon)+escapeHtml(label)+'</button>'
-      ).join('') +
-    '</div>';
-
   let tabBodyHtml = '';
   if(activeTab === 'classes'){
-    tabBodyHtml = toolbar + classGridHtml() +
-      (!state.isAdmin ? '<div class="home-schedule">' + scheduleViewHtml() + '</div>' : '');
+    tabBodyHtml =
+      '<h2 class="home-h">' + (state.isAdmin ? 'Tüm Sınıflar' : 'Sınıflarım') + '</h2>' +
+      toolbar + classGridHtml() +
+      (!state.isAdmin ? '<h2 class="home-h" id="homeScheduleTitle">Ders Programı</h2><div class="home-schedule">' + scheduleViewHtml() + '</div>' : '');
   } else if(activeTab === 'annual_plans'){
-    tabBodyHtml = adminAnnualPlansViewHtml();
+    tabBodyHtml = '<h2 class="home-h">Yıllık Planlar</h2>' + adminAnnualPlansViewHtml();
   } else if(activeTab === 'calendar'){
-    tabBodyHtml = calendarViewHtml();
+    tabBodyHtml = '<h2 class="home-h">Ajanda &amp; Takvim</h2>' + calendarViewHtml();
   }
 
-  const todayLabel = new Date().toLocaleDateString('tr-TR', { weekday:'long', day:'numeric', month:'long' });
-  const classCount = state.classes.length;
-  const subParts = [todayLabel, classCount + ' sınıf'];
-  if(state.isAdmin) subParts.push('Yönetici');
+  // Alttaki menü çubuğu sekmelerin yerini alır
+  const navItems = state.isAdmin
+    ? [['classes','grid','Sınıflar'], ['annual_plans','file','Yıllık Planlar'], ['account','user','Hesap']]
+    : [['classes','grid','Sınıflarım'], ['schedule','clock','Program'], ['calendar','calendar','Ajanda'], ['account','user','Hesap']];
+  const bottomNav =
+    '<nav class="bottom-nav" aria-label="Ana menü">' +
+      navItems.map(([key, icon, label]) =>
+        '<button type="button" class="bn-item' + (activeTab === key ? ' active' : '') + '" data-bnav="' + key + '" aria-label="' + label + '">' + ic(icon) + '<span>' + label + '</span></button>'
+      ).join('') +
+    '</nav>';
 
-  app.innerHTML =
-    '<div class="home-head">' +
-      '<div>' +
-        '<h2>Hoş geldin, '+escapeHtml(state.username||'')+'</h2>' +
-        '<div class="sub">'+escapeHtml(subParts.join(' · '))+'</div>' +
-      '</div>' +
-      (activeTab === 'classes' && !state.isAdmin && classCount > 0 ? '<button class="btn btn-primary btn-sm" id="topAddClassBtn">' + ic('plus') + 'Sınıf Ekle</button>' : '') +
-    '</div>' +
-    adminPanel +
-    navTabsHtml +
-    tabBodyHtml;
+  app.innerHTML = hero + '<div class="home-body">' + tabBodyHtml + '</div>' + bottomNav;
 
-  app.querySelectorAll('.home-tab-btn').forEach(btn => {
+  const goTab = (tab) => { state.homeTab = tab; render(); window.scrollTo(0, 0); };
+  const goSchedule = () => {
+    const scroll = () => { const t = document.getElementById('homeScheduleTitle'); if(t) t.scrollIntoView({ behavior:'smooth', block:'start' }); };
+    if(activeTab !== 'classes'){ state.homeTab = 'classes'; render(); setTimeout(scroll, 50); } else scroll();
+  };
+
+  document.getElementById('heroMenuBtn').onclick = openUserProfileModal;
+  app.querySelectorAll('[data-bnav]').forEach(btn => {
     btn.onclick = () => {
-      state.homeTab = btn.dataset.hometab;
-      render();
+      const key = btn.dataset.bnav;
+      if(key === 'account') openUserProfileModal();
+      else if(key === 'schedule') goSchedule();
+      else goTab(key);
     };
   });
 
-  // Yönetici paneli her sekmede görünür, bu yüzden butonları sekmeden bağımsız bağlanır
   if(state.isAdmin){
     const qBtn = document.getElementById('adminQuickAddClassBtn');
     if(qBtn) qBtn.onclick = openNewClassModal;
@@ -11607,6 +11654,10 @@ function renderHome(app){
         bulkFile.value = '';
       };
     }
+  } else {
+    document.getElementById('topAddClassBtn').onclick = openNewClassModal;
+    document.getElementById('quickScheduleBtn').onclick = goSchedule;
+    document.getElementById('quickCalendarBtn').onclick = () => goTab('calendar');
   }
 
   if(activeTab === 'classes'){
@@ -11626,8 +11677,6 @@ function renderHome(app){
         };
       }
     }
-    const topAdd = document.getElementById('topAddClassBtn');
-    if(topAdd) topAdd.onclick = openNewClassModal;
     wireClassSearch(app);
     wireClassCards(app);
     if(!state.isAdmin) wireScheduleView(app);
@@ -11695,7 +11744,9 @@ function classGridHtml(){
       : '';
 
     html += '<div class="classcard" role="button" tabindex="0" data-grade="' + grade + '" data-name="' + escapeHtml(String(c.name||'').toLocaleLowerCase('tr')) + '" data-openclass="'+c.id+'">' +
-      '<div class="cc-head"><h3>'+escapeHtml(c.name)+'</h3>' + delBtn + '</div>' +
+      (grade ? '<span class="cc-grade">' + grade + '. sınıf</span>' : '') +
+      delBtn +
+      '<h3>'+escapeHtml(c.name)+'</h3>' +
       meta +
     '</div>';
   });
