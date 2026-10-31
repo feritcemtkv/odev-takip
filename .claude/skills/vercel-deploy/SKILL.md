@@ -39,7 +39,7 @@ README.md
 .env*
 ```
 
-`package.json` deploy'dan çıkarıldığı için Vercel `npm install` çalıştırmaz ve projeyi saf statik site olarak sunar.
+Boş `buildCommand` ve `installCommand` sayesinde Vercel `npm install` ya da derleme çalıştırmaz; `package.json` da yüklenmediği için proje saf statik site olarak sunulur.
 
 `vercel.json` (repo kökü):
 
@@ -47,8 +47,8 @@ README.md
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": null,
-  "installCommand": null,
+  "buildCommand": "",
+  "installCommand": "",
   "outputDirectory": ".",
   "cleanUrls": false,
   "headers": [
