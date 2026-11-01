@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://esm.sh; style-src 'self' 'unsafe-inline'; connect-src 'self' https://miekldpkuclbinclnvvu.supabase.co https://esm.sh https://cdnjs.cloudflare.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; img-src 'self' data: blob:; font-src 'self'; manifest-src 'self'; base-uri 'self';">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
@@ -74,7 +74,8 @@
   .pagehead h2{font-size:22px;font-weight:800;}
   .pagehead .sub{color:var(--ink-soft);font-size:13px;}
   .pagehead .spacer{flex:1;}
-  .backlink{display:inline-flex;align-items:center;gap:5px;color:var(--primary-deep);font-weight:700;text-decoration:none;font-size:13.5px;cursor:pointer;margin-bottom:12px;border:none;background:none;padding:0;}
+  .backlink{display:inline-flex;align-items:center;gap:5px;color:var(--primary-deep);font-weight:700;text-decoration:none;font-size:13.5px;cursor:pointer;margin-bottom:6px;border:none;background:none;padding:6px 0;min-height:32px;}
+  .backlink .ic{transform:rotate(180deg);}
 
   .btn{border:none;padding:10px 16px;border-radius:10px;font-weight:700;font-size:13.5px;display:inline-flex;align-items:center;gap:7px;}
   .btn-primary{background:var(--primary);color:#fff;}
@@ -144,7 +145,8 @@
   .home-hero::after{content:"";position:absolute;right:-120px;top:-140px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.18),transparent 65%);pointer-events:none;}
   .hh-inner{max-width:1180px;margin:0 auto;padding:0 30px;position:relative;z-index:1;}
   .hh-user{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:6px;}
-  .hh-name{font-size:26px;font-weight:800;line-height:1.2;}
+  .hh-greet{font-size:14px;font-weight:600;color:rgba(255,255,255,.85);margin-bottom:2px;}
+  .hh-name{font-size:30px;font-weight:800;line-height:1.15;letter-spacing:-.5px;}
   .hh-role{font-size:15px;opacity:.92;margin-top:4px;}
   .hh-meta{font-size:13px;opacity:.8;margin-top:3px;}
   .hh-logo{flex-shrink:0;width:84px;height:84px;border-radius:50%;box-shadow:0 6px 18px -6px rgba(0,0,0,.3);}
@@ -463,6 +465,22 @@
     .teacherbox .who{display:none;}
   }
   @media(max-width:600px){
+    header.top{padding:10px 14px;gap:10px;}
+    .brand{min-width:0;}
+    .brand .logo{width:36px;height:36px;flex-shrink:0;}
+    .brand h1{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .brand .ver{display:none;}
+    #pwaInstallHeaderBtn{padding:6px 10px !important;}
+    #pwaInstallHeaderBtn span{display:none;}
+    .teacherbox{flex-shrink:0;padding:4px;}
+  }
+  :where(button,a,input,select,textarea,[role="button"],[tabindex]):focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
+  [role="button"]{cursor:pointer;}
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:1ms !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important;}
+    .slot-card:hover,.classcard:hover,.brand:active{transform:none;}
+  }
+  @media(max-width:600px){
     .home-toolbar select{width:100%;}
     .classgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
     .classcard{padding:10px;border-radius:16px;}
@@ -496,6 +514,118 @@
   .sch-cell-inp-group input{padding:4px;font-size:11px;border:1px solid var(--line);border-radius:4px;text-align:center;width:100%;box-sizing:border-box;}
   .sch-cell-inp-group input.cls{font-weight:800;color:var(--primary-deep);background:#f0f5ff;}
   .sch-cell-inp-group input.subj{color:var(--ink-soft);background:#fafafa;}
+
+  /* ---------- Görsel cila: ortak yüzeyler ---------- */
+  body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+  ::selection{background:var(--primary-soft);color:var(--primary-deep);}
+  input:focus-visible,textarea:focus-visible,select:focus-visible{outline:none;border-color:var(--primary) !important;box-shadow:0 0 0 3px var(--primary-soft);}
+  .btn{transition:background-color .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease;}
+  .btn-primary:hover{background:var(--primary-deep);}
+  .btn-outline:hover{border-color:#c9d1e3;background:#fafbfe;}
+  .btn-soft:hover{background:#dce4fb;}
+  .btn-danger:hover{background:#f8dada;}
+  .card{border-color:#e6e9f1;}
+
+  /* Özet şeridi (sınıf ve öğrenci sayfası) */
+  .infobar{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);padding:0;gap:0;overflow:hidden;}
+  .infobar .item{flex:1 1 120px;padding:14px 18px;border-right:1px solid var(--line);min-width:0;}
+  .infobar .item:last-child{border-right:none;}
+  .infobar .item .v{font-size:24px;font-weight:800;color:var(--ink);letter-spacing:-.4px;line-height:1.15;font-variant-numeric:tabular-nums;}
+  .infobar .item .k{font-size:12px;color:var(--ink-soft);opacity:1;font-weight:600;margin-top:3px;}
+  .infobar .item[id]{transition:background-color .15s ease;}
+  .infobar .item[id]:hover{background:var(--surface-2);}
+
+  /* Sınıf başlığı: seviye rengiyle */
+  .classhead{--g:var(--primary);gap:4px 14px;}
+  .classhead[data-grade="hz"]{--g:#7c4dcc;}
+  .classhead[data-grade="10"]{--g:var(--teal);}
+  .classhead[data-grade="11"]{--g:var(--amber);}
+  .classhead[data-grade="12"]{--g:var(--red);}
+  .classhead h2{font-size:34px;font-weight:900;letter-spacing:-.6px;color:var(--g);line-height:1.05;}
+  .classhead .sub{font-size:13.5px;font-weight:600;}
+
+  /* Takip kutucukları */
+  .track-grid{gap:10px;}
+  .track-tile{min-height:84px;gap:8px;font-size:12.5px;border-radius:var(--radius);transition:border-color .15s ease,background-color .15s ease,transform .15s ease;}
+  .track-tile .ic{width:20px;height:20px;padding:7px;box-sizing:content-box;border-radius:10px;background:var(--primary-soft);}
+  .track-tile.alert .ic{background:var(--red-soft);}
+  .track-tile.purple .ic{background:#f3e8ff;}
+  .track-tile:hover{transform:translateY(-1px);}
+
+  /* Öğrenci listesi: tek kap, satır ayırıcılı */
+  .stlist{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+  .stlist .rowcard{margin:0;border:none;border-radius:0;box-shadow:none;border-bottom:1px solid var(--line);padding:11px 16px;transition:background-color .12s ease;}
+  .stlist .rowcard:last-child{border-bottom:none;}
+  .stlist .rowcard:hover{background:#f8f9fd;}
+  .stlist .rowcard:focus-visible{outline-offset:-2px;}
+  .stlist .rowcard .no{min-width:30px;}
+  .stlist .rowcard .name{font-size:14.5px;font-weight:650;min-width:0;}
+  .stlist .rowcard .pct{font-variant-numeric:tabular-nums;}
+  .stlist .rowcard:hover .chev{color:var(--primary);}
+  .st-av{width:34px;height:34px;border-radius:50%;background:var(--primary-soft);color:var(--primary-deep);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;letter-spacing:.02em;flex-shrink:0;}
+  .st-av.lg{width:56px;height:56px;font-size:19px;}
+
+  /* Öğrenci başlığı */
+  .stuhead{gap:14px;flex-wrap:nowrap;}
+  .stuhead-txt{min-width:0;}
+  .stuhead h2{font-size:26px;letter-spacing:-.4px;line-height:1.15;}
+  .stuhead .sub{display:flex;align-items:center;gap:8px;margin-top:4px;font-weight:600;}
+  .stu-no{font-size:12px;font-weight:800;color:var(--primary-deep);background:var(--primary-soft);padding:2px 9px;border-radius:999px;font-variant-numeric:tabular-nums;}
+  .stu-no.muted{color:var(--ink-soft);background:var(--surface-2);}
+
+  /* Bilgi kutuları */
+  .callout{border-radius:var(--radius);padding:12px 16px;margin-bottom:14px;font-size:13px;line-height:1.45;font-weight:600;}
+  .callout .ic{width:20px;height:20px;}
+  .callout.info{background:var(--primary-soft);color:var(--primary-deep);}
+  .callout.ok{background:var(--teal-soft);color:#0b6e62;}
+
+  /* Ders programı: boş hücreler sakin, üzerine gelince belirgin */
+  .slot-card.empty{background:transparent;border:1px dashed transparent;color:#b8bfcc;}
+  .slot-card.empty .empty-plus{font-size:16px;font-weight:600;opacity:.7;}
+  .schedule-table tr:hover .slot-card.empty{border-color:#d8deea;}
+  .slot-card.empty:hover,.slot-card.empty:focus-visible{background:var(--primary-soft);border-color:var(--primary);color:var(--primary);}
+  .slot-card.empty:hover .empty-plus{opacity:1;}
+  .schedule-table td{border-color:#edf0f6;}
+
+  /* Alt menü: renkli parlama yerine nötr gölge */
+  .bottom-nav{background:var(--primary);box-shadow:0 10px 28px -14px rgba(20,25,40,.55),0 2px 6px rgba(20,25,40,.12);}
+
+  /* Giriş ekranı */
+  body.login-mode header.top{display:none;}
+  body.login-mode main#app{max-width:none;padding:0;}
+  .loginwrap{min-height:100vh;min-height:100dvh;padding:24px 16px;background:var(--bg);}
+  .login-shell{width:100%;max-width:880px;display:grid;grid-template-columns:1.05fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:0 30px 60px -36px rgba(20,25,40,.35),0 2px 8px rgba(20,25,40,.05);overflow:hidden;}
+  .login-brand{background:linear-gradient(140deg,#1f6fe5 0%,#2d86f0 60%,#3fb8b0 100%);color:#fff;padding:44px 40px;display:flex;flex-direction:column;justify-content:flex-end;gap:10px;min-height:420px;position:relative;}
+  .login-brand .lb-logo{width:76px;height:76px;border-radius:50%;background:#fff;box-shadow:0 6px 18px -8px rgba(0,0,0,.35);position:absolute;top:36px;left:40px;}
+  .login-brand .lb-title{font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1.15;}
+  .login-brand .lb-desc{margin:0;font-size:14.5px;line-height:1.5;color:rgba(255,255,255,.9);max-width:30ch;}
+  .loginwrap .loginbox{max-width:none;border:none;border-radius:0;box-shadow:none;padding:44px 40px;display:flex;flex-direction:column;justify-content:center;}
+  .loginbox h2{text-align:left;font-size:24px;letter-spacing:-.3px;}
+  .loginbox p.sub{text-align:left;font-size:13.5px;margin-bottom:26px;}
+  .loginbox label{font-size:12.5px;color:var(--ink);}
+  .loginbox input{background:var(--bg);transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease;}
+  .loginbox input:focus{outline:none;border-color:var(--primary);background:var(--surface);box-shadow:0 0 0 3px var(--primary-soft);}
+  .loginbox #loginBtn{width:100%;justify-content:center;margin-top:22px;padding:13px 16px;font-size:14.5px;border-radius:12px;}
+  @media(max-width:720px){
+    .login-shell{grid-template-columns:1fr;max-width:420px;}
+    .login-brand{min-height:0;padding:28px 26px 26px;flex-direction:row;align-items:center;gap:14px;justify-content:flex-start;}
+    .login-brand .lb-logo{position:static;width:56px;height:56px;flex-shrink:0;}
+    .login-brand .lb-title{font-size:19px;}
+    .login-brand .lb-desc{display:none;}
+    .loginwrap .loginbox{padding:28px 26px 30px;}
+  }
+  @media(max-width:600px){
+    .classhead h2{font-size:30px;}
+    .infobar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);}
+    .infobar .item{background:var(--surface);border:none;padding:12px 14px;}
+    .infobar .item:last-child:nth-child(odd){grid-column:span 2;}
+    .infobar .item .v{font-size:20px;}
+    .track-grid{gap:8px;}
+    .track-tile{min-height:80px;font-size:12px;padding:10px 4px;}
+    .stlist .rowcard{padding:10px 12px;gap:10px;}
+    .st-av.lg{width:48px;height:48px;font-size:17px;}
+    .stuhead h2{font-size:22px;}
+  }
 </style>
 </head>
 <body>
@@ -508,7 +638,7 @@
   <div class="spacer"></div>
   <button id="pwaInstallHeaderBtn" class="btn btn-sm btn-soft" style="display:none;align-items:center;gap:6px;font-weight:700;border-radius:999px;padding:6px 14px;box-shadow:0 1px 3px rgba(0,0,0,0.06);white-space:nowrap;" title="Uygulamayı Cihazınıza Yükleyin">
     <svg class="ic" style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 0 0 4.561 21h14.878a2 2 0 0 0 1.94-1.515L22 17"/></svg>
-    <span>📲 Uygulamayı Yükle</span>
+    <span>Uygulamayı Yükle</span>
   </button>
   <button class="teacherbox" id="teacherBtn" style="display:none;">
     <div class="who"><div class="name" id="teacherNameLbl"></div><div class="branch">Hesap Ayarları</div></div>
@@ -566,6 +696,7 @@ const ICONS = {
   calendar:'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
   clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
   check:'<polyline points="20 6 9 17 4 12"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5h.01"/>',
   search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   menu:'<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
   grid:'<rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/>',
@@ -730,6 +861,13 @@ function showToast(msg){
 }
 function isGrade12(name){ name = name || (state.cls?state.cls.name:''); return /12/.test(name); }
 function isGrade11(name){ name = name || (state.cls?state.cls.name:''); return /11/.test(name); }
+function studentInitials(name){
+  const parts = String(name||'').trim().split(/\s+/).filter(Boolean);
+  if(!parts.length) return '?';
+  const first = parts[0].charAt(0);
+  const last = parts.length > 1 ? parts[parts.length-1].charAt(0) : '';
+  return (first + last).toLocaleUpperCase('tr');
+}
 function getGradeLevel(name){
   name = name || (state.cls?state.cls.name:'');
   if(!name) return null;
@@ -1654,19 +1792,25 @@ document.addEventListener('click', (e)=>{
 
 function renderLogin(app){
   app.innerHTML =
-    '<div class="loginwrap"><div class="loginbox">' +
+    '<div class="loginwrap"><div class="login-shell">' +
+      '<div class="login-brand">' +
+        '<img class="lb-logo" src="img/takev-logo.svg" alt="TAKEV Okulları" onerror="this.hidden=true">' +
+        '<div class="lb-title">Sınıf Yönetim Panelim</div>' +
+        '<p class="lb-desc">Ödev, sınav, performans ve rehberlik takibi tek yerde.</p>' +
+      '</div>' +
+      '<div class="loginbox">' +
       '<h2>Giriş Yap</h2>' +
       '<p class="sub">Sınıf panelinize erişmek için giriş yapın</p>' +
       '<label>Kullanıcı Adı</label>' +
-      '<input type="text" id="loginUser" autocapitalize="none" autocorrect="off">' +
+      '<input type="text" id="loginUser" autocapitalize="none" autocorrect="off" autocomplete="username">' +
       '<label>Şifre</label>' +
       '<div class="passwrap">' +
-        '<input type="password" id="loginPass">' +
+        '<input type="password" id="loginPass" autocomplete="current-password">' +
         '<button type="button" class="eye-btn" id="loginPassEye" title="Şifreyi göster" aria-label="Şifreyi göster">' + ic('eye') + '</button>' +
       '</div>' +
       '<button class="btn btn-primary" id="loginBtn">Giriş Yap</button>' +
       '<div class="err" id="loginErr"></div>' +
-    '</div></div>';
+    '</div></div></div>';
   wirePassToggle('loginPass', 'loginPassEye');
   const $user = document.getElementById('loginUser');
   const $pass = document.getElementById('loginPass');
@@ -6929,6 +7073,7 @@ function render(){
   const app = document.getElementById('app');
   // Ana sayfa kendi mavi başlığını ve alt menüsünü çizer; üst çubuk diğer sayfalarda kalır
   document.body.classList.toggle('home-mode', state.page==='home' && !state.loading);
+  document.body.classList.toggle('login-mode', state.page==='login');
   if(state.page==='login') return renderLogin(app);
   if(state.loading){ app.innerHTML = '<div class="empty"><div class="big">⏳</div>Yükleniyor...</div>'; return; }
   if(state.page==='home') return renderHome(app);
@@ -9833,7 +9978,7 @@ function scheduleViewHtml(){
           }
         }
         return '<td>' +
-          '<div class="slot-card filled '+colorClass+' '+(isActive ? 'is-active' : '')+'" data-day="'+day.key+'" data-period="'+p.id+'" title="Tıklayarak düzenleyin">' +
+          '<div class="slot-card filled '+colorClass+' '+(isActive ? 'is-active' : '')+'" role="button" tabindex="0" data-day="'+day.key+'" data-period="'+p.id+'" title="Tıklayarak düzenleyin">' +
             '<div class="cls-name">'+escapeHtml(slot.cls)+'</div>' +
             (slot.subj ? '<div class="subj-name">'+escapeHtml(slot.subj)+'</div>' : '') +
             activeTopicBadge +
@@ -9841,7 +9986,7 @@ function scheduleViewHtml(){
         '</td>';
       } else {
         return '<td>' +
-          '<div class="slot-card empty '+(isActive ? 'is-active' : '')+'" data-day="'+day.key+'" data-period="'+p.id+'" title="Ders eklemek için tıklayın">' +
+          '<div class="slot-card empty '+(isActive ? 'is-active' : '')+'" role="button" tabindex="0" aria-label="'+day.label+' '+p.no+'. saat: ders ekle" data-day="'+day.key+'" data-period="'+p.id+'" title="Ders eklemek için tıklayın">' +
             '<span class="empty-plus">+</span>' +
           '</div>' +
         '</td>';
@@ -11758,6 +11903,7 @@ function renderHome(app){
       '<div class="hh-inner">' +
         '<div class="hh-user">' +
           '<div>' +
+            '<div class="hh-greet">' + (new Date().getHours() < 12 ? 'Günaydın' : (new Date().getHours() < 18 ? 'İyi günler' : 'İyi akşamlar')) + ',</div>' +
             '<div class="hh-name">' + escapeHtml(displayName) + '</div>' +
             '<div class="hh-role">' + (state.isAdmin ? 'Yönetici · İzleme modu' : 'Matematik Öğretmeni') + '</div>' +
             '<div class="hh-meta">' + escapeHtml(todayLabel) + '</div>' +
@@ -12089,7 +12235,7 @@ function renderMatPicker(app){
     const pct = students.length ? Math.round((doneCount / students.length) * 100) : 0;
     const badgeColor = pct >= 80 ? '#059669' : (pct >= 50 ? '#d97706' : '#dc2626');
 
-    return '<div class="card rowcard" data-pick-mat="' + m.slot_no + '" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;margin-bottom:8px;">' +
+    return '<div class="card rowcard" role="button" tabindex="0" data-pick-mat="' + m.slot_no + '" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;margin-bottom:8px;">' +
       '<div style="flex:1;min-width:0;">' +
         '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
           '<b style="font-size:15px;color:var(--ink);">' + escapeHtml(m.label) + '</b>' +
@@ -12325,8 +12471,9 @@ function renderRoster(app){
           '</button>';
       }
     }
-    return '<div class="card rowcard" data-student="'+s.id+'">' +
+    return '<div class="card rowcard" role="button" tabindex="0" data-student="'+s.id+'">' +
       '<div class="no">'+escapeHtml(s.no||'—')+'</div>' +
+      '<div class="st-av" aria-hidden="true">'+escapeHtml(studentInitials(s.name))+'</div>' +
       '<div class="name">'+absentTag+escapeHtml(s.name)+'</div>' +
       screenTimeBadge +
       flBadge +
@@ -12359,7 +12506,7 @@ function renderRoster(app){
   app.innerHTML =
     '<button class="backlink" id="toHome">'+ic('chevron')+' Sınıflarım listesine dön</button>' +
     adminBadge +
-    '<div class="pagehead"><h2>'+escapeHtml(cls.name)+'</h2><button class="sub" id="subToHome" style="cursor:pointer;background:none;border:none;padding:0;color:var(--ink-soft);font-size:13px;display:inline-flex;align-items:center;gap:4px;" title="Sınıflar listesine dön">Sınıf paneli &middot; Sınıflara dön &larr;</button></div>' +
+    '<div class="pagehead classhead" data-grade="'+(getGradeLevel(cls.name) || (/^hz/i.test(normalizeClassName(shortClassLabel(cls.name))) ? 'hz' : ''))+'"><h2>'+escapeHtml(cls.name)+'</h2><div class="sub">Sınıf paneli &middot; '+cls.students.length+' öğrenci</div></div>' +
     '<div class="infobar">' +
       '<div class="item"><div class="v">'+cls.students.length+'</div><div class="k">Öğrenci</div></div>' +
       '<div class="item"><div class="v">'+(hwAvg!=null?hwAvg+'%':'-')+'</div><div class="k">Ödev Tamamlama Ort.</div></div>' +
@@ -12382,7 +12529,7 @@ function renderRoster(app){
     '<div class="section-title"><span>Öğrenciler</span><span class="line"></span>' +
       '<button class="btn btn-outline btn-sm" id="sortNo">No</button><button class="btn btn-outline btn-sm" id="sortName">İsim</button>' +
     '</div>' +
-    (list || '<div class="empty">Henüz öğrenci yok.</div>') +
+    (list ? '<div class="stlist">'+list+'</div>' : '<div class="empty">Henüz öğrenci yok.</div>') +
     (!state.isAdmin ? (
       '<button class="btn btn-soft full" id="addStudentBtn" style="margin-top:12px;">'+ic('plus')+'Öğrenci Ekle</button>' +
       '<button class="btn btn-outline full" id="excelImportBtn" style="margin-top:8px;">'+ic('upload')+'Excelden Öğrenci Listesi Yükle</button>' +
@@ -12822,20 +12969,20 @@ function renderStudentDetail(app){
       '</div>';
   } else if(mCount === 1){
     flStatusHtml =
-      '<div class="card" style="background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--primary);border-radius:var(--radius);padding:12px 16px;margin-bottom:14px;">' +
+      '<div class="callout info">' +
         '<div style="display:flex;align-items:center;gap:10px;">' +
-          '<span style="font-size:18px;">ℹ️</span>' +
-          '<div style="font-size:12.5px;color:var(--ink-soft);line-height:1.4;">' +
+          ic('info') +
+          '<div>' +
             'Öğrencinin 1 yapılmayan ödevi var (FL-27 için 2 ödev daha kaldı — Kural: Her 3 yapılmayan ödeve 1 FL-27 verilir).' +
           '</div>' +
         '</div>' +
       '</div>';
   } else {
     flStatusHtml =
-      '<div class="card" style="background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:var(--radius);padding:12px 16px;margin-bottom:14px;">' +
+      '<div class="callout ok">' +
         '<div style="display:flex;align-items:center;gap:10px;">' +
-          '<span style="font-size:18px;">✅</span>' +
-          '<div style="font-size:12.5px;color:var(--teal);line-height:1.4;font-weight:600;">' +
+          ic('check') +
+          '<div>' +
             'Ödev durumu düzenli. Yapılmayan ödev ve FL-27 uyarısı bulunmamaktadır (Kural: Her 3 yapılmayan ödeve 1 FL-27).' +
           '</div>' +
         '</div>' +
@@ -12860,10 +13007,12 @@ function renderStudentDetail(app){
       '<label style="font-size:12px;color:var(--ink-soft);font-weight:700;margin-left:6px;">Özel Ders:</label>' +
       '<input type="text" data-f="ozel_ders" value="'+escapeHtml(s.ozel_ders||'')+'" placeholder="—" '+(state.isAdmin?'disabled readonly':'')+' style="width:180px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;'+(state.isAdmin?'background:var(--surface-2);cursor:not-allowed;':'')+'">' +
     '</div>') : '') +
-    '<div class="pagehead"><h2>' +
-      (s.no ? '<span style="font-size:15px;color:var(--primary);background:var(--primary-soft);padding:3px 10px;border-radius:8px;margin-right:8px;font-weight:800;vertical-align:middle;">#'+escapeHtml(s.no)+'</span>' : '<span style="font-size:12px;color:var(--ink-faint);background:var(--surface-2);padding:3px 8px;border-radius:6px;margin-right:8px;font-weight:600;vertical-align:middle;">No Belirtilmedi</span>') +
-      escapeHtml(s.name) +
-    '</h2></div>' +
+    '<div class="pagehead stuhead">' +
+      '<div class="st-av lg" aria-hidden="true">'+escapeHtml(studentInitials(s.name))+'</div>' +
+      '<div class="stuhead-txt"><h2>'+escapeHtml(s.name)+'</h2>' +
+        '<div class="sub">' + (s.no ? '<span class="stu-no">No '+escapeHtml(s.no)+'</span>' : '<span class="stu-no muted">No belirtilmedi</span>') + escapeHtml(cls.name) + '</div>' +
+      '</div>' +
+    '</div>' +
     '<div class="infobar">' +
       (!g12 ? '<div class="item"><div class="v">'+perfAvg+'</div><div class="k">Performans Ort.</div></div>' : '') +
       '<div class="item"><div class="v">%'+hwP+'</div><div class="k">Ödev Durumu</div></div>' +
@@ -13249,7 +13398,7 @@ function openNewClassEvalModal(){
 }
 function renderClassEvalList(app){
   const rows = state.cls.classEvaluations.map(ev=>
-    '<div class="card rowcard" data-pickeval="'+ev.id+'">' +
+    '<div class="card rowcard" role="button" tabindex="0" data-pickeval="'+ev.id+'">' +
       '<div class="name">'+escapeHtml(ev.period)+'<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;">'+(ev.criteria||[]).length+' kriter</div></div>' +
       '<div class="chev">'+ic('chevron')+'</div>' +
     '</div>'
@@ -14725,6 +14874,14 @@ function renderDenemeScores(app){
     });
   }
 }
+
+document.addEventListener('keydown', (e)=>{
+  const t = e.target;
+  if((e.key === 'Enter' || e.key === ' ') && t && t.matches && t.matches('[role="button"]:not(button)')){
+    e.preventDefault();
+    t.click();
+  }
+});
 
 (async function init(){
   const { data: { session } } = await sb.auth.getSession();

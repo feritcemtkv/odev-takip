@@ -21,7 +21,15 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
-  let reqPath = decodeURIComponent(req.url.split('?')[0]);
+  let reqPath;
+  try {
+    reqPath = decodeURIComponent(req.url.split('?')[0]);
+  } catch (e) {
+    // Bozuk URL kodlaması (örn. /%E0%A4%A) sunucuyu çökertmesin
+    res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Bad Request');
+    return;
+  }
 
   // Local API for School Roster Catalog
   if (reqPath === '/api/school-roster') {
