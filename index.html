@@ -4389,11 +4389,19 @@ async function loadClassDetail(classId){
 
 function assignedCount(){ const today=todayStr(); return (state.cls && state.cls.homeworks) ? state.cls.homeworks.filter(h=>h.check_date && h.check_date<=today).length : 0; }
 function completedCount(sid){ const today=todayStr(); const st=(state.cls && state.cls.hwStatus && state.cls.hwStatus[sid])||{}; let n=0; if(state.cls && state.cls.homeworks){ state.cls.homeworks.forEach(h=>{ if(h.check_date && h.check_date<=today && st[h.slot_no]) n++; }); } return n; }
+// Ödev, sınıfta en az bir öğrenci "yaptı" olarak işaretlendiyse kontrol edilmiş sayılır.
+function hwCheckedCount(slotNo){
+  if(!state.cls) return 0;
+  const all = state.cls.hwStatus || {};
+  return (state.cls.students || []).filter(s => (all[s.id] || {})[slotNo]).length;
+}
+function isHwChecked(slotNo){ return hwCheckedCount(slotNo) > 0; }
 function missedHomeworks(sid){
   const today = todayStr();
   const st = (state.cls && state.cls.hwStatus && state.cls.hwStatus[sid]) || {};
   if(!state.cls || !state.cls.homeworks) return [];
-  return state.cls.homeworks.filter(h => h.check_date && h.check_date <= today && !st[h.slot_no]);
+  // Tarihi gelmiş ama hiç kontrol edilmemiş ödevler FL-27 hesabına girmez.
+  return state.cls.homeworks.filter(h => h.check_date && h.check_date <= today && !st[h.slot_no] && isHwChecked(h.slot_no));
 }
 function missedCount(sid){
   return missedHomeworks(sid).length;
@@ -13550,8 +13558,7 @@ function renderHwPicker(app){
   const today = todayStr();
   const rows = state.cls.homeworks.map(h=>{
     const checked = h.check_date && h.check_date<=today;
-    const st = state.cls.hwStatus || {};
-    const doneCount = state.cls.students.filter(s=> (st[s.id]||{})[h.slot_no]).length;
+    const doneCount = hwCheckedCount(h.slot_no);
     const isChecked = doneCount > 0;
     return '<div class="card rowcard'+(isChecked?' hw-checked':'')+'" data-pick="'+h.slot_no+'">' +
       '<div class="name">'+escapeHtml(h.topic||('Ödev #'+h.slot_no))+'<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;">Kontrol: '+(h.check_date?fmtDate(h.check_date):'belirtilmemiş')+(checked?'':' (henüz gelmedi)')+(isChecked?' &middot; <b style="color:#059669;">✓ Kontrol edildi ('+doneCount+'/'+state.cls.students.length+' yaptı)</b>':'')+'</div></div>' +
