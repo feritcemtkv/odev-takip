@@ -9,7 +9,7 @@
 Sistemin çok kiracılı (multi-tenant) güvenliğini ve her öğretmenin yalnızca kendi sınıf verilerine erişebilmesini sağlamak için:
 1. Supabase Dashboard'a gidin.
 2. Sol menüden **SQL Editor** bölümünü açın.
-3. [`sql/security_and_rls.sql`](sql/security_and_rls.sql) ve [`sql/fix_admin_and_performance_dates.sql`](sql/fix_admin_and_performance_dates.sql) dosyalarındaki komutları çalıştırın.
+3. [`sql/security_and_rls.sql`](sql/security_and_rls.sql) ve [`sql/fix_admin_and_performance_dates.sql`](sql/fix_admin_and_performance_dates.sql) dosyalarındaki komutları, ardından [`sql/fix_is_admin_security.sql`](sql/fix_is_admin_security.sql) güvenlik yamasını çalıştırın.
 
 Bu işlem tüm tablolarda Row Level Security (RLS) politikalarını, yönetici yetkilerini ve performans ödevi tarih altyapısını devreye alır.
 

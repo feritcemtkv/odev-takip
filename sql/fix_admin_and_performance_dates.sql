@@ -44,8 +44,6 @@ AS $$
     (lower(coalesce(auth.jwt() ->> 'email', '')) = 'admin@takip.local')
     -- 2. JWT içindeki app_metadata rolü
     OR (coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') = 'admin')
-    -- 3. JWT içindeki user_metadata rolü
-    OR (coalesce(auth.jwt() -> 'user_metadata' ->> 'role', '') = 'admin')
     -- 4. auth.users tablosunda doğrudan kullanıcı kaydı kontrolü
     OR EXISTS (
       SELECT 1 FROM auth.users
@@ -53,7 +51,6 @@ AS $$
         AND (
           lower(email) = 'admin@takip.local'
           OR coalesce(raw_app_meta_data->>'role', '') = 'admin'
-          OR coalesce(raw_user_meta_data->>'role', '') = 'admin'
         )
     );
 $$;

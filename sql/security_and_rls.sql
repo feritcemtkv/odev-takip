@@ -74,14 +74,12 @@ AS $$
   SELECT 
     (lower(coalesce(auth.jwt() ->> 'email', '')) = 'admin@takip.local')
     OR (coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') = 'admin')
-    OR (coalesce(auth.jwt() -> 'user_metadata' ->> 'role', '') = 'admin')
     OR EXISTS (
       SELECT 1 FROM auth.users
       WHERE id = auth.uid()
         AND (
           lower(email) = 'admin@takip.local'
           OR coalesce(raw_app_meta_data->>'role', '') = 'admin'
-          OR coalesce(raw_user_meta_data->>'role', '') = 'admin'
         )
     );
 $$;

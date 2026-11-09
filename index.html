@@ -1748,7 +1748,7 @@ async function startApp(){
   state.username = user && user.email ? user.email.split('@')[0] : '';
   const emailLower = (state.userEmail || '').toLowerCase();
   const userLower = (state.username || '').toLowerCase();
-  state.isAdmin = (userLower === 'admin') || (emailLower === 'admin@takip.local') || (user && ((user.app_metadata && user.app_metadata.role === 'admin') || (user.user_metadata && user.user_metadata.role === 'admin')));
+  state.isAdmin = (userLower === 'admin') || (emailLower === 'admin@takip.local') || (user && user.app_metadata && user.app_metadata.role === 'admin');
   document.getElementById('teacherBtn').style.display = 'flex';
   const $branch = document.querySelector('#teacherBtn .branch');
   if($branch){
