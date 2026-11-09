@@ -2465,10 +2465,24 @@ function getSchoolRosterCatalog(){
   return {};
 }
 
+// Okul listesi Supabase'de annual_plans tablosunda bu özel satırda tutulur
+// (admin yazar, tüm öğretmenler okur). Böylece her cihazda ve her öğretmende görünür.
+const SCHOOL_ROSTER_DB_KEY = '__school_roster__';
+
 async function saveSchoolRosterCatalog(catalog){
   try{
     localStorage.setItem(SCHOOL_ROSTER_CATALOG_KEY, JSON.stringify(catalog || {}));
   }catch(e){}
+  if(state.isAdmin && typeof sb !== 'undefined'){
+    try{
+      const { error } = await sb.from('annual_plans').upsert({
+        grade: SCHOOL_ROSTER_DB_KEY,
+        plan_data: catalog || {},
+        updated_at: new Date().toISOString()
+      });
+      if(error) console.warn('Okul listesi Supabase\'e kaydedilemedi:', error.message);
+    }catch(e){ console.warn('Okul listesi Supabase\'e kaydedilemedi:', e); }
+  }
   try{
     await fetch('/api/school-roster', {
       method: 'POST',
@@ -2479,6 +2493,20 @@ async function saveSchoolRosterCatalog(catalog){
 }
 
 async function syncSchoolRosterCatalogFromServer(){
+  if(typeof sb !== 'undefined'){
+    try{
+      const { data, error } = await sb.from('annual_plans').select('plan_data').eq('grade', SCHOOL_ROSTER_DB_KEY).maybeSingle();
+      if(!error && data && data.plan_data && typeof data.plan_data === 'object' && Object.keys(data.plan_data).length > 0){
+        localStorage.setItem(SCHOOL_ROSTER_CATALOG_KEY, JSON.stringify(data.plan_data));
+        return;
+      }
+      // Sunucuda liste yok ama yöneticinin tarayıcısında varsa (eski sürümde yüklenmiş), sunucuya taşı
+      if(!error && state.isAdmin){
+        const local = getSchoolRosterCatalog();
+        if(Object.keys(local).length > 0){ await saveSchoolRosterCatalog(local); return; }
+      }
+    }catch(e){}
+  }
   try{
     const res = await fetch('/api/school-roster');
     if(res.ok){
@@ -2912,7 +2940,7 @@ async function openNewClassModal(){
         '<input type="radio" name="mDanismanRole" value="counselor" id="roleCounselor" style="margin-top:2px;">' +
         '<div>' +
           '<div>Bu sınıfın Danışman Öğretmenidir</div>' +
-          '<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;margin-top:2px;">Ödev ve sınav takibine ek olarak Rehberlik &amp; Danışmanlık formları (Form-2, Form-3a, Form-4) aktif olur.</div>' +
+          '<div style="font-size:11.5px;color:var(--ink-soft);font-weight:500;margin-top:2px;">Ödev ve sınav takibine ek olarak Rehberlik &amp; Danışmanlık formları (Form-2, Form-3a, Form-4) aktif olur. 12. sınıflarda telefon ekran süresi takibi açılır.</div>' +
         '</div>' +
       '</label>' +
       '<label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;font-size:13px;color:var(--ink);font-weight:700;">' +
@@ -2942,10 +2970,6 @@ async function openNewClassModal(){
           const moreCount = stus.length > 5 ? ' ve ' + (stus.length - 5) + ' öğrenci daha...' : '';
           catInfo.innerHTML = '✅ <b>' + escapeHtml(chosen) + '</b> seçildi (' + stus.length + ' Öğrenci):<br><span style="font-size:11px;color:#166534;margin-top:4px;display:block;">Öğrenciler: ' + sampleNames + moreCount + ' (Tek tıkla otomatik aktarılacak)</span>';
         }
-        if(isGrade12(chosen)){
-          const rS = document.getElementById('roleSubject');
-          if(rS) rS.checked = true;
-        }
       } else {
         if(catInfo) catInfo.style.display = 'none';
       }
@@ -2964,10 +2988,6 @@ async function openNewClassModal(){
     } else if(catInfo && !catSel?.value){
       catInfo.style.display = 'none';
     }
-    if(isGrade12(nameInp.value)){
-      const rS = document.getElementById('roleSubject');
-      if(rS) rS.checked = true;
-    }
   });
   document.getElementById('roleSubject').addEventListener('change', ()=>{ document.getElementById('roleCounselor').dataset.userTouched = '1'; });
   document.getElementById('roleCounselor').addEventListener('change', ()=>{ document.getElementById('roleCounselor').dataset.userTouched = '1'; });
@@ -2975,7 +2995,7 @@ async function openNewClassModal(){
   document.getElementById('mCancel').onclick = closeModal;
   document.getElementById('mSave').onclick = async ()=>{
     const name = document.getElementById('mClassName').value.trim();
-    const isDanisman = isGrade12(name) ? false : document.getElementById('roleCounselor').checked;
+    const isDanisman = document.getElementById('roleCounselor').checked;
     if(!name){
       showToast('Sınıf adı girilmeli');
       return;
@@ -9362,7 +9382,7 @@ async function syncAnnualPlansFromServer(){
       if(!error && data && data.length > 0){
         serverPlans = {};
         data.forEach(row => {
-          if(row.grade && row.plan_data){
+          if(row.grade && row.plan_data && !String(row.grade).startsWith('__')){
             serverPlans[row.grade] = row.plan_data;
           }
         });
