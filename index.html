@@ -2912,7 +2912,7 @@ async function openNewClassModal(){
         '<select id="mCatalogClassSelect" style="width:100%;padding:10px 12px;border:1.5px solid #86efac;border-radius:8px;font-size:13.5px;font-weight:700;background:#fff;color:#166534;">' +
           '<option value="">— Sınıfı Seçin (Öğrenciler Otomatik Gelir) —</option>' +
           catalogClasses.map(c => {
-            const alreadyHas = !state.isAdmin && state.classes.some(ex => normalizeClassName(ex.name) === normalizeClassName(c));
+            const alreadyHas = !state.isAdmin && state.classes.some(ex => classKey(ex.name) === classKey(c));
             return '<option value="'+escapeHtml(c)+'" '+(alreadyHas ? 'disabled style="color:#94a3b8;"' : '')+'>'+
               escapeHtml(c)+' ('+catalog[c].length+' Öğrenci)' + (alreadyHas ? ' — Zaten Listenizde Ekli' : '') +
             '</option>';
@@ -2979,7 +2979,7 @@ async function openNewClassModal(){
   nameInp.addEventListener('input', ()=>{
     const val = nameInp.value.trim();
     const catalog = getSchoolRosterCatalog();
-    const matchedKey = Object.keys(catalog).find(k => normalizeClassName(k) === normalizeClassName(val));
+    const matchedKey = Object.keys(catalog).find(k => classKey(k) === classKey(val));
     if(matchedKey && catInfo){
       catInfo.style.display = 'block';
       const stus = catalog[matchedKey] || [];
@@ -3112,9 +3112,7 @@ async function addClass(name, isCounselorVal = false, targetOwnerId = null, targ
     return;
   }
 
-  const catalog = getSchoolRosterCatalog();
-  const matchedKey = Object.keys(catalog).find(k => normalizeClassName(k) === normalizeClassName(name));
-  const stus = (matchedKey && catalog[matchedKey]) ? catalog[matchedKey] : [];
+  const stus = findCatalogStudentsForClass(name);
 
   const stuPayload = stus.map((s, idx) => ({
     name: s.name,
@@ -4181,10 +4179,39 @@ function exportParentReport(sid){
   showToast('Veli raporu indirildi');
 }
 
+function findCatalogStudentsForClass(name){
+  const catalog = getSchoolRosterCatalog();
+  const key = Object.keys(catalog).find(k => classKey(k) === classKey(name));
+  return key ? (catalog[key] || []) : [];
+}
+async function fillEmptyClassFromCatalog(classObj){
+  const stus = findCatalogStudentsForClass(classObj.name);
+  if(!stus.length) return null;
+  const rows = stus.map((st, idx) => ({ class_id: classObj.id, name: st.name, no: st.no || null, sort_order: idx + 1 }));
+  try{
+    const { data, error } = await sb.from('students').insert(rows).select();
+    if(error){
+      console.warn('Okul listesinden öğrenci eklenemedi:', error.message);
+      if(state.isAdmin) showToast('Okul listesinde ' + stus.length + ' öğrenci var ama yönetici olarak eklenemedi. Öğretmen sınıfı açınca otomatik eklenir.');
+      return null;
+    }
+    showToast('✅ Okul listesinden ' + data.length + ' öğrenci sınıfa eklendi');
+    logActivity('"' + classObj.name + '" sınıfına okul listesinden ' + data.length + ' öğrenci eklendi');
+    return (data || []).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  }catch(e){
+    console.warn('Okul listesinden öğrenci eklenemedi:', e);
+    return null;
+  }
+}
 async function loadClassDetail(classId){
   state.loading = true; render();
   const classObj = state.classes.find(c=>c.id===classId);
-  const { data: students } = await sb.from('students').select('*').eq('class_id',classId).order('sort_order');
+  let { data: students } = await sb.from('students').select('*').eq('class_id',classId).order('sort_order');
+  // Sınıf boşsa ve okul listesinde bu sınıf varsa öğrencileri otomatik ekle
+  if(classObj && (!students || !students.length)){
+    const filled = await fillEmptyClassFromCatalog(classObj);
+    if(filled) students = filled;
+  }
   const { data: homeworks } = await sb.from('homeworks').select('*').eq('class_id',classId).order('slot_no');
   const { data: quizzes } = await sb.from('quizzes').select('*').eq('class_id',classId).order('slot_no');
   const { data: perfTasks } = await sb.from('performance_tasks').select('*').eq('class_id',classId).order('slot_no');
