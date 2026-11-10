@@ -14647,15 +14647,17 @@ function renderQuickQuiz(app){
         const curRow = parseInt(inp.dataset.row, 10);
         const curCol = parseInt(inp.dataset.col, 10);
 
-        if(e.key === 'Enter' || e.key === 'ArrowDown'){
-          e.preventDefault();
+        // Puan girişinde Tab bir alttaki öğrenciye, Shift+Tab bir üsttekine geçer
+        const tabDown = isQuiz && e.key === 'Tab' && !e.shiftKey;
+        const tabUp = isQuiz && e.key === 'Tab' && e.shiftKey;
+        if(e.key === 'Enter' || e.key === 'ArrowDown' || tabDown){
           const next = allInputs.find(i => parseInt(i.dataset.row, 10) === curRow + 1 && parseInt(i.dataset.col, 10) === curCol);
-          if(next){ next.focus(); next.select(); }
-          else { inp.blur(); }
-        } else if(e.key === 'ArrowUp'){
-          e.preventDefault();
+          if(next){ e.preventDefault(); next.focus(); next.select(); }
+          else if(!tabDown){ e.preventDefault(); inp.blur(); }
+        } else if(e.key === 'ArrowUp' || tabUp){
           const prev = allInputs.find(i => parseInt(i.dataset.row, 10) === curRow - 1 && parseInt(i.dataset.col, 10) === curCol);
-          if(prev){ prev.focus(); prev.select(); }
+          if(prev){ e.preventDefault(); prev.focus(); prev.select(); }
+          else if(!tabUp){ e.preventDefault(); }
         } else if(!isQuiz && e.key === 'ArrowRight'){
           const nextCol = allInputs.find(i => parseInt(i.dataset.row, 10) === curRow && parseInt(i.dataset.col, 10) === curCol + 1);
           if(nextCol){ e.preventDefault(); nextCol.focus(); nextCol.select(); }
