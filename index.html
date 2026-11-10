@@ -162,7 +162,7 @@
   .bn-item .ic{width:24px;height:24px;stroke:currentColor;}
   .bn-item:hover{color:#fff;}
   .bn-item.active{color:#fff;background:rgba(255,255,255,.18);}
-  .track-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px;max-width:560px;}
+  .track-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin-bottom:14px;max-width:760px;}
   .track-tile{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:var(--radius-sm);padding:10px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:700;text-align:center;line-height:1.25;min-height:68px;position:relative;box-shadow:var(--shadow);transition:border-color .15s ease,background .15s ease;}
   .track-tile .ic{width:20px;height:20px;color:var(--primary);}
   .track-tile:hover{border-color:var(--primary);background:var(--primary-soft);}
@@ -691,6 +691,7 @@ const ICONS = {
   target:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
   clipboard:'<rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.3" width="6" height="3.2" rx="1"/><path d="M9 11h6M9 15h6"/>',
   upload:'<path d="M12 20V9"/><path d="m7 13 5-5 5 5"/><path d="M5 20h14"/>',
+  chart:'<path d="M3 3v18h18"/><path d="M8 17v-5"/><path d="M13 17V8"/><path d="M18 17v-8"/>',
   edit:'<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
   key:'<circle cx="7.5" cy="15.5" r="4.5"/><path d="m11 12 9-9h4v4l-2 2v2l-2 2v2l-3.5-3.5"/>',
   eye:'<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
@@ -12576,7 +12577,11 @@ function renderRoster(app){
     '<div class="section-title"><span>Takip</span><span class="line"></span></div>' +
     '<div class="track-grid">' +
       '<button type="button" class="track-tile" id="hwMenuBtn">'+ic('flag')+'Ödevler</button>' +
-      '<button type="button" class="track-tile" id="quizMenuBtn">'+ic('file')+(g12 ? 'Okul Sınavları' : 'KDS &amp; Quiz &amp; Sınav')+'</button>' +
+      (g12
+        ? '<button type="button" class="track-tile" data-exam-cat="sinav">'+ic('file')+'Okul Sınavları</button>'
+        : '<button type="button" class="track-tile" data-exam-cat="quiz">'+ic('edit')+'Quiz</button>' +
+          '<button type="button" class="track-tile" data-exam-cat="kds">'+ic('chart')+'KDS</button>' +
+          '<button type="button" class="track-tile" data-exam-cat="sinav">'+ic('file')+'Sınav</button>') +
       (!g12 ? '<button type="button" class="track-tile" id="perfMenuBtn">'+ic('target')+'Performans</button>' : '') +
       '<button type="button" class="track-tile'+(totalFl>0?' alert':'')+'" id="fl27QuickBtn">' +
         ic('clipboard') + 'FL-27 Takip' + (totalFl > 0 ? '<span class="count">' + totalFl + '</span>' : '') +
@@ -12636,11 +12641,14 @@ function renderRoster(app){
       ]);
     }
   };
-  document.getElementById('quizMenuBtn').onclick = ()=>{
-    state.quizPickerTab = 'all';
-    state.view = 'quiz_picker';
-    render();
-  };
+  app.querySelectorAll('[data-exam-cat]').forEach(btn=>{
+    btn.onclick = ()=>{
+      state.quizCat = btn.dataset.examCat;
+      state.quizPickerTab = btn.dataset.examCat;
+      state.view = 'quiz_picker';
+      render();
+    };
+  });
   if(!g12){
     const exWord = examWord(cls.name), exWordPl = examWordPlural(cls.name);
     const pMenuBtn = document.getElementById('perfMenuBtn');
@@ -14010,8 +14018,11 @@ function renderQuizPicker(app){
 
   if(state.quizPickerTab === 'mini') state.quizPickerTab = 'quiz';
   state.quizPickerTab = state.quizPickerTab || 'all';
-  // 12. sınıfta sadece okul sınavları var; sekmeler gösterilmez
-  if(isGrade12()) state.quizPickerTab = 'sinav';
+  // Sınıf panelinde Quiz / KDS / Sınav ayrı kutular; seçilen türün sınavları gösterilir.
+  // 12. sınıfta sadece okul sınavları var.
+  const onlyCat = isGrade12() ? 'sinav' : (state.quizCat || null);
+  if(onlyCat) state.quizPickerTab = onlyCat;
+  const catTitle = onlyCat === 'quiz' ? 'Quiz' : onlyCat === 'kds' ? 'KDS' : onlyCat === 'sinav' ? (isGrade12() ? 'Okul Sınavı' : 'Sınav') : exWord;
 
   const quizOnlyExams = allQuizzes.filter(q => getExamCategory(q.label) === 'quiz');
   const kdsExams = allQuizzes.filter(q => getExamCategory(q.label) === 'kds');
@@ -14229,21 +14240,22 @@ function renderQuizPicker(app){
     '<button class="backlink" id="back7">' + ic('chevron') + ' ' + escapeHtml(state.cls.name) + ' paneline dön</button>' +
     (state.isAdmin ? '<div class="admin-badge-banner" style="background:var(--amber-soft);border:1px solid var(--amber);color:var(--amber);padding:10px 14px;border-radius:10px;font-size:12.5px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;">Yönetici Modu (Salt Okunur) — Sınavlar ve notlar sadece incelenebilir.</div>' : '') +
     '<div class="pagehead">' +
-      '<h2>' + exWord + ' Notu ' + (state.isAdmin ? 'İncele' : 'Gir') + '</h2>' +
-      '<div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">Öğrenci sınav puanlarını (Quiz / Yazılı Sınav) veya doğru/yanlış sayılarını (KDS) girmek ya da incelemek için sınava tıklayın.</div>' +
+      '<h2>' + catTitle + ' Notu ' + (state.isAdmin ? 'İncele' : 'Gir') + '</h2>' +
+      '<div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">' + (onlyCat === 'kds' ? 'Doğru/yanlış/boş sayılarını girmek ya da incelemek için sınava tıklayın.' : 'Öğrenci puanlarını girmek ya da incelemek için sınava tıklayın.') + '</div>' +
     '</div>' +
 
     (!state.isAdmin ? (
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">' +
-        (isGrade12() ? '' : '<button class="btn btn-primary" id="pickerAddQuizBtn" style="font-weight:800;">➕ Yeni Quiz Ekle</button>' +
-        '<button class="btn btn-outline" id="pickerAddKdsBtn" style="font-weight:700;">➕ Yeni KDS Ekle</button>') +
-        '<button class="btn '+(isGrade12()?'btn-primary':'btn-outline')+'" id="pickerAddS1Btn" style="font-weight:700;">📝 1. Sınav Notları</button>' +
-        '<button class="btn '+(isGrade12()?'btn-primary':'btn-outline')+'" id="pickerAddS2Btn" style="font-weight:700;">📝 2. Sınav Notları</button>' +
+        (!onlyCat || onlyCat === 'quiz' ? '<button class="btn btn-primary" id="pickerAddQuizBtn" style="font-weight:800;">➕ Yeni Quiz Ekle</button>' : '') +
+        (!onlyCat || onlyCat === 'kds' ? '<button class="btn '+(onlyCat?'btn-primary':'btn-outline')+'" id="pickerAddKdsBtn" style="font-weight:700;">➕ Yeni KDS Ekle</button>' : '') +
+        (!onlyCat || onlyCat === 'sinav' ?
+          '<button class="btn '+(onlyCat?'btn-primary':'btn-outline')+'" id="pickerAddS1Btn" style="font-weight:700;">📝 1. Sınav Notları</button>' +
+          '<button class="btn '+(onlyCat?'btn-primary':'btn-outline')+'" id="pickerAddS2Btn" style="font-weight:700;">📝 2. Sınav Notları</button>' : '') +
         '<button class="btn btn-soft" id="pickerManageBtn" style="font-weight:700;margin-left:auto;">✏️ Başlıkları Düzenle</button>' +
       '</div>'
     ) : '') +
 
-    (isGrade12() ? '' : '<div style="display:flex;gap:6px;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:8px;flex-wrap:wrap;">' +
+    (onlyCat ? '' : '<div style="display:flex;gap:6px;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:8px;flex-wrap:wrap;">' +
       '<button type="button" class="btn btn-sm ' + (state.quizPickerTab === 'all' ? 'btn-primary' : 'btn-soft') + '" id="tabAllExams" style="font-size:12px;padding:4px 12px;font-weight:800;">Tümü (' + allQuizzes.length + ')</button>' +
       '<button type="button" class="btn btn-sm ' + (state.quizPickerTab === 'quiz' ? 'btn-primary' : 'btn-soft') + '" id="tabQuizExams" style="font-size:12px;padding:4px 12px;font-weight:800;">📝 Quizler (' + quizOnlyExams.length + ')</button>' +
       '<button type="button" class="btn btn-sm ' + (state.quizPickerTab === 'kds' ? 'btn-primary' : 'btn-soft') + '" id="tabKdsExams" style="font-size:12px;padding:4px 12px;font-weight:800;">📊 KDS Sınavları (' + kdsExams.length + ')</button>' +
