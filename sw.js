@@ -1,4 +1,4 @@
-const CACHE_NAME = 'odev-takip-v1.0.9';
+const CACHE_NAME = 'odev-takip-v1.1.0';
 
 const PRECACHE_ASSETS = [
   './',
@@ -72,8 +72,11 @@ self.addEventListener('fetch', (event) => {
   }
 
   // 4. App Shell (HTML, static assets): Network-first with cache fallback
+  // Sayfanın kendisi tarayıcı önbelleğini atlayarak istenir; böylece telefonda da
+  // her açılışta en yeni sürüm gelir (çevrimdışıyken önbellekteki sürüm açılır).
+  const isPage = req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('.html');
   event.respondWith(
-    fetch(req)
+    (isPage ? fetch(req.url, { cache: 'no-store', credentials: 'same-origin' }) : fetch(req))
       .then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200) {
           const resClone = networkResponse.clone();

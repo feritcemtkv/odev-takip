@@ -14950,8 +14950,9 @@ document.addEventListener('keydown', (e)=>{
   // 1. Service Worker Kaydı
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
+      navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
         .then((reg) => {
+          reg.update().catch(() => {});
           console.log('[PWA] Service Worker aktif:', reg.scope);
           reg.addEventListener('updatefound', () => {
             const installing = reg.installing;
