@@ -928,8 +928,8 @@ async function getAllSameGradeClasses(cls){
   } catch(e){}
   return getSameGradeClasses(cls);
 }
-function examWord(name){ return isGrade12(name) ? 'Deneme' : 'KDS & Quiz & Sınav'; }
-function examWordPlural(name){ return isGrade12(name) ? 'Denemeleri' : 'KDS, Quiz ve Sınavları'; }
+function examWord(name){ return isGrade12(name) ? 'Okul Sınavı' : 'KDS & Quiz & Sınav'; }
+function examWordPlural(name){ return isGrade12(name) ? 'Okul Sınavları' : 'KDS, Quiz ve Sınavları'; }
 function formatExamLabel(label){
   if(!label) return '';
   return String(label).replace(/Mini\s*S[ıi]nav/gi, 'Quiz').trim();
@@ -3852,7 +3852,7 @@ function exportClassBackup(){
     XLSX.utils.book_append_sheet(wb, wsHw, 'Ödevler');
   }
 
-  if(!g12 && cls.quizzes.length){
+  if(cls.quizzes.length){
     const sortedQuizzes = sortQuizzes(cls.quizzes || []);
     const qzAoa = [];
     const qzHeader = ['No', 'Ad Soyad'];
@@ -4084,7 +4084,7 @@ function exportParentReport(sid){
   });
   if(hwRows.length || !g12) addSheet(wb, hwRows, 'Ödev Geçmişi');
 
-  if(!g12 && cls.quizzes.length){
+  if(cls.quizzes.length){
     const sortedQuizzes = sortQuizzes(cls.quizzes || []);
     const rows = sortedQuizzes.map(q=>{
       const v = (cls.quizScores[s.id]||{})[q.slot_no] || {};
@@ -12576,7 +12576,7 @@ function renderRoster(app){
     '<div class="section-title"><span>Takip</span><span class="line"></span></div>' +
     '<div class="track-grid">' +
       '<button type="button" class="track-tile" id="hwMenuBtn">'+ic('flag')+'Ödevler</button>' +
-      (!g12 ? '<button type="button" class="track-tile" id="quizMenuBtn">'+ic('file')+'KDS &amp; Quiz &amp; Sınav</button>' : '') +
+      '<button type="button" class="track-tile" id="quizMenuBtn">'+ic('file')+(g12 ? 'Okul Sınavları' : 'KDS &amp; Quiz &amp; Sınav')+'</button>' +
       (!g12 ? '<button type="button" class="track-tile" id="perfMenuBtn">'+ic('target')+'Performans</button>' : '') +
       '<button type="button" class="track-tile'+(totalFl>0?' alert':'')+'" id="fl27QuickBtn">' +
         ic('clipboard') + 'FL-27 Takip' + (totalFl > 0 ? '<span class="count">' + totalFl + '</span>' : '') +
@@ -12636,13 +12636,13 @@ function renderRoster(app){
       ]);
     }
   };
+  document.getElementById('quizMenuBtn').onclick = ()=>{
+    state.quizPickerTab = 'all';
+    state.view = 'quiz_picker';
+    render();
+  };
   if(!g12){
     const exWord = examWord(cls.name), exWordPl = examWordPlural(cls.name);
-    document.getElementById('quizMenuBtn').onclick = ()=>{
-      state.quizPickerTab = 'all';
-      state.view = 'quiz_picker';
-      render();
-    };
     const pMenuBtn = document.getElementById('perfMenuBtn');
     if(pMenuBtn) pMenuBtn.onclick = ()=>{
       if(state.isAdmin){
@@ -12770,7 +12770,7 @@ function renderStudentDetail(app){
   const perfAvg = perfCount>0 ? Math.round(perfSum/perfCount) : '-';
 
   let quizHtml = '', perfHtml = '', tytHtml = '', aytHtml = '';
-  if(!g12){
+  {
     let sortedQuizzes = sortQuizzes(cls.quizzes || []);
     quizHtml = sortedQuizzes.map(q=>{
       const v = (cls.quizScores[s.id]||{})[q.slot_no];
@@ -13079,7 +13079,7 @@ function renderStudentDetail(app){
       (tytAvgNetBadge ? '<div class="item"><div class="v" style="color:var(--primary-deep);font-weight:900;">'+tytAvgNetBadge+'</div><div class="k">TYT Net Ort. ('+tytExamsCount+' Sınav)</div></div>' : '') +
       (showScreenTime(cls) ? ('<div class="item"><div class="v" style="color:#7e22ce;font-weight:900;">' + (stData.time || '—') + '</div><div class="k" style="color:#7e22ce;">📱 Ekran Süresi' + (stHistory.length > 1 ? (' (' + stHistory.length + ')') : '') + '</div></div>') : '') +
     '</div>' +
-    (!g12 && cls.quizzes.length ? '<div class="section-title"><span>'+escapeHtml(examWord(cls.name))+' Notları</span><span class="line"></span></div><div class="detail-grid">'+quizHtml+'</div>' : '') +
+    (cls.quizzes.length ? '<div class="section-title"><span>'+escapeHtml(examWord(cls.name))+' Notları</span><span class="line"></span></div><div class="detail-grid">'+quizHtml+'</div>' : '') +
     (!g12 && cls.perfTasks.length ? '<div class="section-title"><span>Performans</span><span class="line"></span></div><div class="detail-grid">'+perfHtml+'</div>' : '') +
     (showTytAyt ? '<div class="section-title"><span>TYT Deneme Sonuçları</span><span class="line"></span></div>'+(tytHtml||'<div class="empty">Henüz TYT sonucu yok.</div>') : '') +
     (showTytAyt ? '<div class="section-title"><span>AYT Deneme Sonuçları</span><span class="line"></span></div>'+(aytHtml||'<div class="empty">Henüz AYT sonucu yok.</div>') : '') +
@@ -14233,10 +14233,10 @@ function renderQuizPicker(app){
 
     (!state.isAdmin ? (
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">' +
-        '<button class="btn btn-primary" id="pickerAddQuizBtn" style="font-weight:800;">➕ Yeni Quiz Ekle</button>' +
-        '<button class="btn btn-outline" id="pickerAddKdsBtn" style="font-weight:700;">➕ Yeni KDS Ekle</button>' +
-        '<button class="btn btn-outline" id="pickerAddS1Btn" style="font-weight:700;">📝 1. Sınav Notları</button>' +
-        '<button class="btn btn-outline" id="pickerAddS2Btn" style="font-weight:700;">📝 2. Sınav Notları</button>' +
+        (isGrade12() ? '' : '<button class="btn btn-primary" id="pickerAddQuizBtn" style="font-weight:800;">➕ Yeni Quiz Ekle</button>' +
+        '<button class="btn btn-outline" id="pickerAddKdsBtn" style="font-weight:700;">➕ Yeni KDS Ekle</button>') +
+        '<button class="btn '+(isGrade12()?'btn-primary':'btn-outline')+'" id="pickerAddS1Btn" style="font-weight:700;">📝 1. Sınav Notları</button>' +
+        '<button class="btn '+(isGrade12()?'btn-primary':'btn-outline')+'" id="pickerAddS2Btn" style="font-weight:700;">📝 2. Sınav Notları</button>' +
         '<button class="btn btn-soft" id="pickerManageBtn" style="font-weight:700;margin-left:auto;">✏️ Başlıkları Düzenle</button>' +
       '</div>'
     ) : '') +
