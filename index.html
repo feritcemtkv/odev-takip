@@ -14010,6 +14010,8 @@ function renderQuizPicker(app){
 
   if(state.quizPickerTab === 'mini') state.quizPickerTab = 'quiz';
   state.quizPickerTab = state.quizPickerTab || 'all';
+  // 12. sınıfta sadece okul sınavları var; sekmeler gösterilmez
+  if(isGrade12()) state.quizPickerTab = 'sinav';
 
   const quizOnlyExams = allQuizzes.filter(q => getExamCategory(q.label) === 'quiz');
   const kdsExams = allQuizzes.filter(q => getExamCategory(q.label) === 'kds');
@@ -14241,13 +14243,13 @@ function renderQuizPicker(app){
       '</div>'
     ) : '') +
 
-    '<div style="display:flex;gap:6px;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:8px;flex-wrap:wrap;">' +
+    (isGrade12() ? '' : '<div style="display:flex;gap:6px;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:8px;flex-wrap:wrap;">' +
       '<button type="button" class="btn btn-sm ' + (state.quizPickerTab === 'all' ? 'btn-primary' : 'btn-soft') + '" id="tabAllExams" style="font-size:12px;padding:4px 12px;font-weight:800;">Tümü (' + allQuizzes.length + ')</button>' +
       '<button type="button" class="btn btn-sm ' + (state.quizPickerTab === 'quiz' ? 'btn-primary' : 'btn-soft') + '" id="tabQuizExams" style="font-size:12px;padding:4px 12px;font-weight:800;">📝 Quizler (' + quizOnlyExams.length + ')</button>' +
       '<button type="button" class="btn btn-sm ' + (state.quizPickerTab === 'kds' ? 'btn-primary' : 'btn-soft') + '" id="tabKdsExams" style="font-size:12px;padding:4px 12px;font-weight:800;">📊 KDS Sınavları (' + kdsExams.length + ')</button>' +
       '<button type="button" class="btn btn-sm ' + (state.quizPickerTab === 'sinav' ? 'btn-primary' : 'btn-soft') + '" id="tabSinavExams" style="font-size:12px;padding:4px 12px;font-weight:800;">📄 Sınavlar (' + sinavExams.length + ')</button>' +
       '<button type="button" class="btn btn-sm ' + (state.quizPickerTab === 'matrix' ? 'btn-primary' : 'btn-soft') + '" id="tabMatrixExams" style="font-size:12px;padding:4px 12px;font-weight:800;margin-left:auto;">📋 Sınav Notları (' + allQuizzes.length + ')</button>' +
-    '</div>' +
+    '</div>') +
 
     mainBodyHtml +
 
